@@ -22,7 +22,10 @@ night_light.result = nil
 local MinigameSounds = {
     TURN_1 = Isaac.GetSoundIdByName("nl turn 1"),
     TURN_2 = Isaac.GetSoundIdByName("nl turn 2"),
-    DUST_DEATH = Isaac.GetSoundIdByName("nl ghost death")
+    DUST_DEATH = Isaac.GetSoundIdByName("nl ghost death"),
+
+    WIN = Isaac.GetSoundIdByName("arcade cabinet win"),
+    LOSE = Isaac.GetSoundIdByName("arcade cabinet lose")
 }
 
 --Entities
@@ -475,6 +478,7 @@ function night_light:OnNPCCollision(entity, collider)
 
         if PlayerHP == 0 then
             FadeOutScreen:Play("Appear")
+            SFXManager:Play(MinigameSounds.LOSE)
             CurrentMinigameState = MinigameState.LOSING
         end
     end
