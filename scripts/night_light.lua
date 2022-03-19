@@ -21,7 +21,8 @@ night_light.result = nil
 --Sounds
 local MinigameSounds = {
     TURN_1 = Isaac.GetSoundIdByName("nl turn 1"),
-    TURN_2 = Isaac.GetSoundIdByName("nl turn 2")
+    TURN_2 = Isaac.GetSoundIdByName("nl turn 2"),
+    DUST_DEATH = Isaac.GetSoundIdByName("nl ghost death")
 }
 
 --Entities
@@ -410,6 +411,7 @@ local function CheckIfDustHit(entity)
     (direction.Y == 1 and fakeSprite:IsPlaying("IdleUp")) or (direction.Y == -1 and fakeSprite:IsPlaying("IdleDown")) then
         if entity.Position:Distance(game:GetRoom():GetCenterPos()) < 100 then
             entity:GetSprite():Play("Poof", true)
+            SFXManager:Play(MinigameSounds.DUST_DEATH)
             entity:GetSprite():SetOverlayFrame("FadeIn", 0)
             entity.Velocity = Vector.Zero
         end
@@ -462,14 +464,18 @@ night_light.callbacks[ModCallbacks.MC_NPC_UPDATE] = night_light.OnNPCUpdate
 function night_light:OnNPCCollision(entity, collider)
     if entity.Type ~= MinigameEntityTypes.CUSTOM_ENEMY then return end
 
-    if collider:ToPlayer() and entity.Variant == MinigameEntityVariants.CUSTOM_DUST and not entity:GetSprite():IsPlaying("Poof") then
+    if collider:ToPlayer() and entity.Variant == MinigameEntityVariants.CUSTOM_DUST and not entity:GetData().IsDead then
+        entity:GetData().IsDead = true
+
         entity:GetSprite():Play("Poof")
+        SFXManager:Play(MinigameSounds.DUST_DEATH)
 
         HeartsUI:Play("Flash", true)
         PlayerHP = PlayerHP - 1
 
         if PlayerHP == 0 then
-            FadeOutScreen = 0
+            FadeOutScreen:Play("Appear")
+            CurrentMinigameState = MinigameState.LOSING
         end
     end
 
