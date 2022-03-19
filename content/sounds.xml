@@ -1,0 +1,120 @@
+<sounds root="sfx/">
+    <!--Common-->
+    <sound name="arcade cabinet win">
+        <sample weight="1" path="youwin.wav"/>
+    </sound>
+
+    <sound name="arcade cabinet lose">
+        <sample weight="1" path="youlose.wav"/>
+    </sound>
+
+    <!--Black stone wielder-->
+    <sound name="bsw rune pickup">
+        <sample weight="1" path="black stone wielder/rune pickup.wav" />
+    </sound>
+
+    <sound name="bsw new level">
+        <sample weight="1" path="black stone wielder/new level.wav" />
+    </sound>
+
+    <sound name="bsw player hit">
+        <sample weight="1" path="black stone wielder/player hit.wav" />
+    </sound>
+
+    <sound name="bsw whip hit">
+        <sample weight="1" path="black stone wielder/whip hit.wav" />
+    </sound>
+
+    <sound name="bsw rune popped">
+        <sample weight="1" path="black stone wielder/rune popped.wav" />
+    </sound>
+
+    <!--Jumping coffing-->
+    <sound name="jc sword swing">
+        <sample weight="1" path="jumping coffing/swing.wav" />
+    </sound>
+
+    <sound name="jc sword spin">
+        <sample weight="1" path="jumping coffing/spin.wav"/>
+    </sound>
+
+    <sound name="jc player hurt">
+        <sample weight="1" path="jumping coffing/hurt.wav"/>
+    </sound>
+
+    <sound name="jc grunt">
+        <sample weight="1" path="jumping coffing/growl.wav" />
+        <sample weight="1" path="jumping coffing/growl2.wav" />
+    </sound>
+
+    <sound name="jc fly buzz">
+        <sample weight="1" path="jumping coffing/buzz.wav" />
+    </sound>
+
+    <sound name="jc special attack">
+        <sample weight="1" path="jumping coffing/screech.wav" />
+    </sound>
+
+    <sound name="jc boss death">
+        <sample weight="1" path="jumping coffing/bossdead.wav"/>
+    </sound>
+
+    <sound name="jc gaper death">
+        <sample weight="1" path="jumping coffing/gaper_death2.wav"/>
+    </sound>
+
+    <sound name="jc fly death">
+        <sample weight="1" path="jumping coffing/flydeath.wav"/>
+    </sound>
+
+    <sound name="jc new wave">
+        <sample weight="1" path="jumping coffing/new_wave.wav"/>
+    </sound>
+
+    <sound name="jc third wave">
+        <sample weight="1" path="jumping coffing/thirdwave.wav"/>
+    </sound>
+
+    <!--Night light-->
+    <sound name="nl turn 1">
+        <sample weight="1" path="night light/turn.wav"/>
+    </sound>
+
+    <sound name="nl turn 2">
+        <sample weight="1" path="night light/turn2.wav"/>
+    </sound>
+
+    <sound name="nl ghost death">
+        <sample weight="1" path="night light/ghost death.wav"/>
+    </sound>
+
+    <!--Too underground-->
+    <sound name="tug rock break">
+        <sample weight="1" path="too underground/break.wav"/>
+        <sample weight="1" path="too underground/break2.wav"/>
+    </sound>
+
+    <sound name="tug tear splash">
+        <sample weight="1" path="too underground/tearsplash.wav"/>
+    </sound>
+
+    <sound name="tug explosion">
+        <sample weight="1" path="too underground/explosion.wav"/>
+    </sound>
+
+    <sound name="tug dynamite">
+        <sample weight="1" path="too underground/dynamite.wav"/>
+    </sound>
+
+    <sound name="tug chest drop">
+        <sample weight="1" path="too underground/chest_drop.wav"/>
+    </sound>
+
+    <sound name="tug chest open">
+        <sample weight="1" path="too underground/chest_open.wav"/>
+    </sound>
+
+    <sound name="tug skeleton rise dead">
+        <sample weight="1" path="too underground/skeleton_rise.wav"/>
+    </sound>
+</sounds>

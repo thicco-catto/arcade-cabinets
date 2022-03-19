@@ -1,0 +1,6 @@
+<data>
+	<room Name="Jumping Coffing" >
+		<Gfx BGPrefix="backdrops/jumping_coffing.png" />
+		<Entity ID="1000" Image="backdrops/jumping_coffing_grid.png" />
+	</room>
+</data>
