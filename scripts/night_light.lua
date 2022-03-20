@@ -156,6 +156,25 @@ local function UpdateInitialCutscene()
 end
 
 
+local function ManageMorningStarState(isPressingAnything)
+    if not MorningStar then return end
+
+    local targetState = isPressingAnything and 4 or 3
+
+    if targetState ~= MorningStar.State then
+        if targetState == 3 then
+           MorningStar:GetData().TargetFrame = MorningStar:GetSprite():GetFrame()
+           MorningStar:GetSprite():Play("Idle", true)
+        else
+            MorningStar:GetSprite():Play("Move", true)
+            MorningStar:GetSprite():SetFrame(MorningStar:GetData().TargetFrame)
+        end
+    end
+
+    MorningStar.State = targetState
+end
+
+
 local function ManageInputs()
     local isPressingAnything = false
 
@@ -172,7 +191,7 @@ local function ManageInputs()
 
     elseif Input.IsActionPressed(ButtonAction.ACTION_RIGHT, 0) then
         isPressingAnything = true
-        
+
         if not FakePlayer:GetSprite():IsPlaying("IdleRight") then
             SFXManager:Play(MinigameSounds.TURN_1)
             CheatingCounter = CheatingCounter + 1
@@ -204,9 +223,7 @@ local function ManageInputs()
         LightBeam:GetSprite():Play("IdleDown", true)
     end
 
-    --Change state of the guys
-    if not MorningStar then return end
-    MorningStar.State = isPressingAnything and 4 or 3
+    ManageMorningStarState(isPressingAnything)
 end
 
 
@@ -271,6 +288,8 @@ local function SpawnMorningStar()
     cornerPos = game:GetRoom():GetCenterPos() + cornerPos
 
     MorningStar = Isaac.Spawn(MinigameEntityTypes.CUSTOM_ENEMY, MinigameEntityVariants.CUSTOM_MORNINGSTAR, 0, cornerPos, Vector.Zero, nil):ToNPC()
+    MorningStar:GetData().TargetFrame = 0
+    MorningStar.State = 3
 end
 
 
@@ -445,7 +464,16 @@ local function UpdateDust(entity)
 end
 
 
+local function ManageMorningStarAnimation(entity)
+    if entity.State == 3 then
+        entity:GetSprite():SetFrame(entity:GetData().TargetFrame)
+    end
+end
+
+
 local function UpdateMorningStar(entity)
+    ManageMorningStarAnimation(entity)
+
     if entity:ToNPC().State == 4 then
         entity.Velocity = (game:GetRoom():GetCenterPos() - entity.Position):Normalized() * 3
     else
@@ -475,12 +503,15 @@ function night_light:OnNPCCollision(entity, collider)
 
         HeartsUI:Play("Flash", true)
         PlayerHP = PlayerHP - 1
+    elseif collider:ToPlayer() and entity.Variant == MinigameEntityVariants.CUSTOM_MORNINGSTAR then
+        HeartsUI:Play("Flash", true)
+        PlayerHP = 0
+    end
 
-        if PlayerHP == 0 then
-            FadeOutScreen:Play("Appear")
-            SFXManager:Play(MinigameSounds.LOSE)
-            CurrentMinigameState = MinigameState.LOSING
-        end
+    if PlayerHP == 0 then
+        FadeOutScreen:Play("Appear")
+        SFXManager:Play(MinigameSounds.LOSE)
+        CurrentMinigameState = MinigameState.LOSING
     end
 
     return true
