@@ -37,6 +37,7 @@ local MinigameEntityVariants = {
     FAKE_PLAYER = Isaac.GetEntityVariantByName("fake player NL"),
     CUSTOM_DUST = Isaac.GetEntityVariantByName("custom dust NL"),
     CUSTOM_MORNINGSTAR = Isaac.GetEntityVariantByName("custom morningstar NL"),
+    FUCKY = Isaac.GetEntityVariantByName("fucky NL")
 }
 
 --States
@@ -53,6 +54,8 @@ local MinigameState = {
 local InitialCutsceneTimer = 0
 local HourTimer = 0
 local WaitForWinTimer = 0
+local ConfusionTimer = 0
+local FuckySpawnTimer = 0
 
 --UI
 local InitialCutsceneScreen = Sprite()
@@ -65,6 +68,8 @@ local HeartsUI = Sprite()
 HeartsUI:Load("gfx/nl_hearts_ui.anm2", true)
 local ClockUI = Sprite()
 ClockUI:Load("gfx/nl_clock_ui.anm2", true)
+local FuckyWarning = Sprite()
+FuckyWarning:Load("gfx/nl_fucky.anm2", true)
 
 
 --Wave spawning customization
@@ -80,6 +85,7 @@ local GhostsPerWave = {
 local LastSpawnedAxis = 5
 
 local PlayerHP = 0
+local IsPlayerConfused = false
 local CurrentHour = 0
 local FakePlayer = nil
 local LightBeam = nil
@@ -96,6 +102,7 @@ function night_light:Init()
     HourTimer = SecondsPerHour * 30
     InitialCutsceneTimer = 100
     CurrentMinigameState = MinigameState.START_CUTSCENCE
+    IsPlayerConfused = false
     PlayerHP = 3
     CheatingCounter = 0
     MorningStar = nil
@@ -156,6 +163,105 @@ local function UpdateInitialCutscene()
 end
 
 
+local function ManagePlayerAnimations()
+    local isPressingAnything = false
+
+    if IsPlayerConfused then
+        if Input.IsActionPressed(ButtonAction.ACTION_LEFT, 0) then
+            isPressingAnything = true
+
+            if not FakePlayer:GetSprite():IsPlaying("IdleRight") then
+                SFXManager:Play(MinigameSounds.TURN_2)
+                CheatingCounter = CheatingCounter + 1
+            end
+
+            FakePlayer:GetSprite():Play("IdleRight", true)
+            LightBeam:GetSprite():Play("IdleRight", true)
+
+        elseif Input.IsActionPressed(ButtonAction.ACTION_RIGHT, 0) then
+            isPressingAnything = true
+
+            if not FakePlayer:GetSprite():IsPlaying("IdleLeft") then
+                SFXManager:Play(MinigameSounds.TURN_1)
+                CheatingCounter = CheatingCounter + 1
+            end
+
+            FakePlayer:GetSprite():Play("IdleLeft", true)
+            LightBeam:GetSprite():Play("IdleLeft", true)
+
+        elseif Input.IsActionPressed(ButtonAction.ACTION_UP, 0) then
+            isPressingAnything = true
+
+            if not FakePlayer:GetSprite():IsPlaying("IdleDown") then
+                SFXManager:Play(MinigameSounds.TURN_1)
+                CheatingCounter = CheatingCounter + 1
+            end
+
+            FakePlayer:GetSprite():Play("IdleDown", true)
+            LightBeam:GetSprite():Play("IdleDown", true)
+
+        elseif Input.IsActionPressed(ButtonAction.ACTION_DOWN, 0) then
+            isPressingAnything = true
+
+            if not FakePlayer:GetSprite():IsPlaying("IdleUp") then
+                SFXManager:Play(MinigameSounds.TURN_2)
+                CheatingCounter = CheatingCounter + 1
+            end
+
+            FakePlayer:GetSprite():Play("IdleUp", true)
+            LightBeam:GetSprite():Play("IdleUp", true)
+        end
+    else
+        if Input.IsActionPressed(ButtonAction.ACTION_LEFT, 0) then
+            isPressingAnything = true
+
+            if not FakePlayer:GetSprite():IsPlaying("IdleLeft") then
+                SFXManager:Play(MinigameSounds.TURN_2)
+                CheatingCounter = CheatingCounter + 1
+            end
+
+            FakePlayer:GetSprite():Play("IdleLeft", true)
+            LightBeam:GetSprite():Play("IdleLeft", true)
+
+        elseif Input.IsActionPressed(ButtonAction.ACTION_RIGHT, 0) then
+            isPressingAnything = true
+
+            if not FakePlayer:GetSprite():IsPlaying("IdleRight") then
+                SFXManager:Play(MinigameSounds.TURN_1)
+                CheatingCounter = CheatingCounter + 1
+            end
+
+            FakePlayer:GetSprite():Play("IdleRight", true)
+            LightBeam:GetSprite():Play("IdleRight", true)
+
+        elseif Input.IsActionPressed(ButtonAction.ACTION_UP, 0) then
+            isPressingAnything = true
+
+            if not FakePlayer:GetSprite():IsPlaying("IdleUp") then
+                SFXManager:Play(MinigameSounds.TURN_1)
+                CheatingCounter = CheatingCounter + 1
+            end
+
+            FakePlayer:GetSprite():Play("IdleUp", true)
+            LightBeam:GetSprite():Play("IdleUp", true)
+
+        elseif Input.IsActionPressed(ButtonAction.ACTION_DOWN, 0) then
+            isPressingAnything = true
+
+            if not FakePlayer:GetSprite():IsPlaying("IdleDown") then
+                SFXManager:Play(MinigameSounds.TURN_2)
+                CheatingCounter = CheatingCounter + 1
+            end
+
+            FakePlayer:GetSprite():Play("IdleDown", true)
+            LightBeam:GetSprite():Play("IdleDown", true)
+        end
+    end
+
+    return isPressingAnything
+end
+
+
 local function ManageMorningStarState(isPressingAnything)
     if not MorningStar then return end
 
@@ -176,54 +282,40 @@ end
 
 
 local function ManageInputs()
-    local isPressingAnything = false
-
-    if Input.IsActionPressed(ButtonAction.ACTION_LEFT, 0) then
-        isPressingAnything = true
-
-        if not FakePlayer:GetSprite():IsPlaying("IdleLeft") then
-            SFXManager:Play(MinigameSounds.TURN_2)
-            CheatingCounter = CheatingCounter + 1
-        end
-
-        FakePlayer:GetSprite():Play("IdleLeft", true)
-        LightBeam:GetSprite():Play("IdleLeft", true)
-
-    elseif Input.IsActionPressed(ButtonAction.ACTION_RIGHT, 0) then
-        isPressingAnything = true
-
-        if not FakePlayer:GetSprite():IsPlaying("IdleRight") then
-            SFXManager:Play(MinigameSounds.TURN_1)
-            CheatingCounter = CheatingCounter + 1
-        end
-
-        FakePlayer:GetSprite():Play("IdleRight", true)
-        LightBeam:GetSprite():Play("IdleRight", true)
-
-    elseif Input.IsActionPressed(ButtonAction.ACTION_UP, 0) then
-        isPressingAnything = true
-
-        if not FakePlayer:GetSprite():IsPlaying("IdleUp") then
-            SFXManager:Play(MinigameSounds.TURN_1)
-            CheatingCounter = CheatingCounter + 1
-        end
-
-        FakePlayer:GetSprite():Play("IdleUp", true)
-        LightBeam:GetSprite():Play("IdleUp", true)
-
-    elseif Input.IsActionPressed(ButtonAction.ACTION_DOWN, 0) then
-        isPressingAnything = true
-
-        if not FakePlayer:GetSprite():IsPlaying("IdleDown") then
-            SFXManager:Play(MinigameSounds.TURN_2)
-            CheatingCounter = CheatingCounter + 1
-        end
-
-        FakePlayer:GetSprite():Play("IdleDown", true)
-        LightBeam:GetSprite():Play("IdleDown", true)
-    end
+    local isPressingAnything = ManagePlayerAnimations()
 
     ManageMorningStarState(isPressingAnything)
+end
+
+
+local function ManageSpawningFucky()
+    if FuckySpawnTimer <= 0 then return end
+
+    --Spawn fucky
+    if FuckySpawnTimer == 1 then
+        local spawningOffset = nil
+        local animationToPlay = nil
+        local chosenAxis = math.random(4)
+
+        if chosenAxis == 1 then
+            spawningOffset = Vector(500, 0)
+            animationToPlay = "MoveLeft"
+        elseif chosenAxis == 2 then
+            spawningOffset = Vector(-500, 0)
+            animationToPlay = "MoveRight"
+        elseif chosenAxis == 3 then
+            spawningOffset = Vector(0, 500)
+            animationToPlay = "MoveUp"
+        else
+            spawningOffset = Vector(0, -500)
+            animationToPlay = "MoveDown"
+        end
+
+        local enemy = Isaac.Spawn(MinigameEntityTypes.CUSTOM_ENEMY, MinigameEntityVariants.FUCKY, 0, game:GetRoom():GetCenterPos() + spawningOffset, Vector.Zero, nil)
+        enemy:GetSprite():Play(animationToPlay, true)
+    end
+
+    FuckySpawnTimer = FuckySpawnTimer - 1
 end
 
 
@@ -300,7 +392,14 @@ local function UpdatePlaying()
         HourTimer = SecondsPerHour * 30
         CurrentHour = CurrentHour + 1
 
-        if CurrentHour == 4 or (CheatingCounter > 100 and CurrentHour == 3) then 
+        --Spawn fucky
+        if 1 == 1 then
+            FuckySpawnTimer = 100
+            FuckyWarning:Play("Warn", true)
+        end
+
+        --Spawn morning star
+        if CurrentHour == 4 or (CheatingCounter > 100 and CurrentHour == 3) then
             SpawnMorningStar()
         elseif CurrentHour == 6 then
             CurrentMinigameState = MinigameState.WAIT_FOR_WINNING
@@ -313,6 +412,8 @@ local function UpdatePlaying()
     end
 
     ManageInputs()
+
+    ManageSpawningFucky()
 
     if HourTimer % (math.floor((SecondsPerHour * 30) / GhostsPerWave[CurrentHour + 1])) == 0 then
         SpawnEnemies()
@@ -393,6 +494,12 @@ local function RenderUI()
 end
 
 
+local function RenderFuckyWarning()
+    FuckyWarning:Render(Vector(Isaac.GetScreenWidth()/2 + 100, 0), Vector.Zero, Vector.Zero)
+    FuckyWarning:Update()
+end
+
+
 function night_light:OnRender()
     RenderInitialCutscene()
 
@@ -401,6 +508,8 @@ function night_light:OnRender()
     RenderFadeOut()
 
     RenderUI()
+
+    RenderFuckyWarning()
 
     -- for _, entity in ipairs(Isaac.FindByType(MinigameEntityTypes.CUSTOM_ENEMY, MinigameEntityVariants.CUSTOM_MORNINGSTAR, -1)) do
     --     -- local pos = Isaac.WorldToScreen(entity.Position)
@@ -456,7 +565,11 @@ local function UpdateDust(entity)
     end
 
     --Set speed
-    entity.Velocity = entity:GetData().TargetVelocity
+    if CurrentMinigameState == MinigameState.PLAYING then
+        entity.Velocity = entity:GetData().TargetVelocity
+    else
+        entity.Velocity = Vector.Zero
+    end
 
     ManageDustOverlay(entity)
 
@@ -471,14 +584,41 @@ local function ManageMorningStarAnimation(entity)
 end
 
 
-local function UpdateMorningStar(entity)
-    ManageMorningStarAnimation(entity)
-
-    if entity:ToNPC().State == 4 then
+local function ManageMorningStarVelocity(entity)
+    if CurrentMinigameState ~= MinigameState.PLAYING then
+        entity.Velocity = Vector.Zero
+    elseif entity:ToNPC().State == 4 then
         entity.Velocity = (game:GetRoom():GetCenterPos() - entity.Position):Normalized() * 3
     else
         entity.Velocity = (entity.Position - game:GetRoom():GetCenterPos()):Normalized() * 0.5
     end
+end
+
+
+local function UpdateMorningStar(entity)
+    ManageMorningStarAnimation(entity)
+
+    ManageMorningStarVelocity(entity)
+end
+
+
+local function CheckIfFuckyHit(entity)
+    local direction = (game:GetRoom():GetCenterPos() - entity.Position):Normalized()
+    local fakeSprite = FakePlayer:GetSprite()
+
+    if (direction.X == 1 and fakeSprite:IsPlaying("IdleLeft")) or (direction.X == -1 and fakeSprite:IsPlaying("IdleRight")) or
+    (direction.Y == 1 and fakeSprite:IsPlaying("IdleUp")) or (direction.Y == -1 and fakeSprite:IsPlaying("IdleDown")) then
+        if entity.Position:Distance(game:GetRoom():GetCenterPos()) < 100 then
+            entity:Remove()
+        end
+    end
+end
+
+
+local function UpdateFucky(entity)
+    entity.Velocity = (game:GetRoom():GetCenterPos() - entity.Position):Normalized() * 8
+
+    CheckIfFuckyHit(entity)
 end
 
 
@@ -488,12 +628,17 @@ function night_light:OnNPCUpdate(entity)
     if entity.Variant == MinigameEntityVariants.CUSTOM_DUST then UpdateDust(entity); return end
 
     if entity.Variant == MinigameEntityVariants.CUSTOM_MORNINGSTAR then UpdateMorningStar(entity); return end
+
+    if entity.Variant == MinigameEntityVariants.FUCKY then UpdateFucky(entity); return end
 end
 night_light.callbacks[ModCallbacks.MC_NPC_UPDATE] = night_light.OnNPCUpdate
 
 
 function night_light:OnNPCCollision(entity, collider)
     if entity.Type ~= MinigameEntityTypes.CUSTOM_ENEMY then return end
+
+    --If its not the playing state dont execute the other code
+    if CurrentMinigameState ~= MinigameState.PLAYING then return true end
 
     if collider:ToPlayer() and entity.Variant == MinigameEntityVariants.CUSTOM_DUST and not entity:GetData().IsDead then
         entity:GetData().IsDead = true
@@ -503,6 +648,10 @@ function night_light:OnNPCCollision(entity, collider)
 
         HeartsUI:Play("Flash", true)
         PlayerHP = PlayerHP - 1
+    elseif collider:ToPlayer() and entity.Variant == MinigameEntityVariants.FUCKY then
+        ConfusionTimer = 200
+        IsPlayerConfused = true
+        entity:Remove()
     elseif collider:ToPlayer() and entity.Variant == MinigameEntityVariants.CUSTOM_MORNINGSTAR then
         HeartsUI:Play("Flash", true)
         PlayerHP = 0
