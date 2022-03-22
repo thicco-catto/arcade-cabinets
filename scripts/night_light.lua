@@ -70,6 +70,8 @@ local ClockUI = Sprite()
 ClockUI:Load("gfx/nl_clock_ui.anm2", true)
 local FuckyWarning = Sprite()
 FuckyWarning:Load("gfx/nl_fucky.anm2", true)
+local ConfusionEffectOverlay = Sprite()
+ConfusionEffectOverlay:Load("gfx/nl_confusion_effect.anm2", true)
 
 
 --Wave spawning customization
@@ -111,6 +113,7 @@ function night_light:Init()
     InitialCutsceneScreen:Play("Idle", true)
     HeartsUI:Play("Idle", true)
     ClockUI:Play("Idle", true)
+    ConfusionEffectOverlay:Play("Idle", true)
 
     --Backdrop
     local backdrop = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, ArcadeCabinetVariables.BackdropVariant, 0, room:GetCenterPos(), Vector.Zero, nil)
@@ -415,6 +418,12 @@ local function UpdatePlaying()
 
     ManageSpawningFucky()
 
+    if ConfusionTimer > 0 then 
+        ConfusionTimer = ConfusionTimer - 1
+    else
+        IsPlayerConfused = false
+    end
+
     if HourTimer % (math.floor((SecondsPerHour * 30) / GhostsPerWave[CurrentHour + 1])) == 0 then
         SpawnEnemies()
     end
@@ -500,6 +509,16 @@ local function RenderFuckyWarning()
 end
 
 
+local function RenderConfusionEffect()
+    if not IsPlayerConfused then return end
+
+    local centerPos = Vector(Isaac.GetScreenWidth(), Isaac.GetScreenHeight()) / 2
+
+    ConfusionEffectOverlay:Render(centerPos, Vector.Zero, Vector.Zero)
+    ConfusionEffectOverlay:Update()
+end
+
+
 function night_light:OnRender()
     RenderInitialCutscene()
 
@@ -510,6 +529,8 @@ function night_light:OnRender()
     RenderUI()
 
     RenderFuckyWarning()
+
+    RenderConfusionEffect()
 
     -- for _, entity in ipairs(Isaac.FindByType(MinigameEntityTypes.CUSTOM_ENEMY, MinigameEntityVariants.CUSTOM_MORNINGSTAR, -1)) do
     --     -- local pos = Isaac.WorldToScreen(entity.Position)
