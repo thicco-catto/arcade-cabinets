@@ -107,6 +107,7 @@ local FakePlayer = nil
 local LightBeam = nil
 local MorningStar = nil
 local CheatingCounter = 0
+local FuckySpawnAxis = 0
 
 
 function night_light:Init()
@@ -339,15 +340,14 @@ local function ManageSpawningFucky()
     if FuckySpawnTimer == 1 then
         local spawningOffset = nil
         local animationToPlay = nil
-        local chosenAxis = math.random(4)
 
-        if chosenAxis == 1 then
-            spawningOffset = Vector(500, 0)
-            animationToPlay = "MoveLeft"
-        elseif chosenAxis == 2 then
+        if FuckySpawnAxis == 1 then
             spawningOffset = Vector(-500, 0)
             animationToPlay = "MoveRight"
-        elseif chosenAxis == 3 then
+        elseif FuckySpawnAxis == 2 then
+            spawningOffset = Vector(500, 0)
+            animationToPlay = "MoveLeft"
+        elseif FuckySpawnAxis == 3 then
             spawningOffset = Vector(0, 500)
             animationToPlay = "MoveUp"
         else
@@ -357,6 +357,7 @@ local function ManageSpawningFucky()
 
         local enemy = Isaac.Spawn(MinigameEntityTypes.CUSTOM_ENEMY, MinigameEntityVariants.FUCKY, 0, game:GetRoom():GetCenterPos() + spawningOffset, Vector.Zero, nil)
         enemy:GetSprite():Play(animationToPlay, true)
+        enemy.DepthOffset = 100
     end
 
     FuckySpawnTimer = FuckySpawnTimer - 1
@@ -393,7 +394,7 @@ local function SpawnGhost(ChosenAxis)
 
     --Acutally spawn the dust
     local enemy = Isaac.Spawn(MinigameEntityTypes.CUSTOM_ENEMY, MinigameEntityVariants.CUSTOM_DUST, 0, SpawningPos, Vector.Zero, nil)
-    enemy:GetData().TargetVelocity = -spawningOffset:Normalized() * 2
+    enemy:GetData().TargetVelocity = -spawningOffset:Normalized() * 4
     enemy:GetData().ShouldPlayAnimation = animationToPlay
     enemy.FlipX = isFlip
 end
@@ -439,7 +440,20 @@ local function UpdatePlaying()
         --Spawn fucky
         if 1 == 1 then
             FuckySpawnTimer = 100
-            FuckyWarning:Play("Warn", true)
+            FuckySpawnAxis = math.random(4)
+
+            local animationToPlay = nil
+            if FuckySpawnAxis == 1 then
+                animationToPlay = "WarnRight"
+            elseif FuckySpawnAxis == 2 then
+                animationToPlay = "WarnLeft"
+            elseif FuckySpawnAxis == 3 then
+                animationToPlay = "WarnDown"
+            elseif FuckySpawnAxis == 4 then
+                animationToPlay = "WarnUp"
+            end
+
+            FuckyWarning:Play(animationToPlay, true)
         end
 
         --Spawn morning star
@@ -451,6 +465,7 @@ local function UpdatePlaying()
             FinalCutsceneScreen:Play("Idle", true)
             FakePlayer:GetSprite():Play("IdleDown", true)
             LightBeam:GetSprite():Play("IdleDown", true)
+            ClockUI:Play("Flash", true)
             return
         end
     end
@@ -532,13 +547,11 @@ end
 
 
 local function RenderUI()
-    if CurrentMinigameState ~= MinigameState.PLAYING then return end
-
     local centerPos = Vector(Isaac.GetScreenWidth(), Isaac.GetScreenHeight()) / 2
 
     --Hearts
     if HeartsUI:IsPlaying("Flash") then
-        HeartsUI:Update()
+            HeartsUI:Update()
     else
         HeartsUI:Play("Idle")
         HeartsUI:SetFrame(PlayerHP)
@@ -547,13 +560,32 @@ local function RenderUI()
     HeartsUI:Render(centerPos + Vector(-150, -100), Vector.Zero, Vector.Zero)
 
     --Clock
-    ClockUI:SetFrame(CurrentHour)
+    if CurrentMinigameState == MinigameState.WAIT_FOR_WINNING then
+        ClockUI:Update()
+    else
+        ClockUI:SetFrame(CurrentHour)
+    end
+    
     ClockUI:Render(centerPos + Vector(-120, 100), Vector.Zero, Vector.Zero)
+
 end
 
 
 local function RenderFuckyWarning()
-    FuckyWarning:Render(Vector(Isaac.GetScreenWidth()/2 + 100, 0), Vector.Zero, Vector.Zero)
+    local pos = Vector(0, 0)
+    local anim = FuckyWarning:GetAnimation()
+
+    if anim == "WarnLeft" then
+        pos = Vector(Isaac.GetScreenWidth(), Isaac.GetScreenHeight() / 2)
+    elseif anim == "WarnRight" then
+        pos = Vector(0, Isaac.GetScreenHeight() / 2)
+    elseif anim == "WarnDown" then
+        pos = Vector(Isaac.GetScreenWidth() / 2, Isaac.GetScreenHeight())
+    elseif anim == "WarnUp" then
+        pos = Vector(Isaac.GetScreenWidth() / 2, 0)
+    end
+    
+    FuckyWarning:Render(pos, Vector.Zero, Vector.Zero)
     FuckyWarning:Update()
 end
 
@@ -569,17 +601,17 @@ end
 
 
 function night_light:OnRender()
-    RenderInitialCutscene()
-
-    RenderFinalCutscene()
-
-    RenderFadeOut()
-
     RenderUI()
 
     RenderFuckyWarning()
 
     RenderConfusionEffect()
+
+    RenderInitialCutscene()
+
+    RenderFinalCutscene()
+
+    RenderFadeOut()
 
     -- for _, entity in ipairs(Isaac.FindByType(MinigameEntityTypes.CUSTOM_ENEMY, MinigameEntityVariants.CUSTOM_MORNINGSTAR, -1)) do
     --     -- local pos = Isaac.WorldToScreen(entity.Position)

@@ -1,5 +1,5 @@
 <items gfxroot="gfx/items/" version="1">
     <active name="TUG minecrafter" description="why are you reading this" maxcharges="1" hidden="true"/>
 	
-	<active name="BSW rune" description="pls this is secret stop reading" maxcharges="1" gfx="rune.png" hidden="true"/>
+	<active name="BSW rune" description="pls this is secret stop reading" maxcharges="1" hidden="true"/>
 </items>
