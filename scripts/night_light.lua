@@ -34,6 +34,7 @@ local MinigameSounds = {
     TURN_1 = Isaac.GetSoundIdByName("nl turn 1"),
     TURN_2 = Isaac.GetSoundIdByName("nl turn 2"),
     DUST_DEATH = Isaac.GetSoundIdByName("nl ghost death"),
+    ALARM = Isaac.GetSoundIdByName("nl alarm"),
 
     WIN = Isaac.GetSoundIdByName("arcade cabinet win"),
     LOSE = Isaac.GetSoundIdByName("arcade cabinet lose")
@@ -166,6 +167,13 @@ end
 
 --UPDATE CALLBACKS
 local function ManageSFX()
+    --Alarm clock
+    if CurrentMinigameState == MinigameState.WAIT_FOR_WINNING or CurrentMinigameState == MinigameState.FINISH_CUTSCENE then
+        if not SFXManager:IsPlaying(MinigameSounds.ALARM) then
+            SFXManager:Play(MinigameSounds.ALARM)
+        end
+    end
+
     --Completely stop banned sounds
     for _, sound in ipairs(BannedSounds) do
         if SFXManager:IsPlaying(sound) then SFXManager:Stop(sound) end

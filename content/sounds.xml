@@ -88,6 +88,10 @@
         <sample weight="1" path="night light/ghost death.wav"/>
     </sound>
 
+    <sound name="nl alarm">
+        <sample weight="1" path="night light/alarm.wav"/>
+    </sound>
+
     <!--Too underground-->
     <sound name="tug rock break">
         <sample weight="1" path="too underground/break.wav"/>
