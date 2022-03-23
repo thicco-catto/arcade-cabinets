@@ -35,6 +35,7 @@ local MinigameSounds = {
     TURN_2 = Isaac.GetSoundIdByName("nl turn 2"),
     DUST_DEATH = Isaac.GetSoundIdByName("nl ghost death"),
     ALARM = Isaac.GetSoundIdByName("nl alarm"),
+    PLAYER_HIT = Isaac.GetSoundIdByName("bsw player hit"),
 
     WIN = Isaac.GetSoundIdByName("arcade cabinet win"),
     LOSE = Isaac.GetSoundIdByName("arcade cabinet lose")
@@ -710,6 +711,7 @@ function night_light:OnNPCCollision(entity, collider)
 
         entity:GetSprite():Play("Poof")
         SFXManager:Play(MinigameSounds.DUST_DEATH)
+        SFXManager:Play(MinigameSounds.PLAYER_HIT)
 
         FakePlayer:GetSprite():Play("Hit")
         HeartsUI:Play("Flash", true)
@@ -720,6 +722,7 @@ function night_light:OnNPCCollision(entity, collider)
         entity:Remove()
     elseif collider:ToPlayer() and entity.Variant == MinigameEntityVariants.CUSTOM_MORNINGSTAR then
         FakePlayer:GetSprite():Play("Hit")
+        SFXManager:Play(MinigameSounds.PLAYER_HIT)
         HeartsUI:Play("Flash", true)
         PlayerHP = 0
     end
