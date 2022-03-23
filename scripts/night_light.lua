@@ -19,6 +19,17 @@ night_light.callbacks = {}
 night_light.result = nil
 
 --Sounds
+local BannedSounds = {
+    SoundEffect.SOUND_TEARS_FIRE,
+    SoundEffect.SOUND_BLOODSHOOT,
+    SoundEffect.SOUND_MEAT_IMPACTS,
+    SoundEffect.SOUND_SUMMON_POOF,
+    SoundEffect.SOUND_DOOR_HEAVY_CLOSE,
+    SoundEffect.SOUND_DEATH_BURST_SMALL,
+    SoundEffect.SOUND_MEATY_DEATHS,
+    SoundEffect.SOUND_ANGRY_GURGLE
+}
+
 local MinigameSounds = {
     TURN_1 = Isaac.GetSoundIdByName("nl turn 1"),
     TURN_2 = Isaac.GetSoundIdByName("nl turn 2"),
@@ -102,6 +113,7 @@ function night_light:Init()
     night_light.result = nil
     CurrentHour = 0
     HourTimer = SecondsPerHour * 30
+    FuckySpawnTimer = 0
     InitialCutsceneTimer = 100
     CurrentMinigameState = MinigameState.START_CUTSCENCE
     IsPlayerConfused = false
@@ -125,7 +137,7 @@ function night_light:Init()
     LightBeam = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.FAKE_PLAYER, 0, room:GetCenterPos(), Vector.Zero, nil)
     LightBeam:GetSprite():Load("gfx/nl_light_beam.anm2", true)
     LightBeam.DepthOffset = -200
-    
+
 
     --Prepare players
     local playerNum = game:GetNumPlayers()
@@ -153,6 +165,22 @@ end
 
 
 --UPDATE CALLBACKS
+local function ManageSFX()
+    --Completely stop banned sounds
+    for _, sound in ipairs(BannedSounds) do
+        if SFXManager:IsPlaying(sound) then SFXManager:Stop(sound) end
+    end
+
+    --Replace sounds to be changed
+    -- for originalSound, replacement in pairs(ReplacementSounds) do
+    --     if SFXManager:IsPlaying(originalSound) then
+    --         SFXManager:Stop(originalSound)
+    --         SFXManager:Play(replacement)
+    --     end
+    -- end
+end
+
+
 local function UpdateInitialCutscene()
     if InitialCutsceneTimer > 0 then
         InitialCutsceneTimer = InitialCutsceneTimer - 1
@@ -414,7 +442,13 @@ local function UpdatePlaying()
         end
     end
 
-    ManageInputs()
+    if not FakePlayer:GetSprite():IsPlaying("Hit") then
+        if FakePlayer:GetSprite():IsFinished("Hit") then
+            FakePlayer:GetSprite():Play(LightBeam:GetSprite():GetAnimation())
+        end
+
+        ManageInputs()
+    end
 
     ManageSpawningFucky()
 
@@ -440,6 +474,8 @@ end
 
 
 function night_light:OnFrameUpdate()
+    ManageSFX()
+
     if CurrentMinigameState == MinigameState.START_CUTSCENCE then
         UpdateInitialCutscene()
     elseif CurrentMinigameState == MinigameState.PLAYING then
@@ -495,11 +531,11 @@ local function RenderUI()
         HeartsUI:SetFrame(PlayerHP)
     end
 
-    HeartsUI:Render(centerPos + Vector(-100, -100), Vector.Zero, Vector.Zero)
+    HeartsUI:Render(centerPos + Vector(-150, -100), Vector.Zero, Vector.Zero)
 
     --Clock
     ClockUI:SetFrame(CurrentHour)
-    ClockUI:Render(centerPos + Vector(100, -100), Vector.Zero, Vector.Zero)
+    ClockUI:Render(centerPos + Vector(-120, 100), Vector.Zero, Vector.Zero)
 end
 
 
@@ -557,7 +593,7 @@ end
 
 local function CheckIfDustHit(entity)
     local direction = entity:GetData().TargetVelocity:Normalized()
-    local fakeSprite = FakePlayer:GetSprite()
+    local fakeSprite = LightBeam:GetSprite()
 
     if (direction.X == 1 and fakeSprite:IsPlaying("IdleLeft")) or (direction.X == -1 and fakeSprite:IsPlaying("IdleRight")) or
     (direction.Y == 1 and fakeSprite:IsPlaying("IdleUp")) or (direction.Y == -1 and fakeSprite:IsPlaying("IdleDown")) then
@@ -625,7 +661,7 @@ end
 
 local function CheckIfFuckyHit(entity)
     local direction = (game:GetRoom():GetCenterPos() - entity.Position):Normalized()
-    local fakeSprite = FakePlayer:GetSprite()
+    local fakeSprite = LightBeam:GetSprite()
 
     if (direction.X == 1 and fakeSprite:IsPlaying("IdleLeft")) or (direction.X == -1 and fakeSprite:IsPlaying("IdleRight")) or
     (direction.Y == 1 and fakeSprite:IsPlaying("IdleUp")) or (direction.Y == -1 and fakeSprite:IsPlaying("IdleDown")) then
@@ -637,7 +673,7 @@ end
 
 
 local function UpdateFucky(entity)
-    entity.Velocity = (game:GetRoom():GetCenterPos() - entity.Position):Normalized() * 8
+    entity.Velocity = (game:GetRoom():GetCenterPos() - entity.Position):Normalized() * 10
 
     CheckIfFuckyHit(entity)
 end
@@ -667,6 +703,7 @@ function night_light:OnNPCCollision(entity, collider)
         entity:GetSprite():Play("Poof")
         SFXManager:Play(MinigameSounds.DUST_DEATH)
 
+        FakePlayer:GetSprite():Play("Hit")
         HeartsUI:Play("Flash", true)
         PlayerHP = PlayerHP - 1
     elseif collider:ToPlayer() and entity.Variant == MinigameEntityVariants.FUCKY then
@@ -674,6 +711,7 @@ function night_light:OnNPCCollision(entity, collider)
         IsPlayerConfused = true
         entity:Remove()
     elseif collider:ToPlayer() and entity.Variant == MinigameEntityVariants.CUSTOM_MORNINGSTAR then
+        FakePlayer:GetSprite():Play("Hit")
         HeartsUI:Play("Flash", true)
         PlayerHP = 0
     end

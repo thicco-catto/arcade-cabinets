@@ -1,12 +1,13 @@
 <AnimatedActor>
-	<Info CreatedBy="Unknown" CreatedOn="15/03/2022 12:47:17" Version="28" Fps="30"/>
+	<Info CreatedBy="Unknown" CreatedOn="23/03/2022 18:17:42" Version="30" Fps="30"/>
 	<Content>
 		<Spritesheets>
 			<Spritesheet Path="characters\isaac_nl.png" Id="0"/>
-			<Spritesheet Path="characters\nl_lightbeam.png" Id="1"/>
+			<Spritesheet Path="characters\isaac_bsw.png" Id="1"/>
 		</Spritesheets>
 		<Layers>
 			<Layer Name="Player" Id="0" SpritesheetId="0"/>
+			<Layer Name="Hit" Id="1" SpritesheetId="1"/>
 		</Layers>
 		<Nulls/>
 		<Events>
@@ -23,6 +24,7 @@
 				<LayerAnimation LayerId="0" Visible="true">
 					<Frame XPosition="0" YPosition="-14" XPivot="15" YPivot="20" XCrop="0" YCrop="0" Width="30" Height="38" XScale="100" YScale="100" Delay="1" Visible="true" RedTint="255" GreenTint="255" BlueTint="255" AlphaTint="255" RedOffset="0" GreenOffset="0" BlueOffset="0" Rotation="0" Interpolated="false"/>
 				</LayerAnimation>
+				<LayerAnimation LayerId="1" Visible="true"/>
 			</LayerAnimations>
 			<NullAnimations/>
 			<Triggers/>
@@ -35,6 +37,7 @@
 				<LayerAnimation LayerId="0" Visible="true">
 					<Frame XPosition="0" YPosition="-14" XPivot="15" YPivot="20" XCrop="62" YCrop="0" Width="30" Height="38" XScale="100" YScale="100" Delay="1" Visible="true" RedTint="255" GreenTint="255" BlueTint="255" AlphaTint="255" RedOffset="0" GreenOffset="0" BlueOffset="0" Rotation="0" Interpolated="false"/>
 				</LayerAnimation>
+				<LayerAnimation LayerId="1" Visible="true"/>
 			</LayerAnimations>
 			<NullAnimations/>
 			<Triggers/>
@@ -47,6 +50,7 @@
 				<LayerAnimation LayerId="0" Visible="true">
 					<Frame XPosition="0" YPosition="-14" XPivot="15" YPivot="20" XCrop="30" YCrop="0" Width="32" Height="38" XScale="100" YScale="100" Delay="1" Visible="true" RedTint="255" GreenTint="255" BlueTint="255" AlphaTint="255" RedOffset="0" GreenOffset="0" BlueOffset="0" Rotation="0" Interpolated="false"/>
 				</LayerAnimation>
+				<LayerAnimation LayerId="1" Visible="true"/>
 			</LayerAnimations>
 			<NullAnimations/>
 			<Triggers/>
@@ -58,6 +62,20 @@
 			<LayerAnimations>
 				<LayerAnimation LayerId="0" Visible="true">
 					<Frame XPosition="0" YPosition="-16" XPivot="15" YPivot="20" XCrop="30" YCrop="0" Width="32" Height="38" XScale="-100" YScale="100" Delay="1" Visible="true" RedTint="255" GreenTint="255" BlueTint="255" AlphaTint="255" RedOffset="0" GreenOffset="0" BlueOffset="0" Rotation="0" Interpolated="false"/>
+				</LayerAnimation>
+				<LayerAnimation LayerId="1" Visible="true"/>
+			</LayerAnimations>
+			<NullAnimations/>
+			<Triggers/>
+		</Animation>
+		<Animation Name="Hit" FrameNum="10" Loop="false">
+			<RootAnimation>
+				<Frame XPosition="0" YPosition="0" XScale="100" YScale="100" Delay="10" Visible="true" RedTint="255" GreenTint="255" BlueTint="255" AlphaTint="255" RedOffset="0" GreenOffset="0" BlueOffset="0" Rotation="0" Interpolated="false"/>
+			</RootAnimation>
+			<LayerAnimations>
+				<LayerAnimation LayerId="0" Visible="true"/>
+				<LayerAnimation LayerId="1" Visible="true">
+					<Frame XPosition="0" YPosition="0" XPivot="32" YPivot="52" XCrop="128" YCrop="192" Width="64" Height="64" XScale="100" YScale="100" Delay="10" Visible="true" RedTint="255" GreenTint="255" BlueTint="255" AlphaTint="255" RedOffset="0" GreenOffset="0" BlueOffset="0" Rotation="0" Interpolated="false"/>
 				</LayerAnimation>
 			</LayerAnimations>
 			<NullAnimations/>
