@@ -91,12 +91,12 @@ ConfusionEffectOverlay:Load("gfx/nl_confusion_effect.anm2", true)
 --Wave spawning customization
 local SecondsPerHour = 12
 local GhostsPerWave = {
-    10,
     16,
     22,
-    22,
-    16,
-    16
+    28,
+    28,
+    32,
+    34
 }
 local LastSpawnedAxis = 5
 
@@ -438,23 +438,21 @@ local function UpdatePlaying()
         CurrentHour = CurrentHour + 1
 
         --Spawn fucky
-        if 1 == 1 then
-            FuckySpawnTimer = 100
-            FuckySpawnAxis = math.random(4)
+        FuckySpawnTimer = 100
+        FuckySpawnAxis = math.random(4)
 
-            local animationToPlay = nil
-            if FuckySpawnAxis == 1 then
-                animationToPlay = "WarnRight"
-            elseif FuckySpawnAxis == 2 then
-                animationToPlay = "WarnLeft"
-            elseif FuckySpawnAxis == 3 then
-                animationToPlay = "WarnDown"
-            elseif FuckySpawnAxis == 4 then
-                animationToPlay = "WarnUp"
-            end
-
-            FuckyWarning:Play(animationToPlay, true)
+        local animationToPlay = nil
+        if FuckySpawnAxis == 1 then
+            animationToPlay = "WarnRight"
+        elseif FuckySpawnAxis == 2 then
+            animationToPlay = "WarnLeft"
+        elseif FuckySpawnAxis == 3 then
+            animationToPlay = "WarnDown"
+        elseif FuckySpawnAxis == 4 then
+            animationToPlay = "WarnUp"
         end
+
+        FuckyWarning:Play(animationToPlay, true)
 
         --Spawn morning star
         if CurrentHour == 4 or (CheatingCounter > 100 and CurrentHour == 3) then
