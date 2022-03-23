@@ -92,6 +92,10 @@
         <sample weight="1" path="night light/alarm.wav"/>
     </sound>
 
+    <sound name="nl transition">
+        <sample weight="1" path="night light/spooky transition.wav"/>
+    </sound>
+
     <!--Too underground-->
     <sound name="tug rock break">
         <sample weight="1" path="too underground/break.wav"/>

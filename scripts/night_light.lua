@@ -35,6 +35,7 @@ local MinigameSounds = {
     TURN_2 = Isaac.GetSoundIdByName("nl turn 2"),
     DUST_DEATH = Isaac.GetSoundIdByName("nl ghost death"),
     ALARM = Isaac.GetSoundIdByName("nl alarm"),
+    TRANSITION = Isaac.GetSoundIdByName("nl transition"),
     PLAYER_HIT = Isaac.GetSoundIdByName("bsw player hit"),
 
     WIN = Isaac.GetSoundIdByName("arcade cabinet win"),
@@ -128,6 +129,9 @@ function night_light:Init()
     HeartsUI:Play("Idle", true)
     ClockUI:Play("Idle", true)
     ConfusionEffectOverlay:Play("Idle", true)
+
+    --Transition
+    SFXManager:Play(MinigameSounds.TRANSITION)
 
     --Backdrop
     local backdrop = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, ArcadeCabinetVariables.BackdropVariant, 0, room:GetCenterPos(), Vector.Zero, nil)
