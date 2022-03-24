@@ -703,20 +703,29 @@ end
 
 
 local function CheckIfFuckyHit(entity)
+    if entity:GetData().IsDead then return end
+
     local direction = (game:GetRoom():GetCenterPos() - entity.Position):Normalized()
     local fakeSprite = LightBeam:GetSprite()
 
     if (direction.X == 1 and fakeSprite:IsPlaying("IdleLeft")) or (direction.X == -1 and fakeSprite:IsPlaying("IdleRight")) or
     (direction.Y == 1 and fakeSprite:IsPlaying("IdleUp")) or (direction.Y == -1 and fakeSprite:IsPlaying("IdleDown")) then
         if entity.Position:Distance(game:GetRoom():GetCenterPos()) < 100 then
-            entity:Remove()
+            entity:GetSprite():Play("Poof", true)
+            entity:GetData().IsDead = true
         end
     end
 end
 
 
 local function UpdateFucky(entity)
-    entity.Velocity = (game:GetRoom():GetCenterPos() - entity.Position):Normalized() * 10
+    if entity:GetSprite():IsFinished("Poof") then entity:Remove(); return end
+
+    if entity:GetData().IsDead then
+        entity.Velocity = Vector.Zero
+    else
+        entity.Velocity = (game:GetRoom():GetCenterPos() - entity.Position):Normalized() * 10
+    end
 
     CheckIfFuckyHit(entity)
 end
@@ -750,10 +759,11 @@ function night_light:OnNPCCollision(entity, collider)
         FakePlayer:GetSprite():Play("Hit")
         HeartsUI:Play("Flash", true)
         PlayerHP = PlayerHP - 1
-    elseif collider:ToPlayer() and entity.Variant == MinigameEntityVariants.FUCKY then
+    elseif collider:ToPlayer() and entity.Variant == MinigameEntityVariants.FUCKY and not entity:GetData().IsDead then
         ConfusionTimer = 200
         IsPlayerConfused = true
-        entity:Remove()
+        entity:GetSprite():Play("Poof", true)
+        entity:GetData().IsDead = true
     elseif collider:ToPlayer() and entity.Variant == MinigameEntityVariants.CUSTOM_MORNINGSTAR then
         FakePlayer:GetSprite():Play("Hit")
         SFXManager:Play(MinigameSounds.PLAYER_HIT)
