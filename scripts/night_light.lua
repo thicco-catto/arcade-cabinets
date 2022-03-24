@@ -446,6 +446,7 @@ local function UpdatePlaying()
         CurrentHour = CurrentHour + 1
 
         --Spawn fucky
+        SFXManager:Play(MinigameSounds.TRANSITION)
         FuckySpawnTimer = 100
         FuckySpawnAxis = math.random(4)
 
@@ -681,6 +682,11 @@ local function UpdateDust(entity)
         entity.Velocity = Vector.Zero
     end
 
+    --Make invisible if too far
+    if entity.Position:Distance(game:GetRoom():GetCenterPos()) > 200 then
+        entity:SetColor(Color(1, 1, 1, 0), 2, 1, false, false)
+    end
+
     ManageDustOverlay(entity)
 
     CheckIfDustHit(entity)
@@ -700,7 +706,7 @@ local function ManageMorningStarVelocity(entity)
     elseif entity:ToNPC().State == 4 then
         entity.Velocity = (game:GetRoom():GetCenterPos() - entity.Position):Normalized() * 4.2
     else
-        entity.Velocity = (entity.Position - game:GetRoom():GetCenterPos()):Normalized() * 0.7
+        entity.Velocity = (entity.Position - game:GetRoom():GetCenterPos()):Normalized() * 0.6
     end
 end
 
@@ -723,6 +729,7 @@ local function CheckIfFuckyHit(entity)
         if entity.Position:Distance(game:GetRoom():GetCenterPos()) < 100 then
             entity:GetSprite():Play("Poof", true)
             entity:GetData().IsDead = true
+            SFXManager:Play(MinigameSounds.DUST_DEATH)
         end
     end
 end
@@ -772,6 +779,7 @@ function night_light:OnNPCCollision(entity, collider)
     elseif collider:ToPlayer() and entity.Variant == MinigameEntityVariants.FUCKY and not entity:GetData().IsDead then
         ConfusionTimer = 200
         IsPlayerConfused = true
+        SFXManager:Play(MinigameSounds.DUST_DEATH)
         entity:GetSprite():Play("Poof", true)
         entity:GetData().IsDead = true
     elseif collider:ToPlayer() and entity.Variant == MinigameEntityVariants.CUSTOM_MORNINGSTAR then
@@ -790,6 +798,17 @@ function night_light:OnNPCCollision(entity, collider)
     return true
 end
 night_light.callbacks[ModCallbacks.MC_PRE_NPC_COLLISION] = night_light.OnNPCCollision
+
+
+function night_light:OnEntityDamage(tookDamage, _, damageflags, _)
+    if tookDamage:ToPlayer() then return end
+
+    if damageflags == DamageFlag.DAMAGE_COUNTDOWN then
+        --Negate contact damage (DamageFlag.DAMAGE_COUNTDOWN is damage flag for contact damage)
+        return false
+    end
+end
+night_light.callbacks[ModCallbacks.MC_ENTITY_TAKE_DMG] = night_light.OnEntityDamage
 
 
 --OTHER CALLBACKS
