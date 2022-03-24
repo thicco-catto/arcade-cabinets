@@ -108,6 +108,7 @@ local LightBeam = nil
 local MorningStar = nil
 local CheatingCounter = 0
 local FuckySpawnAxis = 0
+local AlarmSoundTimes = 10
 
 
 function night_light:Init()
@@ -175,8 +176,15 @@ end
 local function ManageSFX()
     --Alarm clock
     if CurrentMinigameState == MinigameState.WAIT_FOR_WINNING or CurrentMinigameState == MinigameState.FINISH_CUTSCENE then
-        if not SFXManager:IsPlaying(MinigameSounds.ALARM) then
-            SFXManager:Play(MinigameSounds.ALARM)
+        if not SFXManager:IsPlaying(MinigameSounds.ALARM) and AlarmSoundTimes > 0 then
+            AlarmSoundTimes = AlarmSoundTimes - 1
+
+            if AlarmSoundTimes == 0 then
+                FinalCutsceneScreen:Play("BlinkLoop")
+                SFXManager:Play(MinigameSounds.WIN)
+            else
+                SFXManager:Play(MinigameSounds.ALARM)
+            end
         end
     end
 
@@ -460,10 +468,11 @@ local function UpdatePlaying()
         elseif CurrentHour == 6 then
             CurrentMinigameState = MinigameState.WAIT_FOR_WINNING
             WaitForWinTimer = 60
-            FinalCutsceneScreen:Play("Idle", true)
+            FinalCutsceneScreen:Play("Start", true)
             FakePlayer:GetSprite():Play("IdleDown", true)
             LightBeam:GetSprite():Play("IdleDown", true)
             ClockUI:Play("Flash", true)
+            AlarmSoundTimes = 3
             return
         end
     end
@@ -478,7 +487,7 @@ local function UpdatePlaying()
 
     ManageSpawningFucky()
 
-    if ConfusionTimer > 0 then 
+    if ConfusionTimer > 0 then
         ConfusionTimer = ConfusionTimer - 1
     else
         IsPlayerConfused = false
@@ -523,7 +532,15 @@ end
 local function RenderFinalCutscene()
     if CurrentMinigameState ~= MinigameState.FINISH_CUTSCENE then return end
 
-    if FinalCutsceneScreen:IsFinished("Idle") then
+    if FinalCutsceneScreen:IsFinished("Start") then
+        FinalCutsceneScreen:Play("ClockLoop")
+    end
+
+    if not SFXManager:IsPlaying(MinigameSounds.WIN) and FinalCutsceneScreen:IsPlaying("BlinkLoop") then
+        FinalCutsceneScreen:Play("FadeIn")
+    end
+
+    if FinalCutsceneScreen:IsFinished("FadeIn") then
         night_light.result = ArcadeCabinetVariables.MinigameResult.WIN
     end
 
@@ -610,13 +627,6 @@ function night_light:OnRender()
     RenderFinalCutscene()
 
     RenderFadeOut()
-
-    -- for _, entity in ipairs(Isaac.FindByType(MinigameEntityTypes.CUSTOM_ENEMY, MinigameEntityVariants.CUSTOM_MORNINGSTAR, -1)) do
-    --     -- local pos = Isaac.WorldToScreen(entity.Position)
-    --     local pos = Vector(100, 100)
-
-    --     Isaac.RenderText(entity:ToNPC().State, pos.X, pos.Y, 1, 1, 1, 255)
-    -- end
 end
 night_light.callbacks[ModCallbacks.MC_POST_RENDER] = night_light.OnRender
 
@@ -688,9 +698,9 @@ local function ManageMorningStarVelocity(entity)
     if CurrentMinigameState ~= MinigameState.PLAYING then
         entity.Velocity = Vector.Zero
     elseif entity:ToNPC().State == 4 then
-        entity.Velocity = (game:GetRoom():GetCenterPos() - entity.Position):Normalized() * 3
+        entity.Velocity = (game:GetRoom():GetCenterPos() - entity.Position):Normalized() * 4.2
     else
-        entity.Velocity = (entity.Position - game:GetRoom():GetCenterPos()):Normalized() * 0.5
+        entity.Velocity = (entity.Position - game:GetRoom():GetCenterPos()):Normalized() * 0.7
     end
 end
 
