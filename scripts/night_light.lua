@@ -446,22 +446,24 @@ local function UpdatePlaying()
         CurrentHour = CurrentHour + 1
 
         --Spawn fucky
-        SFXManager:Play(MinigameSounds.TRANSITION)
-        FuckySpawnTimer = 100
-        FuckySpawnAxis = math.random(4)
+        if CurrentHour ~= 6 then
+            SFXManager:Play(MinigameSounds.TRANSITION)
+            FuckySpawnTimer = 100
+            FuckySpawnAxis = math.random(4)
 
-        local animationToPlay = nil
-        if FuckySpawnAxis == 1 then
-            animationToPlay = "WarnRight"
-        elseif FuckySpawnAxis == 2 then
-            animationToPlay = "WarnLeft"
-        elseif FuckySpawnAxis == 3 then
-            animationToPlay = "WarnDown"
-        elseif FuckySpawnAxis == 4 then
-            animationToPlay = "WarnUp"
+            local animationToPlay = nil
+            if FuckySpawnAxis == 1 then
+                animationToPlay = "WarnRight"
+            elseif FuckySpawnAxis == 2 then
+                animationToPlay = "WarnLeft"
+            elseif FuckySpawnAxis == 3 then
+                animationToPlay = "WarnDown"
+            elseif FuckySpawnAxis == 4 then
+                animationToPlay = "WarnUp"
+            end
+
+            FuckyWarning:Play(animationToPlay, true)
         end
-
-        FuckyWarning:Play(animationToPlay, true)
 
         --Spawn morning star
         if CurrentHour == 4 or (CheatingCounter > 100 and CurrentHour == 3) then
