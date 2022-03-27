@@ -1,6 +1,7 @@
 local jumping_coffing = {}
 local game = Game()
 local SFXManager = SFXManager()
+local MusicManager = MusicManager()
 ----------------------------------------------
 --FANCY REQUIRE (Thanks manaphoenix <3)
 ----------------------------------------------
@@ -39,8 +40,8 @@ local ReplacementSounds = {
 }
 
 local MinigameSounds = {
-    NEW_WAVE = Isaac.GetSoundIdByName("jc new CurrentWave"),
-    THIRD_WAVE = Isaac.GetSoundIdByName("jc third CurrentWave"),
+    NEW_WAVE = Isaac.GetSoundIdByName("jc new wave"),
+    THIRD_WAVE = Isaac.GetSoundIdByName("jc third wave"),
     PLAYER_HURT = Isaac.GetSoundIdByName("jc player hurt"),
     GAPER_GRUNT = Isaac.GetSoundIdByName("jc grunt"),
     GAPER_DEATH = Isaac.GetSoundIdByName("jc gaper death"),
@@ -50,6 +51,8 @@ local MinigameSounds = {
     WIN = Isaac.GetSoundIdByName("arcade cabinet win"),
     LOSE = Isaac.GetSoundIdByName("arcade cabinet lose")
 }
+
+local MinigameMusic = Isaac.GetMusicIdByName("jc corpse beat")
 
 --Entities
 local MinigameEntityVariants = {
@@ -77,9 +80,9 @@ local MinigameConstants = {
     },
 
     TRANSITION_FRAMES_PER_WAVE = {
-        70,
-        70,
-        180
+        35,
+        35,
+        100
     },
     RESTING_BETWEEN_WAVES_FRAMES = 60,
 
@@ -92,8 +95,10 @@ local MinigameTimers = {
     TransitionTimer = 0,
     MiniwaveTimer = 0,
     RestingTimer = 0,
+    IFramesTimer = 0
 }
 
+--States
 local MinigameStates = {
     WAVE_TRANSITION_SCREEN = 1,
     PLAYING_WAVE = 2,
@@ -103,13 +108,6 @@ local MinigameStates = {
 }
 local CurrentMinigameState = MinigameStates.WAVE_TRANSITION_SCREEN
 
-local CurrentWave = 1
-local PlayerHP = 3
-local IFrames = 0
-local MiniWavesLeft = 0
-
-local TargetEntity = nil
-
 --UI
 local WaveTransitionScreen = Sprite()
 WaveTransitionScreen:Load("gfx/minigame_transition.anm2")
@@ -118,6 +116,13 @@ HeartsUI:Load("gfx/jc_hearts_ui.anm2", true)
 local ChargeBarUI = Sprite()
 ChargeBarUI:Load("gfx/jc_charge_bar.anm2")
 ChargeBarUI.FlipX = true
+
+--Other variables
+local CurrentWave = 1
+local PlayerHP = 3
+local MiniWavesLeft = 0
+
+local TargetEntity = nil
 
 local ChargeFrames = 0
 
@@ -134,7 +139,7 @@ function jumping_coffing:Init()
     jumping_coffing.result = nil
     PlayerHP = 3
     CurrentMinigameState = MinigameStates.WAVE_TRANSITION_SCREEN
-    IFrames = 0
+    MinigameTimers.IFramesTimer = 0
     MiniWavesLeft = 0
     FinishedBossWave = false
     HasSpawnedFirstBoss = false
@@ -160,11 +165,15 @@ function jumping_coffing:Init()
     TargetEntity = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.TARGET, 0, room:GetCenterPos(), Vector.Zero, nil)
     TargetEntity:GetSprite():Play("DeadBoss", true)
 
+    --Play music
+    MusicManager:Play(MinigameMusic, 1)
+    MusicManager:UpdateVolume()
+
     --Set up players
     local playerNum = game:GetNumPlayers()
     for i = 0, playerNum - 1, 1 do
         local player = game:GetPlayer(i)
-        
+
         for _, item in ipairs(jumping_coffing.startingItems) do
             player:AddCollectible(item, 0, false)
         end
@@ -238,22 +247,21 @@ local function UpdateTransitionScreen()
     local room = game:GetRoom()
 
     MinigameTimers.TransitionTimer = MinigameTimers.TransitionTimer - 1
-  
-    if MinigameTimers.TransitionTimer == 2 then
-        --Set all the variables before we change the state so it looks good
-        MiniWavesLeft = MinigameConstants.MINIWAVES_PER_WAVE[CurrentWave]
 
+    if MinigameTimers.TransitionTimer == (MinigameConstants.TRANSITION_FRAMES_PER_WAVE[CurrentWave] - 5) then
+        --Move players before we actually change the state so it looks good
         local playerNum = game:GetNumPlayers()
         for i = 0, playerNum - 1, 1 do
             local player = game:GetPlayer(i)
             player.Position = room:GetCenterPos() + Vector(math.random(-50, 50), math.random(-50, 50))
         end
-
-        MinigameTimers.MiniwaveTimer = 20
     elseif MinigameTimers.TransitionTimer == 0 then
-        --Change state and enable controls
+        --Set states and corresponding variables
         CurrentMinigameState = MinigameStates.PLAYING_WAVE
+        MinigameTimers.MiniwaveTimer = MinigameConstants.FRAMES_BETWEEN_MINIWAVES_PER_WAVE[CurrentWave]
+        MiniWavesLeft = MinigameConstants.MINIWAVES_PER_WAVE[CurrentWave]
 
+        --Give control back
         local playerNum = game:GetNumPlayers()
         for i = 0, playerNum - 1, 1 do
             local player = game:GetPlayer(i)
@@ -546,10 +554,9 @@ function jumping_coffing:OnUpdate()
     --     if SFXManager:IsPlaying(i) then print(i) end
     -- end
 
-    if IFrames > 0 then IFrames = IFrames - 1 end
+    if MinigameTimers.IFramesTimer > 0 then MinigameTimers.IFramesTimer = MinigameTimers.IFramesTimer - 1 end
 
-    if MinigameTimers.TransitionTimer > 0 then MinigameTimers.TransitionTimer = MinigameTimers.TransitionTimer - 1 end
-
+    --States logic
     if CurrentMinigameState == MinigameStates.WAVE_TRANSITION_SCREEN then
         UpdateTransitionScreen()
     elseif CurrentMinigameState == MinigameStates.PLAYING_WAVE then
@@ -621,7 +628,7 @@ jumping_coffing.callbacks[ModCallbacks.MC_ENTITY_TAKE_DMG] = jumping_coffing.OnE
 
 
 function jumping_coffing:OnEntityUpdate(entity)
-    if entity.Type == EntityType.ENTITY_GENERIC_PROP or IFrames > 0 then return end
+    if entity.Type == EntityType.ENTITY_GENERIC_PROP or MinigameTimers.IFramesTimer > 0 then return end
 
     local room = game:GetRoom()
 
@@ -638,7 +645,7 @@ function jumping_coffing:OnEntityUpdate(entity)
             KillEnemy(entity)
         end
 
-        IFrames = MinigameConstants.MAX_PLAYER_IFRAMES
+        MinigameTimers.IFramesTimer = MinigameConstants.MAX_PLAYER_IFRAMES
         HeartsUI:Play("Damage", true)
         SFXManager:Play(MinigameSounds.PLAYER_HURT)
 
