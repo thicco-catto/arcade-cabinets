@@ -376,29 +376,26 @@ local function SpawnEnemies()
 end
 
 
+local function SpawnBoss(chosenCorner)
+    local boss = Isaac.Spawn(EntityType.ENTITY_GAPER_L2, 0, 0, MinigameConstants.SPAWNING_POSITIONS[chosenCorner] + Vector(math.random(-50, 50), math.random(-50, 50)), Vector(0, 0), nil)
+    boss:GetSprite():Load("gfx/jc_level_2_gaper.anm2", true)
+    boss.Target = TargetEntity
+    boss.HitPoints = 120
+    boss:GetData().framesUntilSpecialAttack = 100
+    boss:GetData().specialAttackFrames = 0
+    boss:GetData().spawningCorner = chosenCorner
+end
+
+
 local function SpawnBosses()
     if not HasSpawnedFirstBoss and #Isaac.FindByType(EntityType.ENTITY_GAPER, -1, -1) <= 8 then
         LastBossCorner = math.random(4)
-        local boss = Isaac.Spawn(EntityType.ENTITY_GAPER_L2, 0, 0, MinigameConstants.SPAWNING_POSITIONS[LastBossCorner] + Vector(math.random(-50, 50), math.random(-50, 50)), Vector(0, 0), nil)
-        boss:GetSprite():Load("gfx/jc_level_2_gaper.anm2", true)
-        boss.Target = TargetEntity
-        boss.HitPoints = 120
-        boss:GetData().framesUntilSpecialAttack = 100
-        boss:GetData().specialAttackFrames = 0
-        boss:GetData().spawningCorner = LastBossCorner
-
+        SpawnBoss(LastBossCorner)
         HasSpawnedFirstBoss = true
     elseif not FinishedBossWave and HasSpawnedFirstBoss and (#Isaac.FindByType(EntityType.ENTITY_GAPER_L2, -1, -1) == 0 or Isaac.FindByType(EntityType.ENTITY_GAPER_L2, -1, -1)[1].HitPoints <= 36) then
         local chosenCorner = math.random(3)
         if chosenCorner >= LastBossCorner then chosenCorner = chosenCorner + 1 end
-        local boss = Isaac.Spawn(EntityType.ENTITY_GAPER_L2, 0, 0, MinigameConstants.SPAWNING_POSITIONS[chosenCorner] + Vector(math.random(-50, 50), math.random(-50, 50)), Vector(0, 0), nil)
-        boss:GetSprite():Load("gfx/jc_level_2_gaper.anm2", true)
-        boss.Target = TargetEntity
-        boss.HitPoints = 120
-        boss:GetData().framesUntilSpecialAttack = 100
-        boss:GetData().specialAttackFrames = 0
-        boss:GetData().spawningCorner = chosenCorner
-
+        SpawnBoss(chosenCorner)
         FinishedBossWave = true
     end
 end
@@ -739,6 +736,14 @@ end
 jumping_coffing.callbacks[ModCallbacks.MC_POST_RENDER] = jumping_coffing.OnRender
 
 
+function jumping_coffing:EffectUpdate(effect)
+    if effect.Variant == EffectVariant.TINY_FLY then
+        effect:Remove() --They should be removed but just in case
+    end
+end
+jumping_coffing.callbacks[ModCallbacks.MC_POST_EFFECT_UPDATE] = jumping_coffing.EffectUpdate
+
+
 function jumping_coffing:OnKnife(knife)
     local data = knife:GetData()
     if CurrentMinigameState ~= MinigameStates.PLAYING_WAVE and CurrentMinigameState ~= MinigameStates.WAITING_FOR_TRANSITION then
@@ -774,12 +779,12 @@ end
 jumping_coffing.callbacks[ModCallbacks.MC_POST_PROJECTILE_UPDATE] = jumping_coffing.OnProjectile
 
 
-function jumping_coffing:OnEffect(entityType, entityVariant, _, _, _, _, seed)
+function jumping_coffing:OnEffectSpawn(entityType, entityVariant, _, _, _, _, seed)
     if entityType == EntityType.ENTITY_EFFECT and 
     (entityVariant == EffectVariant.POOF01 or entityVariant == EffectVariant.TINY_FLY or entityVariant == EffectVariant.FLY_EXPLOSION) then
         return {EntityType.ENTITY_EFFECT, EffectVariant.BLOOD_SPLAT, 0, seed}
     end
 end
-jumping_coffing.callbacks[ModCallbacks.MC_PRE_ENTITY_SPAWN] = jumping_coffing.OnEffect
+jumping_coffing.callbacks[ModCallbacks.MC_PRE_ENTITY_SPAWN] = jumping_coffing.OnEffectSpawn
 
 return jumping_coffing
