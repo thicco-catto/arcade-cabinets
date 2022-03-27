@@ -69,9 +69,9 @@ local MinigameConstants = {
         Vector(1000, 190)
     },
     MINIWAVES_PER_WAVE = {
-        1, --4
-        1, --8
-        2  --8
+        4,
+        4,
+        8
     },
     FRAMES_BETWEEN_MINIWAVES_PER_WAVE = {
         40,
@@ -203,6 +203,7 @@ local function LoseMinigame()
         local player = game:GetPlayer(i)
         player:PlayExtraAnimation("Sad")
         player.ControlsEnabled = false
+        player.EntityCollisionClass = EntityCollisionClass.ENTCOLL_NONE
     end
 
     WaveTransitionScreen:Play("Appear", true)
