@@ -69,9 +69,9 @@ local MinigameConstants = {
         Vector(1000, 190)
     },
     MINIWAVES_PER_WAVE = {
-        4,
-        8,
-        8
+        1, --4
+        1, --8
+        2  --8
     },
     FRAMES_BETWEEN_MINIWAVES_PER_WAVE = {
         40,
@@ -82,7 +82,7 @@ local MinigameConstants = {
     TRANSITION_FRAMES_PER_WAVE = {
         35,
         35,
-        100
+        110
     },
     RESTING_BETWEEN_WAVES_FRAMES = 60,
 
@@ -168,6 +168,7 @@ function jumping_coffing:Init()
     --Play music
     MusicManager:Play(MinigameMusic, 1)
     MusicManager:UpdateVolume()
+    MusicManager:Pause()
 
     --Set up players
     local playerNum = game:GetNumPlayers()
@@ -260,6 +261,8 @@ local function UpdateTransitionScreen()
         CurrentMinigameState = MinigameStates.PLAYING_WAVE
         MinigameTimers.MiniwaveTimer = MinigameConstants.FRAMES_BETWEEN_MINIWAVES_PER_WAVE[CurrentWave]
         MiniWavesLeft = MinigameConstants.MINIWAVES_PER_WAVE[CurrentWave]
+
+        MusicManager:Resume()
 
         --Give control back
         local playerNum = game:GetNumPlayers()
@@ -419,6 +422,7 @@ local function UpdatePlayingWave()
         #Isaac.FindByType(EntityType.ENTITY_GAPER_L2, -1, -1) == 0 and #Isaac.FindByType(EntityType.ENTITY_ATTACKFLY, -1, -1) == 0 then
             if CurrentWave == 3 then
                 --Clean room and third CurrentWave so win the game
+                MusicManager:Pause()
                 WinMinigame()
             else
                 --Clean room and no more enemies to spawn go to rest
@@ -439,6 +443,8 @@ local function UpdateWaiting()
         CurrentWave = CurrentWave + 1
         WaveTransitionScreen:ReplaceSpritesheet(0, "gfx/effects/jumping coffing/transition" .. CurrentWave .. ".png")
         WaveTransitionScreen:LoadGraphics()
+
+        MusicManager:Pause()
 
         MinigameTimers.TransitionTimer = MinigameConstants.TRANSITION_FRAMES_PER_WAVE[CurrentWave]
         if CurrentWave == 2 then
@@ -479,13 +485,12 @@ local function BossSpecialAttack(entity)
             entity:GetData().specialAttackFrames = 200
 
             local previousHP = entity.HitPoints
-            entity:MakeChampion(1, ChampionColor.YELLOW)
+            --entity:MakeChampion(1, ChampionColor.YELLOW)
             entity.HitPoints = previousHP
             SFXManager:Play(MinigameSounds.SPECIAL_ATTACK)
             entity:SetColor(Color(1, 1, 1, 1, 0, 0, 0), 300, -1, false, false)
-            entity:GetSprite():ReplaceSpritesheet(0, "gfx/enemies/jc_lv2_gaper_champion.png")
-            entity:GetSprite():ReplaceSpritesheet(1, "gfx/enemies/jc_lv2_gaper_champion.png")
-            entity:GetSprite():LoadGraphics()
+            entity:GetSprite():Load("gfx/jc_level_2_gaper_special_attack.anm2", true)
+            entity:GetSprite():PlayOverlay("Head", true)
 
             --Spawn flies
             local flyCorner = entity:GetData().spawningCorner + 2
@@ -532,8 +537,9 @@ function jumping_coffing:OnUpdate()
 
     --Chargebar
     if CurrentMinigameState == MinigameStates.PLAYING_WAVE or CurrentMinigameState == MinigameStates.WAITING_FOR_TRANSITION then
-        if Input.IsActionPressed(ButtonAction.ACTION_SHOOTLEFT, 0) or Input.IsActionPressed(ButtonAction.ACTION_SHOOTRIGHT, 0) or
-        Input.IsActionPressed(ButtonAction.ACTION_SHOOTUP, 0) or Input.IsActionPressed(ButtonAction.ACTION_SHOOTDOWN, 0) then
+        if (Input.IsActionPressed(ButtonAction.ACTION_SHOOTLEFT, 0) or Input.IsActionPressed(ButtonAction.ACTION_SHOOTRIGHT, 0) or
+        Input.IsActionPressed(ButtonAction.ACTION_SHOOTUP, 0) or Input.IsActionPressed(ButtonAction.ACTION_SHOOTDOWN, 0)) and
+        #Isaac.FindByType(EntityType.ENTITY_KNIFE, -1, -1) ~= 0 then
             ChargeFrames = ChargeFrames + 1
         else
             ChargeFrames = 0
@@ -618,7 +624,7 @@ function jumping_coffing:OnEntityDamage(tookDamage, damageAmount, damageflags, s
         tookDamage:AddVelocity((source.Position - tookDamage.Position)* -0.3)
         SFXManager:Play(MinigameSounds.GAPER_DEATH)
 
-        tookDamage:SetColor(Color(1, 1, 1, 1, 0, 0, 0), 6, -1, false, false)
+        tookDamage:SetColor(Color(1, 1, 1, 0, 0, 0, 0), 3, -5, false, false)
     else
         --Kill everything else
         KillEnemy(tookDamage)
