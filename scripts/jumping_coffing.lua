@@ -460,9 +460,11 @@ end
 
 
 local function UpdateLosing()
+    local playerNum = game:GetNumPlayers()
+
     for i = 0, playerNum - 1, 1 do
         local player = game:GetPlayer(i)
-        player:GetSprite():SetFrame(10)
+        player:GetSprite():SetFrame(5)
     end
 end
 
@@ -652,6 +654,32 @@ jumping_coffing.callbacks[ModCallbacks.MC_POST_RENDER] = jumping_coffing.OnRende
 
 
 --NPC CALLBACKS
+local function KillEnemy(entity)
+    entity:Remove()
+    local bloodsplat = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.BLOODSPLAT, 0, entity.Position, Vector.Zero, nil)
+
+    if entity.Type == EntityType.ENTITY_GAPER_L2 then
+        --Death of boss
+        SFXManager:Play(MinigameSounds.BOSS_DEATH)
+
+        bloodsplat:GetSprite():Load("gfx/jc_bloodsplat_big.anm2", true)
+        bloodsplat:GetSprite():Play("Idle", true)
+
+        local deadBoss = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.TARGET, 0, entity.Position + Vector(0, -0.01), Vector.Zero, nil)
+        deadBoss:GetSprite():Load("gfx/jc_dead_boss.anm2", true)
+    elseif entity.Type == EntityType.ENTITY_ATTACKFLY then
+        --Fly death
+        SFXManager:Play(MinigameSounds.FLY_DEATH)
+        bloodsplat:GetSprite():Load("gfx/jc_fly_death.anm2", true)
+        bloodsplat:GetSprite():Play("Idle", true)
+    else
+        --Gaper/twitchy death
+        SFXManager:Play(MinigameSounds.GAPER_DEATH)
+        bloodsplat:GetSprite():Play("Idle", true)
+    end
+end
+
+
 function jumping_coffing:OnEntityInit(entity)
     if entity.Type ~= EntityType.ENTITY_SMALL_MAGGOT then return end
 
@@ -689,32 +717,6 @@ function jumping_coffing:OnEntityUpdate(entity)
     end
 end
 jumping_coffing.callbacks[ModCallbacks.MC_NPC_UPDATE] = jumping_coffing.OnEntityUpdate
-
-
-local function KillEnemy(entity)
-    entity:Remove()
-    local bloodsplat = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.BLOODSPLAT, 0, entity.Position, Vector.Zero, nil)
-
-    if entity.Type == EntityType.ENTITY_GAPER_L2 then
-        --Death of boss
-        SFXManager:Play(MinigameSounds.BOSS_DEATH)
-
-        bloodsplat:GetSprite():Load("gfx/jc_bloodsplat_big.anm2", true)
-        bloodsplat:GetSprite():Play("Idle", true)
-
-        local deadBoss = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.TARGET, 0, entity.Position + Vector(0, -0.01), Vector.Zero, nil)
-        deadBoss:GetSprite():Load("gfx/jc_dead_boss.anm2", true)
-    elseif entity.Type == EntityType.ENTITY_ATTACKFLY then
-        --Fly death
-        SFXManager:Play(MinigameSounds.FLY_DEATH)
-        bloodsplat:GetSprite():Load("gfx/jc_fly_death.anm2", true)
-        bloodsplat:GetSprite():Play("Idle", true)
-    else
-        --Gaper/twitchy death
-        SFXManager:Play(MinigameSounds.GAPER_DEATH)
-        bloodsplat:GetSprite():Play("Idle", true)
-    end
-end
 
 
 function jumping_coffing:OnEntityDamage(tookDamage, damageAmount, damageflags, source)
