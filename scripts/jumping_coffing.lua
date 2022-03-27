@@ -145,7 +145,6 @@ function jumping_coffing:Init()
         timer = 0
     end
 
-
     --Set the transition screen
     WaveTransitionScreen:ReplaceSpritesheet(0, "gfx/effects/jumping coffing/transition1.png")
     WaveTransitionScreen:ReplaceSpritesheet(1, "gfx/effects/jumping coffing/transition1.png")
@@ -153,11 +152,15 @@ function jumping_coffing:Init()
     MinigameTimers.TransitionTimer = MinigameConstants.TRANSITION_FRAMES_PER_WAVE[CurrentWave]
     SFXManager:Play(MinigameSounds.NEW_WAVE)
 
-    --Spawn the backdrop and target
-    Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, ArcadeCabinetVariables.BackdropVariant, 0, Vector(52, 126), Vector.Zero, nil)
+    --Spawn the backdrop
+    local backdrop = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, ArcadeCabinetVariables.Backdrop2x2Variant, 0, room:GetCenterPos(), Vector.Zero, nil)
+    backdrop.DepthOffset = -1000
+
+    --Spawn target
     TargetEntity = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.TARGET, 0, room:GetCenterPos(), Vector.Zero, nil)
     TargetEntity:GetSprite():Play("DeadBoss", true)
 
+    --Set up players
     local playerNum = game:GetNumPlayers()
     for i = 0, playerNum - 1, 1 do
         local player = game:GetPlayer(i)
