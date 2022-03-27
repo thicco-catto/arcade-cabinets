@@ -131,7 +131,7 @@ local LastBossCorner = nil
 local HasSpawnedFirstBoss = false
 local FinishedBossWave = false
 
-
+--INIT
 function jumping_coffing:Init()
     local room = game:GetRoom()
 
@@ -193,6 +193,7 @@ function jumping_coffing:Init()
 end
 
 
+--UPDATE CALLBACKS
 local function LoseMinigame()
     CurrentMinigameState = MinigameStates.LOSING
     SFXManager:Play(MinigameSounds.LOSE)
@@ -458,6 +459,14 @@ local function UpdateWaiting()
 end
 
 
+local function UpdateLosing()
+    for i = 0, playerNum - 1, 1 do
+        local player = game:GetPlayer(i)
+        player:GetSprite():SetFrame(10)
+    end
+end
+
+
 local function UpdateWinning()
     local playerNum = game:GetNumPlayers()
 
@@ -566,107 +575,13 @@ function jumping_coffing:OnUpdate()
         UpdatePlayingWave()
     elseif CurrentMinigameState == MinigameStates.WAITING_FOR_TRANSITION then
         UpdateWaiting()
+    elseif CurrentMinigameState == MinigameStates.LOSING then
+        UpdateLosing()
     elseif CurrentMinigameState == MinigameStates.WINNING then
         UpdateWinning()
     end
 end
 jumping_coffing.callbacks[ModCallbacks.MC_POST_UPDATE] = jumping_coffing.OnUpdate
-
-
-function jumping_coffing:OnFamiliarUpdate(FamiliarEnt)
-    if FamiliarEnt.Variant ~= FamiliarVariant.ISAACS_HEART then return end
-
-    --Move isaac's heart very very far away
-    FamiliarEnt.Position = Vector(-99999999, -99999999)
-end
-jumping_coffing.callbacks[ModCallbacks.MC_FAMILIAR_UPDATE] = jumping_coffing.OnFamiliarUpdate
-
-
-local function KillEnemy(entity)
-    entity:Remove()
-    local bloodsplat = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.BLOODSPLAT, 0, entity.Position, Vector.Zero, nil)
-
-    if entity.Type == EntityType.ENTITY_GAPER_L2 then
-        --Death of boss
-        SFXManager:Play(MinigameSounds.BOSS_DEATH)
-
-        bloodsplat:GetSprite():Load("gfx/jc_bloodsplat_big.anm2", true)
-        bloodsplat:GetSprite():Play("Idle", true)
-
-        local deadBoss = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.TARGET, 0, entity.Position + Vector(0, -0.01), Vector.Zero, nil)
-        deadBoss:GetSprite():Load("gfx/jc_dead_boss.anm2", true)
-    elseif entity.Type == EntityType.ENTITY_ATTACKFLY then
-        --Fly death
-        SFXManager:Play(MinigameSounds.FLY_DEATH)
-        bloodsplat:GetSprite():Load("gfx/jc_fly_death.anm2", true)
-        bloodsplat:GetSprite():Play("Idle", true)
-    else
-        --Gaper/twitchy death
-        SFXManager:Play(MinigameSounds.GAPER_DEATH)
-        bloodsplat:GetSprite():Play("Idle", true)
-    end
-end
-
-
-function jumping_coffing:OnEntityDamage(tookDamage, damageAmount, damageflags, source)
-    if tookDamage:ToPlayer() then return end
-
-    if damageflags == DamageFlag.DAMAGE_COUNTDOWN then
-        --Negate contact damage (DamageFlag.DAMAGE_COUNTDOWN is damage flag for contact damage)
-        return false
-    end
-
-    if tookDamage.Type == EntityType.ENTITY_GAPER_L2 and damageAmount < tookDamage.HitPoints then
-        --Knockback and sfx for bosses
-        tookDamage:AddVelocity((source.Position - tookDamage.Position)* -0.3)
-        SFXManager:Play(MinigameSounds.GAPER_DEATH)
-
-        tookDamage:SetColor(Color(1, 1, 1, 0, 0, 0, 0), 3, -5, false, false)
-    else
-        --Kill everything else
-        KillEnemy(tookDamage)
-    end
-end
-jumping_coffing.callbacks[ModCallbacks.MC_ENTITY_TAKE_DMG] = jumping_coffing.OnEntityDamage
-
-
-function jumping_coffing:OnEntityUpdate(entity)
-    if entity.Type == EntityType.ENTITY_GENERIC_PROP or MinigameTimers.IFramesTimer > 0 then return end
-
-    local room = game:GetRoom()
-
-    if entity.Position:Distance(room:GetCenterPos()) < 20 then
-        PlayerHP = PlayerHP - 1
-
-        if PlayerHP == 0 then
-            LoseMinigame()
-        end
-
-        if entity.Type == EntityType.ENTITY_GAPER_L2 then
-            entity:AddVelocity((entity.Position - room:GetCenterPos()) * 5)
-        else
-            KillEnemy(entity)
-        end
-
-        MinigameTimers.IFramesTimer = MinigameConstants.MAX_PLAYER_IFRAMES
-        HeartsUI:Play("Damage", true)
-        SFXManager:Play(MinigameSounds.PLAYER_HURT)
-
-        local playerNum = game:GetNumPlayers()
-        for i = 0, playerNum - 1, 1 do
-            game:GetPlayer(i):PlayExtraAnimation("Hit")
-        end
-    end
-end
-jumping_coffing.callbacks[ModCallbacks.MC_NPC_UPDATE] = jumping_coffing.OnEntityUpdate
-
-
-function jumping_coffing:OnEntityInit(entity)
-    if entity.Type ~= EntityType.ENTITY_SMALL_MAGGOT then return end
-
-    entity:Remove()
-end
-jumping_coffing.callbacks[ModCallbacks.MC_POST_NPC_INIT] = jumping_coffing.OnEntityInit
 
 
 local function RenderUI()
@@ -734,6 +649,104 @@ function jumping_coffing:OnRender()
     RenderFadeOut()
 end
 jumping_coffing.callbacks[ModCallbacks.MC_POST_RENDER] = jumping_coffing.OnRender
+
+
+--NPC CALLBACKS
+function jumping_coffing:OnEntityInit(entity)
+    if entity.Type ~= EntityType.ENTITY_SMALL_MAGGOT then return end
+
+    entity:Remove()
+end
+jumping_coffing.callbacks[ModCallbacks.MC_POST_NPC_INIT] = jumping_coffing.OnEntityInit
+
+
+function jumping_coffing:OnEntityUpdate(entity)
+    if entity.Type == EntityType.ENTITY_GENERIC_PROP or MinigameTimers.IFramesTimer > 0 then return end
+
+    local room = game:GetRoom()
+
+    if entity.Position:Distance(room:GetCenterPos()) < 20 then
+        PlayerHP = PlayerHP - 1
+
+        if PlayerHP == 0 then
+            LoseMinigame()
+        end
+
+        if entity.Type == EntityType.ENTITY_GAPER_L2 then
+            entity:AddVelocity((entity.Position - room:GetCenterPos()) * 5)
+        else
+            KillEnemy(entity)
+        end
+
+        MinigameTimers.IFramesTimer = MinigameConstants.MAX_PLAYER_IFRAMES
+        HeartsUI:Play("Damage", true)
+        SFXManager:Play(MinigameSounds.PLAYER_HURT)
+
+        local playerNum = game:GetNumPlayers()
+        for i = 0, playerNum - 1, 1 do
+            game:GetPlayer(i):PlayExtraAnimation("Hit")
+        end
+    end
+end
+jumping_coffing.callbacks[ModCallbacks.MC_NPC_UPDATE] = jumping_coffing.OnEntityUpdate
+
+
+local function KillEnemy(entity)
+    entity:Remove()
+    local bloodsplat = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.BLOODSPLAT, 0, entity.Position, Vector.Zero, nil)
+
+    if entity.Type == EntityType.ENTITY_GAPER_L2 then
+        --Death of boss
+        SFXManager:Play(MinigameSounds.BOSS_DEATH)
+
+        bloodsplat:GetSprite():Load("gfx/jc_bloodsplat_big.anm2", true)
+        bloodsplat:GetSprite():Play("Idle", true)
+
+        local deadBoss = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.TARGET, 0, entity.Position + Vector(0, -0.01), Vector.Zero, nil)
+        deadBoss:GetSprite():Load("gfx/jc_dead_boss.anm2", true)
+    elseif entity.Type == EntityType.ENTITY_ATTACKFLY then
+        --Fly death
+        SFXManager:Play(MinigameSounds.FLY_DEATH)
+        bloodsplat:GetSprite():Load("gfx/jc_fly_death.anm2", true)
+        bloodsplat:GetSprite():Play("Idle", true)
+    else
+        --Gaper/twitchy death
+        SFXManager:Play(MinigameSounds.GAPER_DEATH)
+        bloodsplat:GetSprite():Play("Idle", true)
+    end
+end
+
+
+function jumping_coffing:OnEntityDamage(tookDamage, damageAmount, damageflags, source)
+    if tookDamage:ToPlayer() then return end
+
+    if damageflags == DamageFlag.DAMAGE_COUNTDOWN then
+        --Negate contact damage (DamageFlag.DAMAGE_COUNTDOWN is damage flag for contact damage)
+        return false
+    end
+
+    if tookDamage.Type == EntityType.ENTITY_GAPER_L2 and damageAmount < tookDamage.HitPoints then
+        --Knockback and sfx for bosses
+        tookDamage:AddVelocity((source.Position - tookDamage.Position)* -0.3)
+        SFXManager:Play(MinigameSounds.GAPER_DEATH)
+
+        tookDamage:SetColor(Color(1, 1, 1, 0, 0, 0, 0), 3, -5, false, false)
+    else
+        --Kill everything else
+        KillEnemy(tookDamage)
+    end
+end
+jumping_coffing.callbacks[ModCallbacks.MC_ENTITY_TAKE_DMG] = jumping_coffing.OnEntityDamage
+
+
+--OTHER CALLBACKS
+function jumping_coffing:OnFamiliarUpdate(FamiliarEnt)
+    if FamiliarEnt.Variant ~= FamiliarVariant.ISAACS_HEART then return end
+
+    --Move isaac's heart very very far away
+    FamiliarEnt.Position = Vector(-99999999, -99999999)
+end
+jumping_coffing.callbacks[ModCallbacks.MC_FAMILIAR_UPDATE] = jumping_coffing.OnFamiliarUpdate
 
 
 function jumping_coffing:EffectUpdate(effect)
