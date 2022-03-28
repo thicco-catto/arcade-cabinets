@@ -426,7 +426,7 @@ local function UpdatePlayingWave()
         #Isaac.FindByType(EntityType.ENTITY_GAPER_L2, -1, -1) == 0 and #Isaac.FindByType(EntityType.ENTITY_ATTACKFLY, -1, -1) == 0 then
             if CurrentWave == 3 then
                 --Clean room and third CurrentWave so win the game
-                MusicManager:Pause()
+                MusicManager:VolumeSlide(0, 1)
                 WinMinigame()
             else
                 --Clean room and no more enemies to spawn go to rest
@@ -797,10 +797,10 @@ function jumping_coffing:OnKnife(knife)
     end
 
     if data.CustomSprite then return end
-	
+
     local player = knife.Parent
 	if (not player) or (player.Type ~= EntityType.ENTITY_PLAYER) then return end
-	
+
     local sprite = knife:GetSprite()
 	if Isaac.GetPlayer(0):HasCollectible(CollectibleType.COLLECTIBLE_SPIRIT_SWORD) then
         local anim = sprite:GetAnimation()
