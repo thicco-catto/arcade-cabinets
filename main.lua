@@ -401,7 +401,13 @@ function ArcadeCabinetMod:OnFrameUpdate()
                 print("lose")
             end
         else
-            ArcadeCabinetVariables.MinigameDoor:Close()
+            local room = game:GetRoom()
+            for i = 0, 7, 1 do
+                local door = room:GetDoor(i)
+                if door then
+                    door:Close()
+                end
+            end
         end
     elseif ArcadeCabinetVariables.CurrentGameState == ArcadeCabinetVariables.GameState.TRANSITION then
 

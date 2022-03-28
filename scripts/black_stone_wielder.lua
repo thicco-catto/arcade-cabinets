@@ -1,25 +1,27 @@
 local black_stone_wielder = {}
 local game = Game()
+local rng = RNG()
 local SFXManager = SFXManager()
+local MusicManager = MusicManager()
+----------------------------------------------
+--FANCY REQUIRE (Thanks manaphoenix <3)
+----------------------------------------------
+local function loadFile(loc, ...)
+    local _, err = pcall(require, "")
+    local modName = err:match("/mods/(.*)/%.lua")
+    local path = "mods/" .. modName .. "/"
+
+    return assert(loadfile(path .. loc .. ".lua"))(...)
+end
+local ArcadeCabinetVariables = loadFile("scripts/variables")
+
 black_stone_wielder.callbacks = {}
 black_stone_wielder.result = nil
 black_stone_wielder.startingItems = {
     CollectibleType.COLLECTIBLE_ISAACS_HEART,
 }
 
-----------------------------------------------
---FANCY REQUIRE (Thanks manaphoenix <3)
-----------------------------------------------
-local _, err = pcall(require, "")
-local modName = err:match("/mods/(.*)/%.lua")
-local path = "mods/" .. modName .. "/"
-
-local function loadFile(loc, ...)
-    return assert(loadfile(path .. loc .. ".lua"))(...)
-end
-
-local ArcadeCabinetVariables = loadFile("scripts/variables")
-
+--Sounds
 local BannedSounds = {
     SoundEffect.SOUND_TEARS_FIRE,
     SoundEffect.SOUND_BLOODSHOOT,
@@ -43,11 +45,23 @@ local MinigameSounds = {
     LOSE = Isaac.GetSoundIdByName("arcade cabinet lose")
 }
 
+--Entities
 local MinigameEntityVariants = {
     RUNE_SHARD = Isaac.GetEntityVariantByName("rune BSW"),
     WHIPPER_DEATH = Isaac.GetEntityVariantByName("whipper death BSW")
 }
 
+--Constants
+local MinigameConstants = {
+
+}
+
+--Timer
+local MinigameTimers = {
+
+}
+
+--States
 local MinigameState = {
     PLAYING = 1,
     WAITING_FOR_TRANSITION = 2,
@@ -55,14 +69,21 @@ local MinigameState = {
     LOSING = 4,
     WINNING = 5
 }
-
 local CurrentMinigameState = MinigameState.PLAYING
 
-local Backdrop = nil
-
---Transition screen
+--UI
+local BgUI = Sprite()
+BgUI:Load("gfx/bsw_bg_ui.anm2", true)
+local RuneUI = Sprite()
+RuneUI:Load("gfx/bsw_rune_ui.anm2", true)
+local HeartsUI = Sprite()
+HeartsUI:Load("gfx/bsw_hearts_ui.anm2", true)
+local RuneUse = Sprite()
+RuneUse:Load("gfx/bsw_rune_use.anm2", true)
 local TransitionScreen = Sprite()
 TransitionScreen:Load("gfx/minigame_transition.anm2")
+
+--Other variables
 local TransitionTimer = 0
 
 local WaitingTimer = 0
@@ -93,16 +114,6 @@ local RuneItem = Isaac.GetItemIdByName("BSW rune")
 local CurrentLevel = 1
 
 local InvincibilityFrames = 0
-
---UI
-local BgUI = Sprite()
-BgUI:Load("gfx/bsw_bg_ui.anm2", true)
-local RuneUI = Sprite()
-RuneUI:Load("gfx/bsw_rune_ui.anm2", true)
-local HeartsUI = Sprite()
-HeartsUI:Load("gfx/bsw_hearts_ui.anm2", true)
-local RuneUse = Sprite()
-RuneUse:Load("gfx/bsw_rune_use.anm2", true)
 
 
 local function GetPositionForRune(playerPos)
@@ -224,10 +235,10 @@ local function UpdateTransition()
             Isaac.ExecuteCommand("goto s.isaacs." .. roomId)
         elseif TransitionTimer == 1 then
             --Backdrop
-            Backdrop = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, ArcadeCabinetVariables.BackdropVariant, 0, Vector.Zero, Vector.Zero, nil)
-            Backdrop:GetSprite():Load("gfx/backdrop/tug_backdrop.anm2", false)
-            Backdrop:GetSprite():ReplaceSpritesheet(0, "gfx/backdrop/bsw_backdrop" .. CurrentLevel .. ".png")
-            Backdrop:GetSprite():LoadGraphics()
+            local backdrop = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, ArcadeCabinetVariables.Backdrop1x1Variant, 0, game:GetRoom():GetCenterPos(), Vector.Zero, nil)
+            backdrop:GetSprite():ReplaceSpritesheet(0, "gfx/backdrop/bsw_backdrop" .. CurrentLevel .. ".png")
+            backdrop:GetSprite():LoadGraphics()
+            backdrop.DepthOffset = -1000
 
             local numEnemies = 3
             if CurrentLevel == 3 then numEnemies = 2 end
