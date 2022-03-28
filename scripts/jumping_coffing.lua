@@ -1,5 +1,7 @@
 local jumping_coffing = {}
 local game = Game()
+local rng = RNG()
+rng:SetSeed(game:GetSeeds():GetStartSeed(), 35)
 local SFXManager = SFXManager()
 local MusicManager = MusicManager()
 ----------------------------------------------
@@ -256,7 +258,7 @@ local function UpdateTransitionScreen()
         local playerNum = game:GetNumPlayers()
         for i = 0, playerNum - 1, 1 do
             local player = game:GetPlayer(i)
-            player.Position = room:GetCenterPos() + Vector(math.random(-50, 50), math.random(-50, 50))
+            player.Position = room:GetCenterPos() + Vector(rng:RandomInt(101) - 50, rng:RandomInt(101) - 50)
         end
     elseif MinigameTimers.TransitionTimer == 0 then
         --Set states and corresponding variables
@@ -283,30 +285,30 @@ local function CalculateTwitchyCorners()
         --Special waves at 2, 4, 6 and final
         if MiniWavesLeft == 7 then
             --First special CurrentWave (33% to spawn a twitchy)
-            if math.random() <= 0.33 then
-                twitchyCorners[math.random(1, 4)] = true
+            if rng:RandomFloat() <= 0.33 then
+                twitchyCorners[rng:RandomInt(4) + 1] = true
             end
         elseif MiniWavesLeft == 5 then
             --Second special CurrentWave (1 guranteed and 50% to spawn another)
-            local guaranteedCorner = math.random(1, 4)
+            local guaranteedCorner = rng:RandomInt(4) + 1
             twitchyCorners[guaranteedCorner] = true
 
-            if math.random() <= 0.5 then
-                local randomCorner = math.random(1, 3)
+            if rng:RandomFloat() <= 0.5 then
+                local randomCorner = rng:RandomInt(3) + 1
                 if randomCorner >= guaranteedCorner then randomCorner = randomCorner + 1 end
                 twitchyCorners[randomCorner] = true
             end
         elseif MiniWavesLeft == 3 then
             --Third special CurrentWave (50% to spawn a twitchy)
-            if math.random() <= 0.5 then
-                twitchyCorners[math.random(1, 4)] = true
+            if rng:RandomFloat() <= 0.5 then
+                twitchyCorners[rng:RandomInt(4) + 1] = true
             end
         elseif MiniWavesLeft == 1 then
             --Last special CurrentWave (2 guaranteed, 50% to spawn another and 20% to spawn yet another)
             local remainingChoices = {1, 2, 3, 4}
             local aux = {}
 
-            local guaranteedCorner = math.random(1, 4)
+            local guaranteedCorner = rng:RandomInt(4) + 1
             twitchyCorners[guaranteedCorner] = true
 
             for _, value in ipairs(remainingChoices) do
@@ -315,7 +317,7 @@ local function CalculateTwitchyCorners()
             remainingChoices = aux
             aux = {}
 
-            local guaranteedCorner2 = remainingChoices[math.random(1, 3)]
+            local guaranteedCorner2 = remainingChoices[rng:RandomInt(3) + 1]
             twitchyCorners[guaranteedCorner2] = true
             for _, value in ipairs(remainingChoices) do
                 if guaranteedCorner2 ~= value then aux[#aux+1] = value end
@@ -323,8 +325,8 @@ local function CalculateTwitchyCorners()
             remainingChoices = aux
             aux = {}
 
-            if math.random() <= 0.5 then
-                local randomCorner = remainingChoices[math.random(1, 2)]
+            if rng:RandomFloat() <= 0.5 then
+                local randomCorner = remainingChoices[rng:RandomInt(2) + 1]
                 twitchyCorners[randomCorner] = true
                 for _, value in ipairs(remainingChoices) do
                     if randomCorner ~= value then aux[#aux+1] = value end
@@ -332,7 +334,7 @@ local function CalculateTwitchyCorners()
                 remainingChoices = aux
                 aux = {}
 
-                if math.random() <= 0.2 then
+                if rng:RandomFloat() <= 0.2 then
                     twitchyCorners[remainingChoices[1]] = true
                 end
             end
@@ -343,8 +345,8 @@ local function CalculateTwitchyCorners()
         --Special waves at 2, 4, 6 y 8
         if MiniWavesLeft == 7 or MiniWavesLeft == 5 or MiniWavesLeft == 3 or MiniWavesLeft == 1 then
             --Special waves guarantee a twitchy
-            if math.random() <= 0.33 then
-                twitchyCorners[math.random(1, 4)] = true
+            if rng:RandomFloat() <= 0.33 then
+                twitchyCorners[rng:RandomInt(4) + 1] = true
             end
         end
 
@@ -363,14 +365,14 @@ local function SpawnEnemies()
     --Spawn pseudowave miniwave
     for i = 1, 4, 1 do
         if twitchyCorners[i] then
-            local enemy = Isaac.Spawn(EntityType.ENTITY_TWITCHY, 0, 0, MinigameConstants.SPAWNING_POSITIONS[i] + Vector(math.random(-50, 50), math.random(-50, 50)), Vector(0, 0), nil)
+            local enemy = Isaac.Spawn(EntityType.ENTITY_TWITCHY, 0, 0, MinigameConstants.SPAWNING_POSITIONS[i] + Vector(rng:RandomInt(101) - 50, rng:RandomInt(101) - 50), Vector(0, 0), nil)
             enemy:GetSprite():Load("gfx/jc_twitchy.anm2", true)
             enemy.Target = TargetEntity
             enemy.HitPoints = 10
         end
 
-        if not twitchyCorners[i] or math.random() <= 0.5 then
-            local enemy = Isaac.Spawn(EntityType.ENTITY_GAPER, 3, math.random(5), MinigameConstants.SPAWNING_POSITIONS[i] + Vector(math.random(-50, 50), math.random(-50, 50)), Vector(0, 0), nil)
+        if not twitchyCorners[i] or rng:RandomFloat() <= 0.5 then
+            local enemy = Isaac.Spawn(EntityType.ENTITY_GAPER, 3, rng:RandomInt(5) + 1, MinigameConstants.SPAWNING_POSITIONS[i] + Vector(rng:RandomInt(101) - 50, rng:RandomInt(101) - 50), Vector(0, 0), nil)
             enemy:GetSprite():Load("gfx/jc_rotten_gaper" .. enemy.SubType .. ".anm2", true)
             enemy.Target = TargetEntity
         end
@@ -379,10 +381,11 @@ end
 
 
 local function SpawnBoss(chosenCorner)
-    local boss = Isaac.Spawn(EntityType.ENTITY_GAPER_L2, 0, 0, MinigameConstants.SPAWNING_POSITIONS[chosenCorner] + Vector(math.random(-50, 50), math.random(-50, 50)), Vector(0, 0), nil)
+    local boss = Isaac.Spawn(EntityType.ENTITY_GAPER_L2, 0, 0, MinigameConstants.SPAWNING_POSITIONS[chosenCorner] + Vector(rng:RandomInt(101) - 50, rng:RandomInt(101) - 50), Vector(0, 0), nil)
     boss:GetSprite():Load("gfx/jc_level_2_gaper.anm2", true)
     boss.Target = TargetEntity
     boss.HitPoints = 120
+    boss:AddEntityFlags(EntityFlag.FLAG_NO_FLASH_ON_DAMAGE)
     boss:GetData().framesUntilSpecialAttack = 100
     boss:GetData().specialAttackFrames = 0
     boss:GetData().spawningCorner = chosenCorner
@@ -391,11 +394,11 @@ end
 
 local function SpawnBosses()
     if not HasSpawnedFirstBoss and #Isaac.FindByType(EntityType.ENTITY_GAPER, -1, -1) <= 8 then
-        LastBossCorner = math.random(4)
+        LastBossCorner = rng:RandomInt(4) + 1
         SpawnBoss(LastBossCorner)
         HasSpawnedFirstBoss = true
     elseif not FinishedBossWave and HasSpawnedFirstBoss and (#Isaac.FindByType(EntityType.ENTITY_GAPER_L2, -1, -1) == 0 or Isaac.FindByType(EntityType.ENTITY_GAPER_L2, -1, -1)[1].HitPoints <= 36) then
-        local chosenCorner = math.random(3)
+        local chosenCorner = rng:RandomInt(3) + 1
         if chosenCorner >= LastBossCorner then chosenCorner = chosenCorner + 1 end
         SpawnBoss(chosenCorner)
         FinishedBossWave = true
@@ -505,7 +508,7 @@ local function BossSpecialAttack(entity)
             local flyCorner = entity:GetData().spawningCorner + 2
 
             if flyCorner > 4 then flyCorner = (flyCorner % 4) + 1 end
-            
+
             for i = 1, 15, 1 do
                 local fly = Isaac.Spawn(EntityType.ENTITY_ATTACKFLY, 0, 0, MinigameConstants.SPAWNING_POSITIONS[flyCorner], Vector.Zero, nil)
                 fly.Target = TargetEntity
@@ -533,6 +536,7 @@ local function BossSpecialAttack(entity)
             newEntity:GetData().framesUntilSpecialAttack = 100
             newEntity:GetData().specialAttackFrames = 0
             newEntity:GetData().spawningCorner = entity:GetData().spawningCorner
+            newEntity:AddEntityFlags(EntityFlag.FLAG_NO_FLASH_ON_DAMAGE)
 
             entity:Remove()
         end
