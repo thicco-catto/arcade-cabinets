@@ -165,7 +165,13 @@ local function FinishCabinetMinigame()
     end
 
     --Teleport the players back through the door
-    ArcadeCabinetVariables.MinigameDoor:Open()
+    local room = game:GetRoom()
+    for i = 0, 7, 1 do
+        local door = room:GetDoor(i)
+        if door then
+            door:Open()
+        end
+    end
 
     local extraVelocity = nil
 
