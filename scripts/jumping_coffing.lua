@@ -1,7 +1,6 @@
 local jumping_coffing = {}
 local game = Game()
 local rng = RNG()
-rng:SetSeed(game:GetSeeds():GetStartSeed(), 35)
 local SFXManager = SFXManager()
 local MusicManager = MusicManager()
 ----------------------------------------------
@@ -47,6 +46,7 @@ local MinigameSounds = {
     PLAYER_HURT = Isaac.GetSoundIdByName("jc player hurt"),
     GAPER_GRUNT = Isaac.GetSoundIdByName("jc grunt"),
     GAPER_DEATH = Isaac.GetSoundIdByName("jc gaper death"),
+    TWITCHY_JUMP = Isaac.GetSoundIdByName("jc twitchy jump"),
     FLY_DEATH = Isaac.GetSoundIdByName("jc fly death"),
     BOSS_DEATH = Isaac.GetSoundIdByName("jc boss death"),
     SPECIAL_ATTACK = Isaac.GetSoundIdByName("jc special attack"),
@@ -146,6 +146,8 @@ function jumping_coffing:Init()
     FinishedBossWave = false
     HasSpawnedFirstBoss = false
     CurrentWave = 1
+
+    rng:SetSeed(game:GetSeeds():GetStartSeed(), 35)
 
     --Reset timers
     for _, timer in pairs(MinigameTimers) do
@@ -668,7 +670,6 @@ local function KillEnemy(entity)
         SFXManager:Play(MinigameSounds.BOSS_DEATH)
 
         bloodsplat:GetSprite():Load("gfx/jc_bloodsplat_big.anm2", true)
-        bloodsplat:GetSprite():Play("Idle", true)
 
         local deadBoss = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.TARGET, 0, entity.Position + Vector(0, -0.01), Vector.Zero, nil)
         deadBoss:GetSprite():Load("gfx/jc_dead_boss.anm2", true)
@@ -676,12 +677,17 @@ local function KillEnemy(entity)
         --Fly death
         SFXManager:Play(MinigameSounds.FLY_DEATH)
         bloodsplat:GetSprite():Load("gfx/jc_fly_death.anm2", true)
-        bloodsplat:GetSprite():Play("Idle", true)
     else
         --Gaper/twitchy death
         SFXManager:Play(MinigameSounds.GAPER_DEATH)
-        bloodsplat:GetSprite():Play("Idle", true)
+
+        --Special time? kill effect
+        if rng:RandomInt(1000) < 5 then
+            bloodsplat:GetSprite():Load("gfx/jc_bloodsplat_time.anm2", true)
+        end
     end
+
+    bloodsplat:GetSprite():Play("Idle", true)
 end
 
 
@@ -693,9 +699,14 @@ end
 jumping_coffing.callbacks[ModCallbacks.MC_POST_NPC_INIT] = jumping_coffing.OnEntityInit
 
 
-function jumping_coffing:OnEntityUpdate(entity)
-    if entity.Type == EntityType.ENTITY_GENERIC_PROP or MinigameTimers.IFramesTimer > 0 then return end
+local function CheckForTwitchyJump(entity)
+    if entity:GetSprite():IsPlaying("Jump") and entity:GetSprite():GetFrame() == 0 then
+        SFXManager:Play(MinigameSounds.TWITCHY_JUMP)
+    end
+end
 
+
+local function CheckIfEnemyHit(entity)
     local room = game:GetRoom()
 
     if entity.Position:Distance(room:GetCenterPos()) < 20 then
@@ -720,6 +731,20 @@ function jumping_coffing:OnEntityUpdate(entity)
             game:GetPlayer(i):PlayExtraAnimation("Hit")
         end
     end
+end
+
+
+function jumping_coffing:OnEntityUpdate(entity)
+    if entity.Type == EntityType.ENTITY_GENERIC_PROP then return end
+
+    if entity.Type == EntityType.ENTITY_TWITCHY then
+        CheckForTwitchyJump(entity)
+    end
+
+    if MinigameTimers.IFramesTimer <= 0 then
+        CheckIfEnemyHit(entity)
+    end
+    
 end
 jumping_coffing.callbacks[ModCallbacks.MC_NPC_UPDATE] = jumping_coffing.OnEntityUpdate
 

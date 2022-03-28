@@ -1,5 +1,5 @@
 <AnimatedActor>
-	<Info CreatedBy="Unknown" CreatedOn="26/02/2022 10:46:15" Version="15" Fps="30"/>
+	<Info CreatedBy="Unknown" CreatedOn="28/03/2022 18:58:19" Version="16" Fps="30"/>
 	<Content>
 		<Spritesheets>
 			<Spritesheet Path="effects\jumping coffing\bloodsplat_big.png" Id="0"/>

@@ -5,7 +5,6 @@ too_underground.callbacks = {}
 too_underground.result = nil
 too_underground.startingItems = {
     CollectibleType.COLLECTIBLE_ISAACS_HEART,
-    --CollectibleType.COLLECTIBLE_MINE_CRAFTER
     Isaac.GetItemIdByName("TUG minecrafter")
 }
 

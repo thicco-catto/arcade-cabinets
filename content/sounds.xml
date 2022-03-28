@@ -47,6 +47,10 @@
         <sample weight="1" path="jumping coffing/growl2.wav" />
     </sound>
 
+    <sound name="jc twitchy jump">
+        <sample weight="1" path="jumping coffing/twitchy jump.wav"/>
+    </sound>
+
     <sound name="jc fly buzz">
         <sample weight="1" path="jumping coffing/buzz.wav" />
     </sound>
