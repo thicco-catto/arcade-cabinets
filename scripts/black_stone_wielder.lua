@@ -53,12 +53,37 @@ local MinigameEntityVariants = {
 
 --Constants
 local MinigameConstants = {
+    ENEMIES_PER_LEVEL = {
+        3,
+        3,
+        2
+    },
 
+    --For the smoke cloud
+    HEAD_SPRITESHEETS = {
+        "bsw_whipper_head.png",
+        "bsw_snapper_head.png",
+        "bsw_lunatic_head.png"
+    },
+    BODY_SPRITESHEETS = {
+        "bsw_whipper_body.png",
+        "bsw_snapper_body.png",
+        "bsw_lunatic_body.png"
+    },
+
+    RUNE_ITEM = Isaac.GetItemIdByName("BSW rune"),
+    MAX_PLAYER_IFRAMES = 30,
+    MAX_RUNE_TIMEOUT_FRAMES = 200,
+    MAX_TRANSITION_FRAMES = 100,
+    MAX_WAITING_FRAMES = 100
 }
 
 --Timer
 local MinigameTimers = {
-
+    TransitionTimer = 0,
+    WaitingTimer = 0,
+    RuneTimeoutTimer = 0,
+    IFramesTimer = 0
 }
 
 --States
@@ -84,36 +109,14 @@ local TransitionScreen = Sprite()
 TransitionScreen:Load("gfx/minigame_transition.anm2")
 
 --Other variables
-local TransitionTimer = 0
-
-local WaitingTimer = 0
-
 local PlayerHP = 3
-
---Smoke cloud stuff
-local BodySpritesheets = {
-    "bsw_whipper_body.png",
-    "bsw_snapper_body.png",
-    "bsw_lunatic_body.png"
-}
-local HeadSpritesheets = {
-    "bsw_whipper_head.png",
-    "bsw_snapper_head.png",
-    "bsw_lunatic_head.png"
-}
+local CurrentLevel = 1
 
 --Rune stuff
 local PossibleSpawningPositions = {}
 local LastRunePosition = nil
-local RuneTimeout = 0
 local CurrentRune = nil
 local RuneCount = 0
-
-local RuneItem = Isaac.GetItemIdByName("BSW rune")
-
-local CurrentLevel = 1
-
-local InvincibilityFrames = 0
 
 
 local function GetPositionForRune(playerPos)
@@ -135,16 +138,19 @@ local function SpawnRune()
     CurrentRune = Isaac.Spawn(EntityType.ENTITY_PICKUP, MinigameEntityVariants.RUNE_SHARD, 0, position, Vector.Zero, nil)
     CurrentRune:GetSprite():Play("Appear", true)
 
-    RuneTimeout = 200
+    MinigameTimers.RuneTimeoutTimer = MinigameConstants.MAX_RUNE_TIMEOUT_FRAMES
 end
 
 
 local function DespawnRune()
     if not CurrentRune then return end
 
-    if RuneTimeout > 0 then
-        if RuneTimeout == 60 then CurrentRune:GetSprite():Play("Flash", true) end
-        RuneTimeout = RuneTimeout - 1
+    if MinigameTimers.RuneTimeoutTimer > 0 then
+        if MinigameTimers.RuneTimeoutTimer == 60 then
+            CurrentRune:GetSprite():Play("Flash", true)
+        end
+
+        MinigameTimers.RuneTimeoutTimer = MinigameTimers.RuneTimeoutTimer - 1
         return
     end
 
@@ -161,7 +167,7 @@ local function PrepareTransition()
     TransitionScreen:ReplaceSpritesheet(0, "gfx/effects/black stone wielder/transition" .. CurrentLevel .. ".png")
     TransitionScreen:ReplaceSpritesheet(1, "gfx/effects/black stone wielder/transition" .. CurrentLevel .. ".png")
     TransitionScreen:LoadGraphics()
-    TransitionTimer = 100
+    MinigameTimers.TransitionTimer = MinigameConstants.MAX_TRANSITION_FRAMES
     CurrentMinigameState = MinigameState.TRANSITION
     SFXManager:Play(MinigameSounds.NEW_LEVEL)
 
@@ -183,6 +189,11 @@ function black_stone_wielder:Init()
     RuneCount = 0
     CurrentMinigameState = MinigameState.TRANSITION
     PlayerHP = 3
+
+    --Reset timers
+    for _, timer in pairs(MinigameTimers) do
+        timer = 0
+    end
 
     --Transition
     PrepareTransition()
@@ -226,24 +237,22 @@ end
 
 --UPDATE CALLBACKS
 local function UpdateTransition()
-    if TransitionTimer > 0 then
-        TransitionTimer = TransitionTimer - 1
+    if MinigameTimers.TransitionTimer > 0 then
+        MinigameTimers.TransitionTimer = MinigameTimers.TransitionTimer - 1
 
         local roomId = 39 + CurrentLevel
 
-        if TransitionTimer == 50 and CurrentLevel ~= 1 and roomId ~= game:GetLevel():GetCurrentRoomDesc().Data.Variant then
+        if MinigameTimers.TransitionTimer == 50 and CurrentLevel ~= 1 and roomId ~= game:GetLevel():GetCurrentRoomDesc().Data.Variant then
             Isaac.ExecuteCommand("goto s.isaacs." .. roomId)
-        elseif TransitionTimer == 1 then
+        elseif MinigameTimers.TransitionTimer == 1 then
             --Backdrop
             local backdrop = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, ArcadeCabinetVariables.Backdrop1x1Variant, 0, game:GetRoom():GetCenterPos(), Vector.Zero, nil)
             backdrop:GetSprite():ReplaceSpritesheet(0, "gfx/backdrop/bsw_backdrop" .. CurrentLevel .. ".png")
             backdrop:GetSprite():LoadGraphics()
             backdrop.DepthOffset = -1000
 
-            local numEnemies = 3
-            if CurrentLevel == 3 then numEnemies = 2 end
-
-            for i = 1, numEnemies, 1 do
+            local numEnemies = MinigameConstants.ENEMIES_PER_LEVEL[CurrentLevel]
+            for _ = 1, numEnemies, 1 do
                 local room = game:GetRoom()
                 local pos = room:FindFreePickupSpawnPosition(room:GetCenterPos(), 0, true)
                 Isaac.Spawn(EntityType.ENTITY_WHIPPER, CurrentLevel - 1, 0, pos, Vector.Zero, nil)
@@ -273,13 +282,13 @@ local function CheckUseRune()
             entity:Remove()
             local deathEffect = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.WHIPPER_DEATH, 0, entity.Position, Vector.Zero, nil)
             deathEffect:GetSprite():Play("Idle", true)
-            deathEffect:GetSprite():ReplaceSpritesheet(1, "gfx/enemies/" .. HeadSpritesheets[CurrentLevel])
-            deathEffect:GetSprite():ReplaceSpritesheet(2, "gfx/enemies/" .. BodySpritesheets[CurrentLevel])
+            deathEffect:GetSprite():ReplaceSpritesheet(1, "gfx/enemies/" .. MinigameConstants.HEAD_SPRITESHEETS[CurrentLevel])
+            deathEffect:GetSprite():ReplaceSpritesheet(2, "gfx/enemies/" .. MinigameConstants.BODY_SPRITESHEETS[CurrentLevel])
             deathEffect:GetSprite():LoadGraphics()
         end
 
         RuneCount = 0
-        WaitingTimer = 100
+        MinigameTimers.WaitingTimer = MinigameConstants.MAX_WAITING_FRAMES
         CurrentMinigameState = MinigameState.WAITING_FOR_TRANSITION
 
         SFXManager:Play(MinigameSounds.RUNE_POPPED)
@@ -310,8 +319,8 @@ local function UpdateWaitForTransition()
         end
     end
 
-    if WaitingTimer > 0 then
-        WaitingTimer = WaitingTimer - 1
+    if MinigameTimers.WaitingTimer > 0 then
+        MinigameTimers.WaitingTimer = MinigameTimers.WaitingTimer - 1
     else
 
         if CurrentLevel == 3 then
@@ -333,13 +342,13 @@ end
 
 
 local function CheckForEnemyAttack()
-    if not SFXManager:IsPlaying(SoundEffect.SOUND_WHIP_HIT) or InvincibilityFrames > 0 or
+    if not SFXManager:IsPlaying(SoundEffect.SOUND_WHIP_HIT) or MinigameTimers.IFramesTimer > 0 or
     CurrentMinigameState ~= MinigameState.PLAYING then return end
 
     --TODO: Find out who got hit
     --Temporary solution: multiplayer doesnt exist
     PlayerHP = PlayerHP - 1
-    InvincibilityFrames = 30
+    MinigameTimers.IFramesTimer = MinigameConstants.MAX_PLAYER_IFRAMES
     HeartsUI:Play("Flash")
     SFXManager:Play(MinigameSounds.PLAYER_HIT)
 
@@ -383,7 +392,7 @@ function black_stone_wielder:OnFrameUpdate()
     ManageSFX()
 
     --Invincibility frames
-    if InvincibilityFrames > 0 then InvincibilityFrames = InvincibilityFrames - 1 end
+    if MinigameTimers.IFramesTimer > 0 then MinigameTimers.IFramesTimer = MinigameTimers.IFramesTimer - 1 end
 
     --Delete colors
     local playerNum = game:GetNumPlayers()
@@ -481,11 +490,6 @@ end
 
 
 function black_stone_wielder:OnRender()
-    for _, entity in ipairs(Isaac.FindByType(EntityType.ENTITY_WHIPPER, -1, -1)) do
-        local pos = Isaac.WorldToScreen(entity.Position)
-        Isaac.RenderText(entity:ToNPC().State, pos.X, pos.Y, 1, 1, 1, 255)
-    end
-
     RenderUI()
 
     RenderFloatingRune()
@@ -549,10 +553,10 @@ black_stone_wielder.callbacks[ModCallbacks.MC_ENTITY_TAKE_DMG] = black_stone_wie
 
 
 function black_stone_wielder:OnEntityCollision(_, collider)
-    if not collider:ToPlayer() or InvincibilityFrames > 0 then return end
+    if not collider:ToPlayer() or MinigameTimers.IFramesTimer > 0 then return end
 
     PlayerHP = PlayerHP - 1
-    InvincibilityFrames = 30
+    MinigameTimers.IFramesTimer = MinigameConstants.MAX_PLAYER_IFRAMES
     HeartsUI:Play("Flash")
     SFXManager:Play(MinigameSounds.PLAYER_HIT)
 
@@ -577,7 +581,7 @@ function black_stone_wielder:OnPickupCollision(pickup, collider)
             SFXManager:Play(MinigameSounds.RUNE_PICKUP)
 
             --Reset timeout so new rune appears
-            RuneTimeout = 0
+            MinigameTimers.RuneTimeoutTimer = 0
             RuneCount = RuneCount + 1
 
             RuneUI:Play("Flash", true)
