@@ -552,8 +552,8 @@ end
 black_stone_wielder.callbacks[ModCallbacks.MC_ENTITY_TAKE_DMG] = black_stone_wielder.OnEntityDamage
 
 
-function black_stone_wielder:OnEntityCollision(_, collider)
-    if not collider:ToPlayer() or MinigameTimers.IFramesTimer > 0 then return end
+function black_stone_wielder:OnEntityCollision(entity, collider)
+    if entity.Type == EntityType.ENTITY_GENERIC_PROP or not collider:ToPlayer() or MinigameTimers.IFramesTimer > 0 then return end
 
     PlayerHP = PlayerHP - 1
     MinigameTimers.IFramesTimer = MinigameConstants.MAX_PLAYER_IFRAMES

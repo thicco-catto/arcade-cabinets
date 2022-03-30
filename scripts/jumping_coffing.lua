@@ -50,6 +50,7 @@ local MinigameSounds = {
     FLY_DEATH = Isaac.GetSoundIdByName("jc fly death"),
     BOSS_DEATH = Isaac.GetSoundIdByName("jc boss death"),
     SPECIAL_ATTACK = Isaac.GetSoundIdByName("jc special attack"),
+    SPECIAL_ATTACK_END = Isaac.GetSoundIdByName("jc special attack end"),
     WIN = Isaac.GetSoundIdByName("arcade cabinet win"),
     LOSE = Isaac.GetSoundIdByName("arcade cabinet lose")
 }
@@ -541,6 +542,8 @@ local function BossSpecialAttack(entity)
             newEntity:AddEntityFlags(EntityFlag.FLAG_NO_FLASH_ON_DAMAGE)
 
             entity:Remove()
+
+            SFXManager:Play(MinigameSounds.SPECIAL_ATTACK_END)
         end
     end
 end

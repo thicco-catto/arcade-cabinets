@@ -59,6 +59,10 @@
         <sample weight="1" path="jumping coffing/screech.wav" />
     </sound>
 
+    <sound name="jc special attack end">
+        <sample weight="1" path="jumping coffing/screech.wav" />
+    </sound>
+
     <sound name="jc boss death">
         <sample weight="1" path="jumping coffing/bossdead.wav"/>
     </sound>
