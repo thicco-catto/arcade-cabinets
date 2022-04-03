@@ -1,3 +1,4 @@
 <music root="music/">
+	<track name="bsw black beat wielder" path="black_beat_wielder.ogg" loop="true" />
 	<track name="jc corpse beat" path="corpse_beat.ogg" loop="true" />
 </music>

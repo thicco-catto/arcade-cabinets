@@ -45,6 +45,8 @@ local MinigameSounds = {
     LOSE = Isaac.GetSoundIdByName("arcade cabinet lose")
 }
 
+local MinigameMusic = Isaac.GetMusicIdByName("bsw black beat wielder")
+
 --Entities
 local MinigameEntityVariants = {
     RUNE_SHARD = Isaac.GetEntityVariantByName("rune BSW"),
@@ -164,12 +166,16 @@ end
 
 
 local function PrepareTransition()
+    MusicManager:Pause()
+    MusicManager:Disable()
+    SFXManager:Play(MinigameSounds.NEW_LEVEL)
+
     TransitionScreen:ReplaceSpritesheet(0, "gfx/effects/black stone wielder/transition" .. CurrentLevel .. ".png")
     TransitionScreen:ReplaceSpritesheet(1, "gfx/effects/black stone wielder/transition" .. CurrentLevel .. ".png")
     TransitionScreen:LoadGraphics()
+
     MinigameTimers.TransitionTimer = MinigameConstants.MAX_TRANSITION_FRAMES
     CurrentMinigameState = MinigameState.TRANSITION
-    SFXManager:Play(MinigameSounds.NEW_LEVEL)
 
     local playerNum = game:GetNumPlayers()
     for i = 0, playerNum - 1, 1 do
@@ -196,6 +202,9 @@ function black_stone_wielder:Init()
     for _, timer in pairs(MinigameTimers) do
         timer = 0
     end
+
+    MusicManager:Play(MinigameMusic, 1)
+    MusicManager:UpdateVolume()
 
     --Transition
     PrepareTransition()
@@ -246,6 +255,13 @@ local function UpdateTransition()
 
         if MinigameTimers.TransitionTimer == 50 and CurrentLevel ~= 1 and roomId ~= game:GetLevel():GetCurrentRoomDesc().Data.Variant then
             Isaac.ExecuteCommand("goto s.isaacs." .. roomId)
+
+        elseif MinigameTimers.TransitionTimer == 49 then
+            --Play music again coz game is dumb
+            MusicManager:Enable()
+            MusicManager:Play(MinigameMusic, 1)
+            MusicManager:UpdateVolume()
+            MusicManager:Pause()
         elseif MinigameTimers.TransitionTimer == 1 then
             --Backdrop
             local backdrop = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, ArcadeCabinetVariables.Backdrop1x1Variant, 0, game:GetRoom():GetCenterPos(), Vector.Zero, nil)
@@ -269,6 +285,8 @@ local function UpdateTransition()
 
             player.ControlsEnabled = true
         end
+
+        MusicManager:Resume()
 
         CurrentMinigameState = MinigameState.PLAYING
     end
