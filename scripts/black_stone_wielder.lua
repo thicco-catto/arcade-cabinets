@@ -186,6 +186,28 @@ local function PrepareTransition()
 end
 
 
+local function HitPlayer(player)
+    PlayerHP = PlayerHP - 1
+    MinigameTimers.IFramesTimer = MinigameConstants.MAX_PLAYER_IFRAMES
+    HeartsUI:Play("Flash")
+    SFXManager:Play(MinigameSounds.PLAYER_HIT)
+
+    player:PlayExtraAnimation("Hit")
+
+    if PlayerHP == 0 then
+        CurrentMinigameState = MinigameState.LOSING
+        SFXManager:Play(MinigameSounds.LOSE)
+        TransitionScreen:Play("Appear")
+
+        local playerNum = game:GetNumPlayers()
+        for i = 0, playerNum - 1, 1 do
+            game:GetPlayer(i):PlayExtraAnimation("Hit")
+            game:GetPlayer(i).ControlsEnabled = false
+        end
+    end
+end
+
+
 --INIT MINIGAME
 function black_stone_wielder:Init()
     --Restart stuff
@@ -367,18 +389,7 @@ local function CheckForEnemyAttack()
 
     --TODO: Find out who got hit
     --Temporary solution: multiplayer doesnt exist
-    PlayerHP = PlayerHP - 1
-    MinigameTimers.IFramesTimer = MinigameConstants.MAX_PLAYER_IFRAMES
-    HeartsUI:Play("Flash")
-    SFXManager:Play(MinigameSounds.PLAYER_HIT)
-
-    game:GetPlayer(0):PlayExtraAnimation("Hit")
-
-    if PlayerHP == 0 then
-        CurrentMinigameState = MinigameState.LOSING
-        SFXManager:Play(MinigameSounds.LOSE)
-        TransitionScreen:Play("Appear")
-    end
+    HitPlayer(game:GetPlayer(0))
 end
 
 
@@ -401,7 +412,7 @@ end
 local function UpdateFinishing()
     local playerNum = game:GetNumPlayers()
     for i = 0, playerNum - 1, 1 do
-        game:GetPlayer(i):GetSprite():SetFrame(10)
+        game:GetPlayer(i):GetSprite():SetFrame(6)
     end
 end
 
@@ -573,19 +584,14 @@ black_stone_wielder.callbacks[ModCallbacks.MC_ENTITY_TAKE_DMG] = black_stone_wie
 
 
 function black_stone_wielder:OnEntityCollision(entity, collider)
-    if entity.Type == EntityType.ENTITY_GENERIC_PROP or not collider:ToPlayer() or MinigameTimers.IFramesTimer > 0 then return end
+    if entity.Type == EntityType.ENTITY_GENERIC_PROP then return end
 
-    PlayerHP = PlayerHP - 1
-    MinigameTimers.IFramesTimer = MinigameConstants.MAX_PLAYER_IFRAMES
-    HeartsUI:Play("Flash")
-    SFXManager:Play(MinigameSounds.PLAYER_HIT)
+    if CurrentMinigameState == MinigameState.LOSING then
+        return true
+    else
+        if not collider:ToPlayer() or MinigameTimers.IFramesTimer > 0 then return end
 
-    collider:ToPlayer():PlayExtraAnimation("Hit")
-
-    if PlayerHP == 0 then
-        CurrentMinigameState = MinigameState.LOSING
-        SFXManager:Play(MinigameSounds.LOSE)
-        TransitionScreen:Play("Appear")
+        HitPlayer(collider:ToPlayer())
     end
 end
 black_stone_wielder.callbacks[ModCallbacks.MC_PRE_NPC_COLLISION] = black_stone_wielder.OnEntityCollision
