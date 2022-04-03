@@ -128,7 +128,7 @@ local function GetPositionForRune(playerPos)
         end
     end
 
-    return ViableSpawningPositions[math.random(#ViableSpawningPositions)]
+    return ViableSpawningPositions[rng:RandomInt(#ViableSpawningPositions) + 1]
 end
 
 
@@ -189,6 +189,8 @@ function black_stone_wielder:Init()
     RuneCount = 0
     CurrentMinigameState = MinigameState.TRANSITION
     PlayerHP = 3
+
+    rng:SetSeed(game:GetSeeds():GetStartSeed(), 35)
 
     --Reset timers
     for _, timer in pairs(MinigameTimers) do
