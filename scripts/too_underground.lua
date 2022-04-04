@@ -181,6 +181,11 @@ function too_underground:Init()
     WaveTransitionScreen:SetFrame(0)
     SFXManager:Play(MinigameSounds.INTRO)
 
+    --Music
+    MusicManager:Play(MinigameMusic, 1)
+    MusicManager:UpdateVolume()
+    MusicManager:Pause()
+
     --Save bone guys positions
     for _, entity in ipairs(Isaac.FindByType(EntityType.ENTITY_CLICKETY_CLACK, -1, -1)) do
         BoneGuysPositions[#BoneGuysPositions+1] = entity.Position
@@ -283,6 +288,7 @@ local function UpdateIntroScreen()
         end
 
         WaveTransitionScreen:Play("Appear", true)
+        MusicManager:Resume()
         CurrentMinigameState = MinigameState.MINING
     end
 end
@@ -497,6 +503,7 @@ too_underground.callbacks[ModCallbacks.MC_ENTITY_TAKE_DMG] = too_underground.OnE
 function too_underground:OnNPCCollision(entity, collider)
     if entity.Type == EntityType.ENTITY_CLICKETY_CLACK and entity:ToNPC().State == 4 and collider:ToPlayer() and CurrentMinigameState == MinigameState.MINING then
         CurrentMinigameState = MinigameState.LOSING
+        MusicManager:VolumeSlide(0, 1)
         SFXManager:Play(MinigameSounds.LOSE)
         WaveTransitionScreen:Play("Appear")
 
@@ -616,6 +623,7 @@ function too_underground:PickupCollision(pickup, collider)
     if pickup.Variant == MinigameEntityVariants.CHEST and collider:ToPlayer() then
         pickup:GetSprite():Play("Open", true)
         CurrentMinigameState = MinigameState.WINNING
+        MusicManager:VolumeSlide(0, 1)
         SFXManager:Play(MinigameSounds.WIN)
         WaveTransitionScreen:Play("Appear")
 
