@@ -113,6 +113,7 @@ local BrokenRocks = 0
 
 local InmortalBoneGuy = nil
 local RemoveBoneGuys = false
+local LastRockPosition = nil
 
 local BoneGuysPositions = {}
 local BatteriesPositions = {}
@@ -151,6 +152,10 @@ local function BreakRock(index, rock)
     rockBreak:GetSprite():Play("Poof", true)
 
     BrokenRocks = BrokenRocks + 1
+
+    if BrokenRocks == MinigameConstants.MAX_ROCK_COUNT then
+        LastRockPosition = rock.gridEntity.Position
+    end
 
     --Spawn shockwave
     local chanceToSpawn = 7
@@ -267,7 +272,7 @@ local function UpdateIntroScreen()
     MinigameTimers.IntroScreenTimer = MinigameTimers.IntroScreenTimer - 1
 
     --Spawn boneguys in waves
-    if MinigameTimers.IntroScreenTimer % 5 == 0 and #BoneGuysPositions > 0 then
+    if MinigameTimers.IntroScreenTimer % 6 == 0 and #BoneGuysPositions > 0 then
         local pos = BoneGuysPositions[#BoneGuysPositions]
         Isaac.Spawn(EntityType.ENTITY_CLICKETY_CLACK, MinigameEntityVariants.BONE_GUY, 0, pos, Vector.Zero, nil)
         BoneGuysPositions[#BoneGuysPositions] = nil
@@ -299,8 +304,7 @@ local function CheckForWin()
     if BrokenRocks ~= MinigameConstants.MAX_ROCK_COUNT or #Isaac.FindByType(EntityType.ENTITY_PICKUP, MinigameEntityVariants.CHEST, -1) ~= 0 then return end
 
     RemoveBoneGuys = true
-    local room = game:GetRoom()
-    local chest = Isaac.Spawn(EntityType.ENTITY_PICKUP, MinigameEntityVariants.CHEST, 0, room:GetCenterPos(), Vector.Zero, nil)
+    local chest = Isaac.Spawn(EntityType.ENTITY_PICKUP, MinigameEntityVariants.CHEST, 0, LastRockPosition, Vector.Zero, nil)
     chest:AddEntityFlags(EntityFlag.FLAG_NO_PHYSICS_KNOCKBACK | EntityFlag.FLAG_NO_KNOCKBACK)
 end
 
