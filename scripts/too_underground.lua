@@ -29,6 +29,7 @@ local BannedSounds = {
     SoundEffect.SOUND_MEAT_IMPACTS,
     SoundEffect.SOUND_SUMMON_POOF,
     SoundEffect.SOUND_DOOR_HEAVY_CLOSE,
+    SoundEffect.SOUND_DOOR_HEAVY_OPEN,
     SoundEffect.SOUND_DEATH_BURST_SMALL,
     SoundEffect.SOUND_MEATY_DEATHS,
     SoundEffect.SOUND_ANGRY_GURGLE,
@@ -36,7 +37,8 @@ local BannedSounds = {
     SoundEffect.SOUND_SPLATTER,
     SoundEffect.SOUND_POT_BREAK,
     SoundEffect.SOUND_POT_BREAK_2,
-    SoundEffect.SOUND_ROCK_CRUMBLE
+    SoundEffect.SOUND_ROCK_CRUMBLE,
+    SoundEffect.SOUND_BATTERYCHARGE
 }
 
 local ReplacementSounds = {
@@ -112,6 +114,7 @@ local BrokenRocks = 0
 local InmortalBoneGuy = nil
 local RemoveBoneGuys = false
 
+local BoneGuysPositions = {}
 local BatteriesPositions = {}
 
 
@@ -168,6 +171,7 @@ function too_underground:Init()
     RocksInRoom = {}
     BrokenRocks = 0
     RemoveBoneGuys = false
+    BoneGuysPositions = {}
     BatteriesPositions = {}
     CurrentMinigameState = MinigameState.INTRO_SCREEN
 
@@ -177,9 +181,15 @@ function too_underground:Init()
     WaveTransitionScreen:SetFrame(0)
     SFXManager:Play(MinigameSounds.INTRO)
 
-    --Replace bone guys to my gibless bone guys
+    --Save bone guys positions
     for _, entity in ipairs(Isaac.FindByType(EntityType.ENTITY_CLICKETY_CLACK, -1, -1)) do
-        Isaac.Spawn(EntityType.ENTITY_CLICKETY_CLACK, MinigameEntityVariants.BONE_GUY, 0, entity.Position, Vector.Zero, nil)
+        BoneGuysPositions[#BoneGuysPositions+1] = entity.Position
+        entity:Remove()
+    end
+
+    --Save batteries positions
+    for _, entity in ipairs(Isaac.FindByType(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_LIL_BATTERY, -1)) do
+        BatteriesPositions[#BatteriesPositions+1] = entity.Position
         entity:Remove()
     end
 
@@ -188,12 +198,6 @@ function too_underground:Init()
     InmortalBoneGuy:GetSprite():ReplaceSpritesheet(0, "a")
     InmortalBoneGuy:GetSprite():ReplaceSpritesheet(1, "a")
     InmortalBoneGuy:GetSprite():LoadGraphics()
-
-    --Save batteries positions
-    for _, entity in ipairs(Isaac.FindByType(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_LIL_BATTERY, -1)) do
-        BatteriesPositions[#BatteriesPositions+1] = entity.Position
-        entity:Remove()
-    end
 
     --Spawn backdrop
     local backdrop = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, ArcadeCabinetVariables.Backdrop1x2Variant, 0, game:GetRoom():GetCenterPos(), Vector.Zero, nil)
@@ -257,6 +261,13 @@ local function UpdateIntroScreen()
 
     MinigameTimers.IntroScreenTimer = MinigameTimers.IntroScreenTimer - 1
 
+    --Spawn boneguys in waves
+    if MinigameTimers.IntroScreenTimer % 5 == 0 and #BoneGuysPositions > 0 then
+        local pos = BoneGuysPositions[#BoneGuysPositions]
+        Isaac.Spawn(EntityType.ENTITY_CLICKETY_CLACK, MinigameEntityVariants.BONE_GUY, 0, pos, Vector.Zero, nil)
+        BoneGuysPositions[#BoneGuysPositions] = nil
+    end
+
     if MinigameTimers.IntroScreenTimer == 0 then
         local playerNum = game:GetNumPlayers()
         for i = 0, playerNum - 1, 1 do
@@ -288,6 +299,15 @@ local function CheckForWin()
 end
 
 
+local function RemovePickedBatteries()
+    for _, battery in ipairs(Isaac.FindByType(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.DYNAMITE, -1)) do
+        if battery:GetSprite():IsFinished("Collect") then
+            battery:Remove()
+        end
+    end
+end
+
+
 local function RemoveBoneGuysWin()
     if not RemoveBoneGuys or #Isaac.FindByType(EntityType.ENTITY_CLICKETY_CLACK, MinigameEntityVariants.BONE_GUY, -1) == 0 then return end
     if game:GetFrameCount() % 3 ~= 0 then return end
@@ -310,6 +330,8 @@ function too_underground:FrameUpdate()
     InmortalBoneGuy.Position = Vector(-99999999, -99999999)
 
     UpdateIntroScreen()
+
+    RemovePickedBatteries()
 
     RemoveBoneGuysWin()
 
