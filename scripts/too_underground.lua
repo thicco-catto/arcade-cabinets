@@ -41,7 +41,6 @@ local BannedSounds = {
 
 local ReplacementSounds = {
     [SoundEffect.SOUND_BOSS1_EXPLOSIONS] = Isaac.GetSoundIdByName("tug explosion"),
-    [SoundEffect.SOUND_BATTERYCHARGE] = Isaac.GetSoundIdByName("tug dynamite")
 }
 
 local MinigameSounds = {
@@ -51,6 +50,7 @@ local MinigameSounds = {
     CHEST_DROP = Isaac.GetSoundIdByName("tug chest drop"),
     CHEST_OPEN = Isaac.GetSoundIdByName("tug chest open"),
     BONE_GUY_RISE_DEAD = Isaac.GetSoundIdByName("tug skeleton rise dead"),
+    DYNAMITE_PICKUP = Isaac.GetSoundIdByName("tug dynamite"),
     WIN = Isaac.GetSoundIdByName("arcade cabinet win"),
     LOSE = Isaac.GetSoundIdByName("arcade cabinet lose")
 }
@@ -62,7 +62,8 @@ local MinigameEntityVariants = {
     TEAR_POOF = Isaac.GetEntityVariantByName("tear poof TUG"),
     ROCK_ENTITY = Isaac.GetEntityVariantByName("rock TUG"),
     BONE_GUY = Isaac.GetEntityVariantByName("bone guy TUG"),
-    CHEST = Isaac.GetEntityVariantByName("chest TUG")
+    CHEST = Isaac.GetEntityVariantByName("chest TUG"),
+    DYNAMITE = Isaac.GetEntityVariantByName("dynamite TUG")
 }
 
 --Constants
@@ -110,6 +111,8 @@ local BrokenRocks = 0
 
 local InmortalBoneGuy = nil
 local RemoveBoneGuys = false
+
+local BatteriesPositions = {}
 
 
 local function AddRock(gridEntity, index)
@@ -165,6 +168,7 @@ function too_underground:Init()
     RocksInRoom = {}
     BrokenRocks = 0
     RemoveBoneGuys = false
+    BatteriesPositions = {}
     CurrentMinigameState = MinigameState.INTRO_SCREEN
 
     --Intro screen
@@ -185,9 +189,10 @@ function too_underground:Init()
     InmortalBoneGuy:GetSprite():ReplaceSpritesheet(1, "a")
     InmortalBoneGuy:GetSprite():LoadGraphics()
 
-    --Change sprite for batteries
+    --Save batteries positions
     for _, entity in ipairs(Isaac.FindByType(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_LIL_BATTERY, -1)) do
-        entity:GetSprite():Load("gfx/tug_dynamite.anm2", true)
+        BatteriesPositions[#BatteriesPositions+1] = entity.Position
+        entity:Remove()
     end
 
     --Spawn backdrop
@@ -260,6 +265,12 @@ local function UpdateIntroScreen()
             player.ControlsEnabled = true
         end
 
+        --Spawn batteries because they keep getting deleted????
+        for _, pos in ipairs(BatteriesPositions) do
+            local battery = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.DYNAMITE, 0, pos, Vector.Zero, nil)
+            battery:GetSprite():Play("Idle", true)
+        end
+
         WaveTransitionScreen:Play("Appear", true)
         CurrentMinigameState = MinigameState.MINING
     end
@@ -267,6 +278,7 @@ end
 
 
 local function CheckForWin()
+    if CurrentMinigameState == MinigameState.INTRO_SCREEN then return end
     if BrokenRocks ~= MinigameConstants.MAX_ROCK_COUNT or #Isaac.FindByType(EntityType.ENTITY_PICKUP, MinigameEntityVariants.CHEST, -1) ~= 0 then return end
 
     RemoveBoneGuys = true
@@ -278,7 +290,7 @@ end
 
 local function RemoveBoneGuysWin()
     if not RemoveBoneGuys or #Isaac.FindByType(EntityType.ENTITY_CLICKETY_CLACK, MinigameEntityVariants.BONE_GUY, -1) == 0 then return end
-    if game:GetFrameCount() % 2 ~= 0 then return end
+    if game:GetFrameCount() % 3 ~= 0 then return end
 
     local boneGuyToRemove = Isaac.FindByType(EntityType.ENTITY_CLICKETY_CLACK, MinigameEntityVariants.BONE_GUY, -1)[1]
     boneGuyToRemove:Remove()
@@ -306,10 +318,44 @@ end
 too_underground.callbacks[ModCallbacks.MC_POST_UPDATE] = too_underground.FrameUpdate
 
 
-function too_underground:PlayerUpdate(player)
+local function FlipPlayer(player)
     --Flip the player if they shoot left and they aren't already moving left
     player.FlipX = Input.IsActionPressed(ButtonAction.ACTION_SHOOTLEFT, player.ControllerIndex) and not Input.IsActionPressed(ButtonAction.ACTION_LEFT, player.ControllerIndex) or
     Input.IsActionPressed(ButtonAction.ACTION_SHOOTRIGHT, player.ControllerIndex) and Input.IsActionPressed(ButtonAction.ACTION_LEFT, player.ControllerIndex)
+end
+
+
+local function CheckIfPickUpBattery(player)
+    if player:GetActiveCharge() > 0 then return end
+
+    local entitiesInRadius = Isaac.FindInRadius(player.Position, 10)
+    local foundEntity = nil
+
+    for _, entity in ipairs(entitiesInRadius) do
+        if entity.Type == EntityType.ENTITY_GENERIC_PROP and entity.Variant == MinigameEntityVariants.DYNAMITE and not entity:GetSprite():IsPlaying("Collect") then
+            foundEntity = entity
+            break
+        end
+    end
+
+    if foundEntity then
+        foundEntity:GetSprite():Play("Collect", true)
+        SFXManager:Play(MinigameSounds.DYNAMITE_PICKUP)
+
+        local playerNum = game:GetNumPlayers()
+        for i = 0, playerNum - 1, 1 do
+            local player2 = game:GetPlayer(i)
+
+            player2:SetActiveCharge(1)
+        end
+    end
+end
+
+
+function too_underground:PlayerUpdate(player)
+    FlipPlayer(player)
+
+    CheckIfPickUpBattery(player)
 
     if CurrentMinigameState == MinigameState.WINNING then
         player:GetSprite():SetFrame(5)
@@ -533,6 +579,15 @@ function too_underground:PickupInit(pickup)
     end
 end
 too_underground.callbacks[ModCallbacks.MC_POST_PICKUP_INIT] = too_underground.PickupInit
+
+
+function too_underground:PickupUpdate(pickup)
+    if pickup.Variant == PickupVariant.PICKUP_COIN or pickup.Variant == PickupVariant.PICKUP_COLLECTIBLE or
+    pickup.Variant == PickupVariant.PICKUP_TRINKET then
+        pickup:Remove()
+    end
+end
+too_underground.callbacks[ModCallbacks.MC_POST_PICKUP_UPDATE] = too_underground.PickupUpdate
 
 
 function too_underground:PickupCollision(pickup, collider)

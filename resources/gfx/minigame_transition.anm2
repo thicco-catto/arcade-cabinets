@@ -1,5 +1,5 @@
 <AnimatedActor>
-	<Info CreatedBy="Unknown" CreatedOn="15/03/2022 13:24:32" Version="25" Fps="30"/>
+	<Info CreatedBy="Unknown" CreatedOn="04/04/2022 13:13:05" Version="26" Fps="30"/>
 	<Content>
 		<Spritesheets>
 			<Spritesheet Path="effects\bsw.png" Id="0"/>
