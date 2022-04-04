@@ -80,7 +80,7 @@ local MinigameConstants = {
     MAX_WAITING_FRAMES = 100
 }
 
---Timer
+--Timers
 local MinigameTimers = {
     TransitionTimer = 0,
     WaitingTimer = 0,

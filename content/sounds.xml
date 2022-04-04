@@ -105,6 +105,10 @@
     </sound>
 
     <!--Too underground-->
+    <sound name="tug intro">
+        <sample weight="1" path="too underground/intro.wav"/>
+    </sound>
+
     <sound name="tug rock break">
         <sample weight="1" path="too underground/break.wav"/>
         <sample weight="1" path="too underground/break2.wav"/>

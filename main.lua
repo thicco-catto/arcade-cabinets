@@ -218,6 +218,13 @@ local function DebugRender()
         Isaac.RenderText(dump(data.collectedItems), pos.X, pos.Y, 1, 1, 1, 255)
         Isaac.RenderText(dump(data.collectedItemsOrdered), pos.X, pos.Y + 10, 1, 1, 1, 255)
     end
+
+    for _, entity in ipairs(Isaac.FindByType(889, 2, 0)) do
+        local pos = Isaac.WorldToScreen(entity.Position)
+        local color = entity:GetColor()
+
+        Isaac.RenderText(dump(color), pos.X, pos.Y, 1, 1, 1, 255)
+    end
 end
 
 
@@ -560,7 +567,7 @@ local function shallowCopy(tab)
         return t .. ' -> ' .. o.Type .. '.' .. o.Variant .. '.' .. o.VarData
       elseif t == 'Vector' then
         return t .. '(' .. o.X .. ', ' .. o.Y .. ')'
-      elseif t == 'Color' then
+      elseif t == 'Color' or t == "const Color" then
         return t .. '(' .. o.R .. ', ' .. o.G .. ', ' .. o.B .. ', ' .. o.RO .. ', ' .. o.GO .. ', ' .. o.BO .. ')'
       elseif t == 'Level' then
         return t .. ': ' .. o:GetName()

@@ -74,6 +74,7 @@ ArcadeCabinetVariables.MAX_ID_TMTRAINER = 4294967295
 ArcadeCabinetVariables.FadeOutTimer = nil
 ArcadeCabinetVariables.BackdropVariant = Isaac.GetEntityVariantByName("minigame backdrop")
 ArcadeCabinetVariables.Backdrop1x1Variant = Isaac.GetEntityVariantByName("minigame backdrop 1x1")
+ArcadeCabinetVariables.Backdrop1x2Variant = Isaac.GetEntityVariantByName("minigame backdrop 1x2")
 ArcadeCabinetVariables.Backdrop2x2Variant = Isaac.GetEntityVariantByName("minigame backdrop 2x2")
 
 return ArcadeCabinetVariables
