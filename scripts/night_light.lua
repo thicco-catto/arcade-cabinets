@@ -136,17 +136,20 @@ local FuckySpawnAxis = 0
 local AlarmSoundTimes = 10
 
 
+--INIT MINIGAME
 function night_light:Init()
     local room = game:GetRoom()
 
     --Reset stuff
     night_light.result = nil
     CurrentHour = 0
-    CurrentMinigameState = MinigameState.START_CUTSCENCE
     IsPlayerConfused = false
     PlayerHP = 3
     CheatingCounter = 0
     MorningStar = nil
+    CurrentMinigameState = MinigameState.START_CUTSCENCE
+
+    rng:SetSeed(game:GetSeeds():GetStartSeed(), 35)
 
     --Reset timers
     for _, timer in pairs(MinigameTimers) do
@@ -439,7 +442,7 @@ end
 
 
 local function SpawnEnemies()
-    local chosenAxis = math.random(4)
+    local chosenAxis = rng:RandomInt(4) + 1
     SpawnGhost(chosenAxis)
 end
 
@@ -447,7 +450,7 @@ end
 local function SpawnMorningStar()
     if MorningStar then return end
 
-    local chosenCorner = math.random(4)
+    local chosenCorner = rng:RandomInt(4) + 1
     local cornerPos
 
     if chosenCorner == 1 then
@@ -479,7 +482,7 @@ local function UpdatePlaying()
         if CurrentHour ~= 6 then
             SFXManager:Play(MinigameSounds.TRANSITION)
             MinigameTimers.FuckySpawnTimer = MinigameConstants.FUCKY_SPAWN_MAX_TIMER
-            FuckySpawnAxis = math.random(4)
+            FuckySpawnAxis = rng:RandomInt(4) + 1
 
             local animationToPlay = nil
             if FuckySpawnAxis == 1 then
