@@ -18,7 +18,6 @@ local ArcadeCabinetVariables = loadFile("scripts/variables")
 night_light.callbacks = {}
 night_light.result = nil
 night_light.startingItems = {
-    CollectibleType.COLLECTIBLE_ISAACS_HEART,
 }
 
 --Sounds
@@ -197,10 +196,6 @@ function night_light:Init()
             playerSprite:ReplaceSpritesheet(o, "cant find this?? skill issue")
         end
         playerSprite:LoadGraphics()
-    end
-
-    for _, entity in ipairs(Isaac.FindByType(EntityType.ENTITY_FAMILIAR, FamiliarVariant.ISAACS_HEART, -1)) do
-        entity.Position = Vector(-99999999, -99999999)
     end
 end
 
@@ -836,26 +831,12 @@ night_light.callbacks[ModCallbacks.MC_PRE_NPC_COLLISION] = night_light.OnNPCColl
 
 
 function night_light:OnEntityDamage(tookDamage, _, damageflags, _)
-    if tookDamage:ToPlayer() then return end
-
-    if damageflags == DamageFlag.DAMAGE_COUNTDOWN then
-        --Negate contact damage (DamageFlag.DAMAGE_COUNTDOWN is damage flag for contact damage)
-        return false
-    end
+    if tookDamage:ToPlayer() then return false end
 end
 night_light.callbacks[ModCallbacks.MC_ENTITY_TAKE_DMG] = night_light.OnEntityDamage
 
 
 --OTHER CALLBACKS
-function night_light:OnFamiliarUpdate(FamiliarEnt)
-    if FamiliarEnt.Variant ~= FamiliarVariant.ISAACS_HEART then return end
-
-    --Move isaac's heart very very far away
-    FamiliarEnt.Position = Vector(-99999999, -99999999)
-end
-night_light.callbacks[ModCallbacks.MC_FAMILIAR_UPDATE] = night_light.OnFamiliarUpdate
-
-
 function night_light:OnEntitySpawn(entityType, entityVariant, _, _, _, _, seed)
     if entityType == EntityType.ENTITY_EFFECT and 
     (entityVariant == EffectVariant.TINY_FLY or entityVariant == EffectVariant.POOF01) then

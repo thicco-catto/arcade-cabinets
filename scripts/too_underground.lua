@@ -18,7 +18,6 @@ local ArcadeCabinetVariables = loadFile("scripts/variables")
 too_underground.callbacks = {}
 too_underground.result = nil
 too_underground.startingItems = {
-    CollectibleType.COLLECTIBLE_ISAACS_HEART,
     Isaac.GetItemIdByName("TUG minecrafter")
 }
 
@@ -238,10 +237,6 @@ function too_underground:Init()
         playerSprite:Load("gfx/tug_isaac52.anm2", true)
         playerSprite:ReplaceSpritesheet(4, "a") --Empty head xd
         playerSprite:LoadGraphics()
-    end
-
-    for _, entity in ipairs(Isaac.FindByType(EntityType.ENTITY_FAMILIAR, FamiliarVariant.ISAACS_HEART, -1)) do
-        entity.Position = Vector(-99999999, -99999999)
     end
 end
 
@@ -487,12 +482,7 @@ too_underground.callbacks[ModCallbacks.MC_NPC_UPDATE] = too_underground.NPCUpdat
 
 
 function too_underground:OnEntityDamage(tookDamage, _, damageflags, _)
-    if tookDamage:ToPlayer() then return end
-
-    if damageflags == DamageFlag.DAMAGE_COUNTDOWN then
-        --Negate contact damage (DamageFlag.DAMAGE_COUNTDOWN is damage flag for contact damage)
-        return false
-    end
+    if tookDamage:ToPlayer() then return false end
 
     if damageflags == DamageFlag.DAMAGE_CRUSH then
         return false
@@ -652,15 +642,6 @@ function too_underground:OnEntitySpawn(entityType, entityVariant, _, _, _, _, se
     end
 end
 too_underground.callbacks[ModCallbacks.MC_PRE_ENTITY_SPAWN] = too_underground.OnEntitySpawn
-
-
-function too_underground:OnFamiliarUpdate(FamiliarEnt)
-    if FamiliarEnt.Variant ~= FamiliarVariant.ISAACS_HEART then return end
-
-    --Move isaac's heart very very far away
-    FamiliarEnt.Position = Vector(-99999999, -99999999)
-end
-too_underground.callbacks[ModCallbacks.MC_FAMILIAR_UPDATE] = too_underground.OnFamiliarUpdate
 
 
 function too_underground:OnActiveUse(_, _, player)

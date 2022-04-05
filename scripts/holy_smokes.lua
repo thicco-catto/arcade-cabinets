@@ -65,7 +65,14 @@ function holy_smokes:Init()
     print("Init holy smokes")
 end
 
-holy_smokes.callbacks = {
-}
+
+function holy_smokes:OnEntityDamage(tookDamage, _, damageflags, _)
+    if tookDamage:ToPlayer() then
+        return false
+    end
+
+
+end
+holy_smokes.callbacks[ModCallbacks.MC_ENTITY_TAKE_DMG] = holy_smokes.OnEntityDamage
 
 return holy_smokes

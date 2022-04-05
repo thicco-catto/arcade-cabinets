@@ -19,7 +19,6 @@ jumping_coffing.callbacks = {}
 jumping_coffing.result = nil
 jumping_coffing.startingItems = {
     CollectibleType.COLLECTIBLE_SPIRIT_SWORD,
-    CollectibleType.COLLECTIBLE_ISAACS_HEART
 }
 
 --Sounds
@@ -753,12 +752,7 @@ jumping_coffing.callbacks[ModCallbacks.MC_NPC_UPDATE] = jumping_coffing.OnEntity
 
 
 function jumping_coffing:OnEntityDamage(tookDamage, damageAmount, damageflags, source)
-    if tookDamage:ToPlayer() then return end
-
-    if damageflags == DamageFlag.DAMAGE_COUNTDOWN then
-        --Negate contact damage (DamageFlag.DAMAGE_COUNTDOWN is damage flag for contact damage)
-        return false
-    end
+    if tookDamage:ToPlayer() then return false end
 
     if tookDamage.Type == EntityType.ENTITY_GAPER_L2 and damageAmount < tookDamage.HitPoints then
         --Knockback and sfx for bosses
@@ -775,15 +769,6 @@ jumping_coffing.callbacks[ModCallbacks.MC_ENTITY_TAKE_DMG] = jumping_coffing.OnE
 
 
 --OTHER CALLBACKS
-function jumping_coffing:OnFamiliarUpdate(FamiliarEnt)
-    if FamiliarEnt.Variant ~= FamiliarVariant.ISAACS_HEART then return end
-
-    --Move isaac's heart very very far away
-    FamiliarEnt.Position = Vector(-99999999, -99999999)
-end
-jumping_coffing.callbacks[ModCallbacks.MC_FAMILIAR_UPDATE] = jumping_coffing.OnFamiliarUpdate
-
-
 function jumping_coffing:EffectUpdate(effect)
     if effect.Variant == EffectVariant.TINY_FLY then
         effect:Remove() --They should be removed but just in case

@@ -18,7 +18,6 @@ local ArcadeCabinetVariables = loadFile("scripts/variables")
 black_stone_wielder.callbacks = {}
 black_stone_wielder.result = nil
 black_stone_wielder.startingItems = {
-    CollectibleType.COLLECTIBLE_ISAACS_HEART,
 }
 
 --Sounds
@@ -260,10 +259,6 @@ function black_stone_wielder:Init()
 
         local costume = Isaac.GetCostumeIdByPath("gfx/costumes/bsw_robes.anm2")
         player:AddNullCostume(costume)
-    end
-
-    for _, entity in ipairs(Isaac.FindByType(EntityType.ENTITY_FAMILIAR, FamiliarVariant.ISAACS_HEART, -1)) do
-        entity.Position = Vector(-99999999, -99999999)
     end
 end
 
@@ -573,12 +568,7 @@ black_stone_wielder.callbacks[ModCallbacks.MC_NPC_UPDATE] = black_stone_wielder.
 
 
 function black_stone_wielder:OnEntityDamage(tookDamage, _, damageflags, _)
-    if tookDamage:ToPlayer() then return end
-
-    if damageflags == DamageFlag.DAMAGE_COUNTDOWN then
-        --Negate contact damage (DamageFlag.DAMAGE_COUNTDOWN is damage flag for contact damage)
-        return false
-    end
+    if tookDamage:ToPlayer() then return false end
 end
 black_stone_wielder.callbacks[ModCallbacks.MC_ENTITY_TAKE_DMG] = black_stone_wielder.OnEntityDamage
 
@@ -632,15 +622,6 @@ function black_stone_wielder:OnTear(tear)
     tear:Remove()
 end
 black_stone_wielder.callbacks[ModCallbacks.MC_POST_TEAR_UPDATE] = black_stone_wielder.OnTear
-
-
-function black_stone_wielder:OnFamiliarUpdate(FamiliarEnt)
-    if FamiliarEnt.Variant ~= FamiliarVariant.ISAACS_HEART then return end
-
-    --Move isaac's heart very very far away
-    FamiliarEnt.Position = Vector(-99999999, -99999999)
-end
-black_stone_wielder.callbacks[ModCallbacks.MC_FAMILIAR_UPDATE] = black_stone_wielder.OnFamiliarUpdate
 
 
 function black_stone_wielder:OnEntitySpawn(entityType, entityVariant, _, _, _, _, seed)
