@@ -403,18 +403,19 @@ ArcadeCabinetMod:AddCallback(ModCallbacks.MC_GET_SHADER_PARAMS, ArcadeCabinetMod
 
 function ArcadeCabinetMod:OnFrameUpdate()
 
-    -- if game:GetFrameCount() == 1 then
-	-- 	Isaac.Spawn(6, 1984, 1, Vector(100, 150), Vector.Zero, nil)
-    --     Isaac.Spawn(6, 1984, 2, Vector(170, 150), Vector.Zero, nil)
-    --     Isaac.Spawn(6, 1984, 3, Vector(240, 150), Vector.Zero, nil)
+    if game:GetFrameCount() == 1 then
+		Isaac.Spawn(6, ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_BLACKSTONEWIELDER, 0, Vector(100, 150), Vector.Zero, nil)
+        Isaac.Spawn(6, ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_GUSH, 0, Vector(170, 150), Vector.Zero, nil)
+        Isaac.Spawn(6, ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_HOLYSMOKES, 0, Vector(240, 150), Vector.Zero, nil)
 
-    --     Isaac.Spawn(6, 1984, 4, Vector(400, 150), Vector.Zero, nil)
-    --     Isaac.Spawn(6, 1984, 5, Vector(470, 150), Vector.Zero, nil)
-    --     Isaac.Spawn(6, 1984, 6, Vector(540, 150), Vector.Zero, nil)
+        Isaac.Spawn(6, ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_JUMPINGCOFFING, 0, Vector(400, 150), Vector.Zero, nil)
+        Isaac.Spawn(6, ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_NIGHTLIGHT, 0, Vector(470, 150), Vector.Zero, nil)
+        Isaac.Spawn(6, ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_NOSPLASH, 0, Vector(540, 150), Vector.Zero, nil)
 
-    --     Isaac.Spawn(6, 1984, 7, Vector(100, 250), Vector.Zero, nil)
-    --     Isaac.Spawn(6, 1984, 8, Vector(540, 250), Vector.Zero, nil)
-    -- end
+        Isaac.Spawn(6, ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_THEBLOB, 0, Vector(100, 250), Vector.Zero, nil)
+        Isaac.Spawn(6, ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_THEGROUNDBELOW, 0, Vector(320, 250), Vector.Zero, nil)
+        Isaac.Spawn(6, ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_TOOUNDERGROUND, 0, Vector(540, 250), Vector.Zero, nil)
+    end
 
     CheckCollectedItems()
 
