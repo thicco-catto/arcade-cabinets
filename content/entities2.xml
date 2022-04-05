@@ -1,35 +1,39 @@
 <entities anm2root="gfx/" version="5">
 
     <!--Cabinets-->
-    <entity anm2path="bsw_cabinet.anm2" baseHP="0" boss="0" champion="0" collisionDamage="0" collisionMass="10" collisionRadius="12" friction="1" name="Arcade_Cabinet_BSW" numGridCollisionPoints="24" shadowSize="33" stageHP="0" id="6" variant="1984" subtype="1">
+    <entity anm2path="bsw_cabinet.anm2" baseHP="0" boss="0" champion="0" collisionDamage="0" collisionMass="10" collisionRadius="12" friction="1" name="Arcade Cabinet BSW" numGridCollisionPoints="24" shadowSize="33" stageHP="0" id="6">
         <gibs amount="0" blood="0" bone="0" eye="0" gut="0" large="0" />
     </entity>
 
-    <entity anm2path="gush_cabinet.anm2" baseHP="0" boss="0" champion="0" collisionDamage="0" collisionMass="10" collisionRadius="12" friction="1" name="Arcade_Cabinet_GUSH" numGridCollisionPoints="24" shadowSize="33" stageHP="0" id="6" variant="1984" subtype="2">
+    <entity anm2path="gush_cabinet.anm2" baseHP="0" boss="0" champion="0" collisionDamage="0" collisionMass="10" collisionRadius="12" friction="1" name="Arcade Cabinet GUSH" numGridCollisionPoints="24" shadowSize="33" stageHP="0" id="6">
         <gibs amount="0" blood="0" bone="0" eye="0" gut="0" large="0" />
     </entity>
 
-    <entity anm2path="jc_cabinet.anm2" baseHP="0" boss="0" champion="0" collisionDamage="0" collisionMass="10" collisionRadius="12" friction="1" name="Arcade_Cabinet_JC" numGridCollisionPoints="24" shadowSize="33" stageHP="0" id="6" variant="1984" subtype="3">
+    <entity anm2path="hs_cabinet.anm2" baseHP="0" boss="0" champion="0" collisionDamage="0" collisionMass="10" collisionRadius="12" friction="1" name="Arcade Cabinet HS" numGridCollisionPoints="24" shadowSize="33" stageHP="0" id="6">
         <gibs amount="0" blood="0" bone="0" eye="0" gut="0" large="0" />
     </entity>
 
-    <entity anm2path="nl_cabinet.anm2" baseHP="0" boss="0" champion="0" collisionDamage="0" collisionMass="10" collisionRadius="12" friction="1" name="Arcade_Cabinet_NL" numGridCollisionPoints="24" shadowSize="33" stageHP="0" id="6" variant="1984" subtype="4">
+    <entity anm2path="jc_cabinet.anm2" baseHP="0" boss="0" champion="0" collisionDamage="0" collisionMass="10" collisionRadius="12" friction="1" name="Arcade Cabinet JC" numGridCollisionPoints="24" shadowSize="33" stageHP="0" id="6">
         <gibs amount="0" blood="0" bone="0" eye="0" gut="0" large="0" />
     </entity>
 
-    <entity anm2path="ns_cabinet.anm2" baseHP="0" boss="0" champion="0" collisionDamage="0" collisionMass="10" collisionRadius="12" friction="1" name="Arcade_Cabinet_NS" numGridCollisionPoints="24" shadowSize="33" stageHP="0" id="6" variant="1984" subtype="5">
+    <entity anm2path="nl_cabinet.anm2" baseHP="0" boss="0" champion="0" collisionDamage="0" collisionMass="10" collisionRadius="12" friction="1" name="Arcade Cabinet NL" numGridCollisionPoints="24" shadowSize="33" stageHP="0" id="6">
         <gibs amount="0" blood="0" bone="0" eye="0" gut="0" large="0" />
     </entity>
 
-    <entity anm2path="tb_cabinet.anm2" baseHP="0" boss="0" champion="0" collisionDamage="0" collisionMass="10" collisionRadius="12" friction="1" name="Arcade_Cabinet_TB" numGridCollisionPoints="24" shadowSize="33" stageHP="0" id="6" variant="1984" subtype="6">
+    <entity anm2path="ns_cabinet.anm2" baseHP="0" boss="0" champion="0" collisionDamage="0" collisionMass="10" collisionRadius="12" friction="1" name="Arcade Cabinet NS" numGridCollisionPoints="24" shadowSize="33" stageHP="0" id="6">
         <gibs amount="0" blood="0" bone="0" eye="0" gut="0" large="0" />
     </entity>
 
-    <entity anm2path="tgb_cabinet.anm2" baseHP="0" boss="0" champion="0" collisionDamage="0" collisionMass="10" collisionRadius="12" friction="1" name="Arcade_Cabinet_TGB" numGridCollisionPoints="24" shadowSize="33" stageHP="0" id="6" variant="1984" subtype="7">
+    <entity anm2path="tb_cabinet.anm2" baseHP="0" boss="0" champion="0" collisionDamage="0" collisionMass="10" collisionRadius="12" friction="1" name="Arcade Cabinet TB" numGridCollisionPoints="24" shadowSize="33" stageHP="0" id="6">
         <gibs amount="0" blood="0" bone="0" eye="0" gut="0" large="0" />
     </entity>
 
-    <entity anm2path="tug_cabinet.anm2" baseHP="0" boss="0" champion="0" collisionDamage="0" collisionMass="10" collisionRadius="12" friction="1" name="Arcade_Cabinet_TUG" numGridCollisionPoints="24" shadowSize="33" stageHP="0" id="6" variant="1984" subtype="8">
+    <entity anm2path="tgb_cabinet.anm2" baseHP="0" boss="0" champion="0" collisionDamage="0" collisionMass="10" collisionRadius="12" friction="1" name="Arcade Cabinet TGB" numGridCollisionPoints="24" shadowSize="33" stageHP="0" id="6">
+        <gibs amount="0" blood="0" bone="0" eye="0" gut="0" large="0" />
+    </entity>
+
+    <entity anm2path="tug_cabinet.anm2" baseHP="0" boss="0" champion="0" collisionDamage="0" collisionMass="10" collisionRadius="12" friction="1" name="Arcade Cabinet TUG" numGridCollisionPoints="24" shadowSize="33" stageHP="0" id="6">
         <gibs amount="0" blood="0" bone="0" eye="0" gut="0" large="0" />
     </entity>
 

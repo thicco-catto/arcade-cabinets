@@ -1,48 +1,39 @@
 local ArcadeCabinetVariables = {}
 
-----------------------------------------------
---FANCY REQUIRE (Thanks manaphoenix <3)
-----------------------------------------------
-local _, err = pcall(require, "")
-local modName = err:match("/mods/(.*)/%.lua")
-local path = "mods/" .. modName .. "/"
-
-local function loadFile(loc, ...)
-    return assert(loadfile(path .. loc .. ".lua"))(...)
-end
-
-ArcadeCabinetVariables.ArcadeCabinetVar = Isaac.GetEntityVariantByName("Arcade_Cabinet_BSW")
-ArcadeCabinetVariables.ArcadeCabinetSub = {
-    SUBTYPE_BLACKSTONEWIELDER = 1,
-    SUBTYPE_GUSH = 2,
-    SUBTYPE_JUMPINGCOFFING = 3,
-    SUBTYPE_NIGHTLIGHT = 4,
-    SUBTYPE_NOSPLASH = 5,
-    SUBTYPE_THEBLOB = 6,
-    SUBTYPE_THEGROUONDBELOW = 7,
-    SUBTYPE_TOOUNDERGROUND = 8
+ArcadeCabinetVariables.ArcadeCabinetVariant = {
+    VARIANT_BLACKSTONEWIELDER = Isaac.GetEntityVariantByName("Arcade Cabinet BSW"),
+    VARIANT_GUSH = Isaac.GetEntityVariantByName("Arcade Cabinet GUSH"),
+    VARIANT_HOLYSMOKES = Isaac.GetEntityVariantByName("Arcade Cabinet HS"),
+    VARIANT_JUMPINGCOFFING = Isaac.GetEntityVariantByName("Arcade Cabinet JC"),
+    VARIANT_NIGHTLIGHT = Isaac.GetEntityVariantByName("Arcade Cabinet NL"),
+    VARIANT_NOSPLASH = Isaac.GetEntityVariantByName("Arcade Cabinet NS"),
+    VARIANT_THEBLOB = Isaac.GetEntityVariantByName("Arcade Cabinet TB"),
+    VARIANT_THEGROUNDBELOW = Isaac.GetEntityVariantByName("Arcade Cabinet TGB"),
+    VARIANT_TOOUNDERGROUND = Isaac.GetEntityVariantByName("Arcade Cabinet TUG")
 }
 
 ArcadeCabinetVariables.ArcadeCabinetSprite = {
-    "bsw.png",
-    "gush.png",
-    "jc.png",
-    "nl.png",
-    "ns.png",
-    "tb.png",
-    "tgb.png",
-    "tug.png"
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_BLACKSTONEWIELDER] = "bsw.png",
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_GUSH] = "gush.png",
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_HOLYSMOKES] = "hs.png",
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_JUMPINGCOFFING] = "jc.png",
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_NIGHTLIGHT] = "nl.png",
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_NOSPLASH] = "ns.png",
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_THEBLOB] = "tb.png",
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_THEGROUNDBELOW] = "tgb.png",
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_TOOUNDERGROUND] = "tug.png"
 }
 
 ArcadeCabinetVariables.ArcadeCabinetRooms = {
-    {"40"},
-    {"50"},
-    {"60"},
-    {"70"},
-    {"80"},
-    {"90"},
-    {"100"},
-    {"110", "111", "112"}
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_BLACKSTONEWIELDER] = "40",
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_GUSH] = "50",
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_HOLYSMOKES] = "60",
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_JUMPINGCOFFING] = "70",
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_NIGHTLIGHT] = "80",
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_NOSPLASH] = "90",
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_THEBLOB] = "100",
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_THEGROUNDBELOW] = "110",
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_TOOUNDERGROUND] = "120"
 }
 
 ArcadeCabinetVariables.GameState = {

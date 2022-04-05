@@ -5,11 +5,10 @@ local rng = RNG()
 ----------------------------------------------
 --FANCY REQUIRE (Thanks manaphoenix <3)
 ----------------------------------------------
-local _, err = pcall(require, "")
-local modName = err:match("/mods/(.*)/%.lua")
-local path = "mods/" .. modName .. "/"
-
 local function loadFile(loc, ...)
+    local _, err = pcall(require, "")
+    local modName = err:match("/mods/(.*)/%.lua")
+    local path = "mods/" .. modName .. "/"
     return assert(loadfile(path .. loc .. ".lua"))(...)
 end
 
@@ -19,14 +18,15 @@ ArcadeCabinetVariables.TransitionScreen:Load("gfx/minigame_transition.anm2")
 
 --Add this here so it doesn't loop infinitely
 ArcadeCabinetVariables.ArcadeCabinetScripts = {
-    loadFile("scripts/black_stone_wielder"),
-    loadFile("scripts/gush"),
-    loadFile("scripts/jumping_coffing"),
-    loadFile("scripts/night_light"),
-    loadFile("scripts/no_splash"),
-    loadFile("scripts/the_blob"),
-    loadFile("scripts/the_ground_below"),
-    loadFile("scripts/too_underground")
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_BLACKSTONEWIELDER] = loadFile("scripts/black_stone_wielder"),
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_GUSH] = loadFile("scripts/gush"),
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_HOLYSMOKES] = loadFile("scripts/holy_smokes"),
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_JUMPINGCOFFING] = loadFile("scripts/jumping_coffing"),
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_NIGHTLIGHT] = loadFile("scripts/night_light"),
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_NOSPLASH] = loadFile("scripts/no_splash"),
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_THEBLOB] = loadFile("scripts/the_blob"),
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_THEGROUNDBELOW] = loadFile("scripts/the_ground_below"),
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_TOOUNDERGROUND] = loadFile("scripts/too_underground")
 }
 
 local function InitPlayerForMinigame(player)
@@ -286,6 +286,21 @@ local function CheckCollectedItems()
 end
 
 
+local function CanUseMachine(player, entity)
+    local isModdedMachine = false
+
+    for _, variant in pairs(ArcadeCabinetVariables.ArcadeCabinetVariant) do
+        if entity.Variant == variant then
+            isModdedMachine = true
+            break
+        end
+    end
+
+    return entity.Type == EntityType.ENTITY_SLOT and isModdedMachine and
+    player:GetNumCoins() >= 5 and ArcadeCabinetVariables.CurrentGameState == ArcadeCabinetVariables.GameState.NOT_PLAYING
+end
+
+
 function ArcadeCabinetMod:OnArcadeRoom()
     local room = game:GetRoom()
 
@@ -308,8 +323,7 @@ function ArcadeCabinetMod:OnCabinetUse(player, entity)
 
     local player = player:ToPlayer()
 
-    if entity.Type ~= 6 or entity.Variant ~= ArcadeCabinetVariables.ArcadeCabinetVar 
-    or player:GetNumCoins() < 5  or ArcadeCabinetVariables.CurrentGameState ~= ArcadeCabinetVariables.GameState.NOT_PLAYING then return end
+    if not CanUseMachine(player, entity) then return end
 
     --Remove coins from the player that used the machine
 	player:AddCoins(-5)
@@ -319,7 +333,7 @@ function ArcadeCabinetMod:OnCabinetUse(player, entity)
     SFXManager():Play(SoundEffect.SOUND_COIN_SLOT, 1, 0, false, math.random(9,11)/10)
 
     --Set the current minigame
-    ArcadeCabinetVariables.CurrentMinigame = entity.SubType
+    ArcadeCabinetVariables.CurrentMinigame = entity.Variant
 
     InitCabinetMinigame()
 end
@@ -341,7 +355,7 @@ function ArcadeCabinetMod:OnRender()
         ArcadeCabinetVariables.TransitionFrameCount = game:GetFrameCount()
 
         --Teleport players to the room
-        local roomIndex = ArcadeCabinetVariables.ArcadeCabinetRooms[ArcadeCabinetVariables.CurrentMinigame][1]
+        local roomIndex = ArcadeCabinetVariables.ArcadeCabinetRooms[ArcadeCabinetVariables.CurrentMinigame]
         Isaac.ExecuteCommand("goto s.isaacs." .. roomIndex)
 
         --Change all players to isaac and manage their pickups
@@ -389,18 +403,18 @@ ArcadeCabinetMod:AddCallback(ModCallbacks.MC_GET_SHADER_PARAMS, ArcadeCabinetMod
 
 function ArcadeCabinetMod:OnFrameUpdate()
 
-    if game:GetFrameCount() == 1 then
-		Isaac.Spawn(6, 1984, 1, Vector(100, 150), Vector.Zero, nil)
-        Isaac.Spawn(6, 1984, 2, Vector(170, 150), Vector.Zero, nil)
-        Isaac.Spawn(6, 1984, 3, Vector(240, 150), Vector.Zero, nil)
+    -- if game:GetFrameCount() == 1 then
+	-- 	Isaac.Spawn(6, 1984, 1, Vector(100, 150), Vector.Zero, nil)
+    --     Isaac.Spawn(6, 1984, 2, Vector(170, 150), Vector.Zero, nil)
+    --     Isaac.Spawn(6, 1984, 3, Vector(240, 150), Vector.Zero, nil)
 
-        Isaac.Spawn(6, 1984, 4, Vector(400, 150), Vector.Zero, nil)
-        Isaac.Spawn(6, 1984, 5, Vector(470, 150), Vector.Zero, nil)
-        Isaac.Spawn(6, 1984, 6, Vector(540, 150), Vector.Zero, nil)
+    --     Isaac.Spawn(6, 1984, 4, Vector(400, 150), Vector.Zero, nil)
+    --     Isaac.Spawn(6, 1984, 5, Vector(470, 150), Vector.Zero, nil)
+    --     Isaac.Spawn(6, 1984, 6, Vector(540, 150), Vector.Zero, nil)
 
-        Isaac.Spawn(6, 1984, 7, Vector(100, 250), Vector.Zero, nil)
-        Isaac.Spawn(6, 1984, 8, Vector(540, 250), Vector.Zero, nil)
-    end
+    --     Isaac.Spawn(6, 1984, 7, Vector(100, 250), Vector.Zero, nil)
+    --     Isaac.Spawn(6, 1984, 8, Vector(540, 250), Vector.Zero, nil)
+    -- end
 
     CheckCollectedItems()
 
@@ -455,9 +469,6 @@ function ArcadeCabinetMod:OnPlayerInit(player)
     player:GetData().ArcadeCabinet.collectedItems = {}
     player:GetData().ArcadeCabinet.collectedItemsOrdered = {}
     player:AddCoins(20)
-
-    -- local costume = Isaac.GetCostumeIdByPath("gfx/costumes/bsw_robes.anm2")
-    -- player:AddNullCostume(costume)
 end
 ArcadeCabinetMod:AddCallback(ModCallbacks.MC_POST_PLAYER_INIT, ArcadeCabinetMod.OnPlayerInit)
 
