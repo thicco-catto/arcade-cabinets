@@ -1,6 +1,8 @@
 local night_light = {}
 local game = Game()
+local rng = RNG()
 local SFXManager = SFXManager()
+local MusicManager = MusicManager()
 ----------------------------------------------
 --FANCY REQUIRE (Thanks manaphoenix <3)
 ----------------------------------------------
@@ -12,11 +14,12 @@ local function loadFile(loc, ...)
     return assert(loadfile(path .. loc .. ".lua"))(...)
 end
 local ArcadeCabinetVariables = loadFile("scripts/variables")
+
+night_light.callbacks = {}
+night_light.result = nil
 night_light.startingItems = {
     CollectibleType.COLLECTIBLE_ISAACS_HEART,
 }
-night_light.callbacks = {}
-night_light.result = nil
 
 --Sounds
 local BannedSounds = {
@@ -42,6 +45,8 @@ local MinigameSounds = {
     LOSE = Isaac.GetSoundIdByName("arcade cabinet lose")
 }
 
+local MinigameMusic = Isaac.GetMusicIdByName("bsw black beat wielder")
+
 --Entities
 local MinigameEntityTypes = {
     CUSTOM_ENEMY = Isaac.GetEntityTypeByName("custom dust NL")
@@ -54,6 +59,43 @@ local MinigameEntityVariants = {
     FUCKY = Isaac.GetEntityVariantByName("fucky NL")
 }
 
+--Constants
+local MinigameConstants = {
+    --Wave control
+    SECONDS_PER_HOUR = 12,
+    GHOSTS_PER_HOUR = {
+        16,
+        22,
+        28,
+        28,
+        32,
+        34
+    },
+
+    --Timer stuff
+    INTIAL_CUTSCENE_MAX_FRAMES = 100,
+    WAIT_FOR_WIN_MAX_FRAMES = 60,
+    CONFUSION_MAX_FRAMES = 200,
+    FUCKY_SPAWN_MAX_TIMER = 100,
+
+    --Entities stuff
+    DUST_SPEED = 4,
+    FUCKY_SPEED = 10,
+    MORNINGSTAR_CHASE_SPEED = 4.2,
+    MORNINGSTAR_RETREAT_SPEED = 0.6,
+
+    MAX_CHEATING_COUNTER = 100
+}
+
+--Timers
+local MinigameTimers = {
+    InitialCutsceneTimer = 0,
+    HourTimer = 0,
+    WaitForWinTimer = 0,
+    ConfusionTimer = 0,
+    FuckySpawnTimer = 0
+}
+
 --States
 local CurrentMinigameState = 0
 local MinigameState = {
@@ -63,13 +105,6 @@ local MinigameState = {
     WAIT_FOR_WINNING = 3,
     LOSING = 4
 }
-
---Timers
-local InitialCutsceneTimer = 0
-local HourTimer = 0
-local WaitForWinTimer = 0
-local ConfusionTimer = 0
-local FuckySpawnTimer = 0
 
 --UI
 local InitialCutsceneScreen = Sprite()
@@ -89,17 +124,7 @@ ConfusionEffectOverlay:Load("gfx/nl_confusion_effect.anm2", true)
 
 
 --Wave spawning customization
-local SecondsPerHour = 12
-local GhostsPerWave = {
-    16,
-    22,
-    28,
-    28,
-    32,
-    34
-}
 local LastSpawnedAxis = 5
-
 local PlayerHP = 0
 local IsPlayerConfused = false
 local CurrentHour = 0
@@ -117,14 +142,19 @@ function night_light:Init()
     --Reset stuff
     night_light.result = nil
     CurrentHour = 0
-    HourTimer = SecondsPerHour * 30
-    FuckySpawnTimer = 0
-    InitialCutsceneTimer = 100
     CurrentMinigameState = MinigameState.START_CUTSCENCE
     IsPlayerConfused = false
     PlayerHP = 3
     CheatingCounter = 0
     MorningStar = nil
+
+    --Reset timers
+    for _, timer in pairs(MinigameTimers) do
+        timer = 0
+    end
+
+    MinigameTimers.HourTimer = MinigameConstants.SECONDS_PER_HOUR * 30
+    MinigameTimers.InitialCutsceneTimer = MinigameConstants.INTIAL_CUTSCENE_MAX_FRAMES
 
     --UI
     InitialCutsceneScreen:Play("Idle", true)
@@ -204,10 +234,10 @@ end
 
 
 local function UpdateInitialCutscene()
-    if InitialCutsceneTimer > 0 then
-        InitialCutsceneTimer = InitialCutsceneTimer - 1
+    if MinigameTimers.InitialCutsceneTimer > 0 then
+        MinigameTimers.InitialCutsceneTimer = MinigameTimers.InitialCutsceneTimer - 1
 
-        if InitialCutsceneTimer == 2 then
+        if MinigameTimers.InitialCutsceneTimer == 2 then
             Options.CameraStyle = 2
         end
     else
@@ -342,10 +372,10 @@ end
 
 
 local function ManageSpawningFucky()
-    if FuckySpawnTimer <= 0 then return end
+    if MinigameTimers.FuckySpawnTimer <= 0 then return end
 
     --Spawn fucky
-    if FuckySpawnTimer == 1 then
+    if MinigameTimers.FuckySpawnTimer == 1 then
         local spawningOffset = nil
         local animationToPlay = nil
 
@@ -368,7 +398,7 @@ local function ManageSpawningFucky()
         enemy.DepthOffset = 100
     end
 
-    FuckySpawnTimer = FuckySpawnTimer - 1
+    MinigameTimers.FuckySpawnTimer = MinigameTimers.FuckySpawnTimer - 1
 end
 
 
@@ -402,7 +432,7 @@ local function SpawnGhost(ChosenAxis)
 
     --Acutally spawn the dust
     local enemy = Isaac.Spawn(MinigameEntityTypes.CUSTOM_ENEMY, MinigameEntityVariants.CUSTOM_DUST, 0, SpawningPos, Vector.Zero, nil)
-    enemy:GetData().TargetVelocity = -spawningOffset:Normalized() * 4
+    enemy:GetData().TargetVelocity = -spawningOffset:Normalized() * MinigameConstants.DUST_SPEED
     enemy:GetData().ShouldPlayAnimation = animationToPlay
     enemy.FlipX = isFlip
 end
@@ -439,16 +469,16 @@ end
 
 
 local function UpdatePlaying()
-    if HourTimer > 0 then
-        HourTimer = HourTimer - 1
+    if MinigameTimers.HourTimer > 0 then
+        MinigameTimers.HourTimer = MinigameTimers.HourTimer - 1
     else
-        HourTimer = SecondsPerHour * 30
+        MinigameTimers.HourTimer = MinigameConstants.SECONDS_PER_HOUR * 30
         CurrentHour = CurrentHour + 1
 
         --Spawn fucky
         if CurrentHour ~= 6 then
             SFXManager:Play(MinigameSounds.TRANSITION)
-            FuckySpawnTimer = 100
+            MinigameTimers.FuckySpawnTimer = MinigameConstants.FUCKY_SPAWN_MAX_TIMER
             FuckySpawnAxis = math.random(4)
 
             local animationToPlay = nil
@@ -466,11 +496,11 @@ local function UpdatePlaying()
         end
 
         --Spawn morning star
-        if CurrentHour == 4 or (CheatingCounter > 100 and CurrentHour == 3) then
+        if CurrentHour == 4 or (CheatingCounter > MinigameConstants.MAX_CHEATING_COUNTER and CurrentHour == 3) then
             SpawnMorningStar()
         elseif CurrentHour == 6 then
             CurrentMinigameState = MinigameState.WAIT_FOR_WINNING
-            WaitForWinTimer = 60
+            MinigameTimers.WaitForWinTimer = MinigameConstants.WAIT_FOR_WIN_MAX_FRAMES
             FinalCutsceneScreen:Play("Start", true)
             FakePlayer:GetSprite():Play("IdleDown", true)
             LightBeam:GetSprite():Play("IdleDown", true)
@@ -490,21 +520,21 @@ local function UpdatePlaying()
 
     ManageSpawningFucky()
 
-    if ConfusionTimer > 0 then
-        ConfusionTimer = ConfusionTimer - 1
+    if MinigameTimers.ConfusionTimer > 0 then
+        MinigameTimers.ConfusionTimer = MinigameTimers.ConfusionTimer - 1
     else
         IsPlayerConfused = false
     end
 
-    if HourTimer % (math.floor((SecondsPerHour * 30) / GhostsPerWave[CurrentHour + 1])) == 0 then
+    if MinigameTimers.HourTimer % (math.floor((MinigameConstants.SECONDS_PER_HOUR * 30) / MinigameConstants.GHOSTS_PER_HOUR[CurrentHour + 1])) == 0 then
         SpawnEnemies()
     end
 end
 
 
 local function UpdateWaitingForWin()
-    if WaitForWinTimer > 0 then
-        WaitForWinTimer = WaitForWinTimer - 1
+    if MinigameTimers.WaitForWinTimer > 0 then
+        MinigameTimers.WaitForWinTimer = MinigameTimers.WaitForWinTimer - 1
     else
         CurrentMinigameState = MinigameState.FINISH_CUTSCENE
     end
@@ -584,7 +614,7 @@ local function RenderUI()
         ClockUI:SetFrame(CurrentHour)
     end
     
-    ClockUI:Render(centerPos + Vector(-120, 100), Vector.Zero, Vector.Zero)
+    ClockUI:Render(centerPos + Vector(120, 100), Vector.Zero, Vector.Zero)
 
 end
 
@@ -706,9 +736,9 @@ local function ManageMorningStarVelocity(entity)
     if CurrentMinigameState ~= MinigameState.PLAYING then
         entity.Velocity = Vector.Zero
     elseif entity:ToNPC().State == 4 then
-        entity.Velocity = (game:GetRoom():GetCenterPos() - entity.Position):Normalized() * 4.2
+        entity.Velocity = (game:GetRoom():GetCenterPos() - entity.Position):Normalized() * MinigameConstants.MORNINGSTAR_CHASE_SPEED
     else
-        entity.Velocity = (entity.Position - game:GetRoom():GetCenterPos()):Normalized() * 0.6
+        entity.Velocity = (entity.Position - game:GetRoom():GetCenterPos()):Normalized() * MinigameConstants.MORNINGSTAR_RETREAT_SPEED
     end
 end
 
@@ -743,7 +773,7 @@ local function UpdateFucky(entity)
     if entity:GetData().IsDead then
         entity.Velocity = Vector.Zero
     else
-        entity.Velocity = (game:GetRoom():GetCenterPos() - entity.Position):Normalized() * 10
+        entity.Velocity = (game:GetRoom():GetCenterPos() - entity.Position):Normalized() * MinigameConstants.FUCKY_SPEED
     end
 
     CheckIfFuckyHit(entity)
@@ -779,7 +809,7 @@ function night_light:OnNPCCollision(entity, collider)
         HeartsUI:Play("Flash", true)
         PlayerHP = PlayerHP - 1
     elseif collider:ToPlayer() and entity.Variant == MinigameEntityVariants.FUCKY and not entity:GetData().IsDead then
-        ConfusionTimer = 200
+        MinigameTimers.ConfusionTimer = MinigameConstants.CONFUSION_MAX_FRAMES
         IsPlayerConfused = true
         SFXManager:Play(MinigameSounds.DUST_DEATH)
         entity:GetSprite():Play("Poof", true)
