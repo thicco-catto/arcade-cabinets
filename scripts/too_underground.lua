@@ -212,6 +212,8 @@ function too_underground:Init()
 
     --Spawn backdrop
     local backdrop = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, ArcadeCabinetVariables.Backdrop1x2Variant, 0, game:GetRoom():GetCenterPos(), Vector.Zero, nil)
+    backdrop:GetSprite():ReplaceSpritesheet(0, "gfx/backdrop/tug_backdrop.png")
+    backdrop:GetSprite():LoadGraphics()
     backdrop.DepthOffset = -1000
 
     --Add rocks to the list

@@ -41,11 +41,17 @@ local MinigameSounds = {
 local MinigameMusic = Isaac.GetMusicIdByName("bsw black beat wielder")
 
 --Entities
+local MinigameEntityTypes = {
+    CUSTOM_BOSS = Isaac.GetEntityTypeByName("satan head HS")
+}
+
 local MinigameEntityVariants = {
+    SATAN_HEAD = Isaac.GetEntityVariantByName("satan head HS")
 }
 
 --Constants
 local MinigameConstants = {
+    SATAN_HEAD_SPAWNING_OFFSET = Vector(0, 52)
 }
 
 --Timers
@@ -60,10 +66,35 @@ local MinigameState = {
 --UI
 
 --Other variables
+local SatanHead = nil
 
+
+--INIT MINIGAME
 function holy_smokes:Init()
-    print("Init holy smokes")
+
+    --Backdrop
+    local backdrop = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, ArcadeCabinetVariables.Backdrop1x2Variant, 0, game:GetRoom():GetCenterPos(), Vector.Zero, nil)
+    backdrop:GetSprite():ReplaceSpritesheet(0, "gfx/backdrop/hs_backdrop.png")
+    backdrop:GetSprite():LoadGraphics()
+    backdrop.DepthOffset = -1000
+
+    --Boss
+    SatanHead = Isaac.Spawn(MinigameEntityTypes.CUSTOM_BOSS, MinigameEntityVariants.SATAN_HEAD, 0, game:GetRoom():GetCenterPos() + MinigameConstants.SATAN_HEAD_SPAWNING_OFFSET, Vector.Zero, nil)
+    SatanHead:AddEntityFlags(EntityFlag.FLAG_NO_FLASH_ON_DAMAGE | EntityFlag.FLAG_NO_KNOCKBACK | EntityFlag.FLAG_NO_PHYSICS_KNOCKBACK)
 end
+
+
+--UPDATE CALLBACKS
+function holy_smokes:FrameUpdate()
+    if game:GetFrameCount() % 70 == 0 then
+        SatanHead:GetSprite():Play("Breathe", true)
+    end
+
+    if SatanHead:GetSprite():IsFinished("Breathe") then
+        SatanHead:GetSprite():Play("Idle", true)
+    end
+end
+holy_smokes.callbacks[ModCallbacks.MC_POST_UPDATE] = holy_smokes.FrameUpdate
 
 
 function holy_smokes:OnEntityDamage(tookDamage, _, damageflags, _)
