@@ -161,7 +161,7 @@ local function BreakRock(index, rock)
     local chanceToSpawn = 7
     if rock.type == MinigameConstants.ROCK_TYPES.HARDENED then chanceToSpawn = 20 end
 
-    if chanceToSpawn >= math.random(100) then
+    if chanceToSpawn >= rng:RandomInt(100) then
         Isaac.Spawn(EntityType.ENTITY_EFFECT, EffectVariant.SHOCKWAVE_RANDOM, 0, rock.gridEntity.Position, Vector.Zero, nil)
     end
 end
@@ -179,6 +179,8 @@ function too_underground:Init()
     BoneGuysPositions = {}
     BatteriesPositions = {}
     CurrentMinigameState = MinigameState.INTRO_SCREEN
+
+    rng:SetSeed(game:GetSeeds():GetStartSeed(), 35)
 
     --Intro screen
     MinigameTimers.IntroScreenTimer = MinigameConstants.INTRO_SCREEN_MAX_FRAMES
