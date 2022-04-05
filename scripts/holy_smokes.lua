@@ -18,7 +18,6 @@ local ArcadeCabinetVariables = loadFile("scripts/variables")
 holy_smokes.callbacks = {}
 holy_smokes.result = nil
 holy_smokes.startingItems = {
-    CollectibleType.COLLECTIBLE_ISAACS_HEART,
 }
 
 --Sounds
@@ -81,6 +80,27 @@ function holy_smokes:Init()
     --Boss
     SatanHead = Isaac.Spawn(MinigameEntityTypes.CUSTOM_BOSS, MinigameEntityVariants.SATAN_HEAD, 0, game:GetRoom():GetCenterPos() + MinigameConstants.SATAN_HEAD_SPAWNING_OFFSET, Vector.Zero, nil)
     SatanHead:AddEntityFlags(EntityFlag.FLAG_NO_FLASH_ON_DAMAGE | EntityFlag.FLAG_NO_KNOCKBACK | EntityFlag.FLAG_NO_PHYSICS_KNOCKBACK)
+
+        --Prepare players
+        local playerNum = game:GetNumPlayers()
+        for i = 0, playerNum - 1, 1 do
+            local player = game:GetPlayer(i)
+    
+            for _, item in ipairs(holy_smokes.startingItems) do
+                player:AddCollectible(item, 0, false)
+            end
+    
+            --Set the spritesheets
+            local playerSprite = player:GetSprite()
+            playerSprite:Load("gfx/isaac52.anm2", true)
+            playerSprite:ReplaceSpritesheet(1, "gfx/characters/isaac_hs.png")
+            playerSprite:ReplaceSpritesheet(4, "gfx/characters/isaac_hs.png")
+            playerSprite:ReplaceSpritesheet(12, "gfx/characters/isaac_hs.png")
+            playerSprite:LoadGraphics()
+    
+            local costume = Isaac.GetCostumeIdByPath("gfx/costumes/hs_halo.anm2")
+            player:AddNullCostume(costume)
+        end
 end
 
 

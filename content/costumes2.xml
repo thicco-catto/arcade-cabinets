@@ -1,3 +1,4 @@
 <costumes anm2root="gfx/costumes/">
     <costume anm2path="bsw_robes.anm2" type="none"/>
+    <costume anm2path="hs_halo.anm2" type="none"/>
 </costumes>
