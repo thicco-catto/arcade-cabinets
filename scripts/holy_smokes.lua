@@ -92,7 +92,7 @@ function holy_smokes:Init()
     
             --Set the spritesheets
             local playerSprite = player:GetSprite()
-            playerSprite:Load("gfx/isaac52.anm2", true)
+            playerSprite:Load("gfx/hs_isaac52.anm2", true)
             playerSprite:ReplaceSpritesheet(1, "gfx/characters/isaac_hs.png")
             playerSprite:ReplaceSpritesheet(4, "gfx/characters/isaac_hs.png")
             playerSprite:ReplaceSpritesheet(12, "gfx/characters/isaac_hs.png")
@@ -117,13 +117,19 @@ end
 holy_smokes.callbacks[ModCallbacks.MC_POST_UPDATE] = holy_smokes.FrameUpdate
 
 
-function holy_smokes:OnEntityDamage(tookDamage, _, damageflags, _)
-    if tookDamage:ToPlayer() then
-        return false
-    end
-
-
+function holy_smokes:OnEntityDamage(tookDamage, _, _, _)
+    if tookDamage:ToPlayer() then return false end
 end
 holy_smokes.callbacks[ModCallbacks.MC_ENTITY_TAKE_DMG] = holy_smokes.OnEntityDamage
+
+
+function holy_smokes:OnTearFire(tear)
+    print(tear.Velocity:Normalized())
+    if tear.Velocity:Normalized().Y > 0 or tear.Velocity:Normalized().X > 0.5 or tear.Velocity:Normalized().X < -0.5 then
+        SFXManager:Stop(SoundEffect.SOUND_TEARS_FIRE)
+        tear:Remove()
+    end
+end
+holy_smokes.callbacks[ModCallbacks.MC_POST_FIRE_TEAR] = holy_smokes.OnTearFire
 
 return holy_smokes
