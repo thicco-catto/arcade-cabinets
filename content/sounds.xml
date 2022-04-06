@@ -29,6 +29,15 @@
         <sample weight="1" path="black stone wielder/rune popped.wav" />
     </sound>
 
+    <!--Holy smokes-->
+    <sound name="hs tear shoot">
+        <sample weight="1" path="holy smokes/tear shoot.wav" />
+    </sound>
+
+    <sound name="hs tear impact">
+        <sample weight="1" path="holy smokes/tear impact.wav" />
+    </sound>
+
     <!--Jumping coffing-->
     <sound name="jc sword swing">
         <sample weight="1" path="jumping coffing/swing.wav" />

@@ -122,7 +122,6 @@ local function InitCabinetMinigame()
     --Set the current state and script
     ArcadeCabinetVariables.CurrentGameState = ArcadeCabinetVariables.GameState.FADE_IN
     ArcadeCabinetVariables.CurrentScript = ArcadeCabinetVariables.ArcadeCabinetScripts[ArcadeCabinetVariables.CurrentMinigame]
-    print(#ArcadeCabinetVariables.ArcadeCabinetScripts)
 
     --Disable the hud
     game:GetHUD():SetVisible(false)
