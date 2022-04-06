@@ -54,7 +54,10 @@ local MinigameEntityVariants = {
 
 -- Constants
 local MinigameConstants = {
-    SATAN_HEAD_SPAWNING_OFFSET = Vector(0, 52)
+    SATAN_HEAD_SPAWNING_OFFSET = Vector(0, 52),
+
+    MAX_PLAYER_HEALTH = 5,
+    MAX_PLAYER_POWER = 200,
 }
 
 -- Timers
@@ -65,25 +68,36 @@ local CurrentMinigameState = 0
 local MinigameState = {}
 
 -- UI
+local PlayerHealthUI = Sprite()
+PlayerHealthUI:Load("gfx/hs_health_ui.anm2")
+local PlayerPowerUI = Sprite()
+PlayerPowerUI:Load("gfx/hs_power_ui.anm2")
 
 -- Other variables
+local PlayerHP = 0
+local PlayerPower = 0
 local SatanHead = nil
 
 
 -- INIT MINIGAME
 function holy_smokes:Init()
+    -- Reset variables
+    PlayerHP = MinigameConstants.MAX_PLAYER_HEALTH
+    PlayerPower = 0
 
     -- Backdrop
-    local backdrop = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, ArcadeCabinetVariables.Backdrop1x2Variant, 0,
-        game:GetRoom():GetCenterPos(), Vector.Zero, nil)
+    local backdrop = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, ArcadeCabinetVariables.Backdrop1x2Variant, 0, game:GetRoom():GetCenterPos(), Vector.Zero, nil)
     backdrop:GetSprite():ReplaceSpritesheet(0, "gfx/backdrop/hs_backdrop.png")
     backdrop:GetSprite():LoadGraphics()
     backdrop.DepthOffset = -1000
 
     -- Boss
-    SatanHead = Isaac.Spawn(MinigameEntityTypes.CUSTOM_BOSS, MinigameEntityVariants.SATAN_HEAD, 0,
-        game:GetRoom():GetCenterPos() + MinigameConstants.SATAN_HEAD_SPAWNING_OFFSET, Vector.Zero, nil)
+    SatanHead = Isaac.Spawn(MinigameEntityTypes.CUSTOM_BOSS, MinigameEntityVariants.SATAN_HEAD, 0, game:GetRoom():GetCenterPos() + MinigameConstants.SATAN_HEAD_SPAWNING_OFFSET, Vector.Zero, nil)
     SatanHead:AddEntityFlags(EntityFlag.FLAG_NO_FLASH_ON_DAMAGE | EntityFlag.FLAG_NO_KNOCKBACK | EntityFlag.FLAG_NO_PHYSICS_KNOCKBACK)
+
+    -- UI
+    PlayerHealthUI:Play("Idle", true)
+    PlayerPowerUI:Play("Idle", true)
 
     -- Prepare players
     local playerNum = game:GetNumPlayers()
@@ -134,6 +148,36 @@ end
 holy_smokes.callbacks[ModCallbacks.MC_POST_PEFFECT_UPDATE] = holy_smokes.PlayerUpdate
 
 
+local function RenderUI()
+    --Health
+    if PlayerHealthUI:IsPlaying("Flash") then
+        PlayerHealthUI:Update()
+    else
+        PlayerHealthUI:Play("Idle")
+        PlayerHealthUI:SetFrame(PlayerHP)
+    end
+
+    PlayerHealthUI:Render(Vector(Isaac.GetScreenWidth() / 2, Isaac.GetScreenHeight() / 2) + Vector(-200, 0), Vector.Zero, Vector.Zero)
+
+    --Power
+    if PlayerPowerUI:IsPlaying("Flash") then
+        PlayerPowerUI:Update()
+    else
+        PlayerPowerUI:Play("Idle")
+        PlayerPowerUI:SetFrame(PlayerPower)
+    end
+
+    PlayerPowerUI:Render(Vector(Isaac.GetScreenWidth() / 2, Isaac.GetScreenHeight() / 2) + Vector(-189, 0), Vector.Zero, Vector.Zero)
+end
+
+
+function holy_smokes:OnRender()
+    RenderUI()
+end
+holy_smokes.callbacks[ModCallbacks.MC_POST_RENDER] = holy_smokes.OnRender
+
+
+--ENTITY CALLBACKS
 function holy_smokes:OnEntityDamage(tookDamage, _, _, _)
     if tookDamage:ToPlayer() then
         return false
@@ -145,6 +189,7 @@ holy_smokes.callbacks[ModCallbacks.MC_ENTITY_TAKE_DMG] = holy_smokes.OnEntityDam
 function holy_smokes:OnEffectInit(effect)
     if effect.Variant == EffectVariant.TEAR_POOF_A or effect.Variant == EffectVariant.TEAR_POOF_B then
         SFXManager:Stop(SoundEffect.SOUND_TEARIMPACTS)
+        SFXManager:Stop(SoundEffect.SOUND_SPLATTER)
         if effect.Position.Y >= SatanHead.Position.Y - 40 then
             SFXManager:Play(MinigameSounds.TEAR_IMPACT)
         end
