@@ -55,7 +55,7 @@
     </entity>
 
     <!--Black stone wielder-->
-    <entity anm2path="bsw_rune.anm2" name="rune BSW" baseHP="0" boss="0" champion="0" collisionDamage="0" collisionMass="3" collisionRadius="12" friction="1" id="5" numGridCollisionPoints="24" shadowSize="28" stageHP="0" variant="2134">
+    <entity anm2path="bsw_rune.anm2" name="rune BSW" variant="2134" id="5" baseHP="0" boss="0" champion="0" collisionDamage="0" collisionMass="3" collisionRadius="12" friction="1" numGridCollisionPoints="24" shadowSize="28" stageHP="0">
         <gibs amount="0" blood="0" bone="0" eye="0" gut="0" large="0"/>
     </entity>
 
@@ -64,21 +64,33 @@
     </entity>
 
     <!--Holy smokes-->
-    <entity anm2path="hs_satan_head.anm2" name="satan head HS" id="997" variant="1" baseHP="420" boss="0" champion="0" collisionDamage="0" collisionMass="10" collisionRadius="50" friction="1" gridCollision="walls" numGridCollisionPoints="12" shadowSize="0" stageHP="0">
+    <entity anm2path="hs_satan_head.anm2" name="satan head HS" id="997" variant="1" baseHP="420" boss="0" champion="0" collisionDamage="0" collisionMass="10" collisionRadius="50" friction="1" gridCollision="walls" numGridCollisionPoints="12" shadowSize="0" stageHP="0" gridCollision="walls">
         <gibs amount="0" blood="0" bone="0" dust="0" eye="0" gut="0" large="0"/>
     </entity>
 
-    <!--Jumping coffing-->
-    <entity anm2path="jc_target.anm2" subtype="0" name="target JC" variant="2102" id="960" baseHP="0" boss="0" champion="0" collisionDamage="0" collisionMass="0" collisionRadius="0" friction="1" numGridCollisionPoints="0" shadowSize="0" shutdoors="false" stageHP="0" gridCollision="none"> 
+    <entity anm2path="hs_falling_stalagmite.anm2" subtype="0" name="stalagmite HS" variant="2" id="997" baseHP="42069" boss="0" champion="0" collisionDamage="1" collisionMass="0" collisionRadius="13" friction="1" numGridCollisionPoints="8" shadowSize="0" shutdoors="false" stageHP="0" gridCollision="none"> 
         <gibs amount="0" blood="0" bone="0" eye="0" gut="0" large="0" />
     </entity>
 
-    <entity anm2path="jc_bloodsplat.anm2" subtype="0" name="bloodsplat JC" variant="2103" id="960" baseHP="0" boss="0" champion="0" collisionDamage="0" collisionMass="0" collisionRadius="0" friction="1" numGridCollisionPoints="0" shadowSize="0" shutdoors="false" stageHP="0" gridCollision="none"> 
+    <entity anm2path="hs_falling_stalagmite_shadow.anm2" subtype="0" name="stalagmite shadow HS" variant="2109" id="960" baseHP="0" boss="0" champion="0" collisionDamage="0" collisionMass="0" collisionRadius="0" friction="1" numGridCollisionPoints="0" shadowSize="0" shutdoors="false" stageHP="0" gridCollision="none"> 
+        <gibs amount="0" blood="0" bone="0" eye="0" gut="0" large="0" />
+    </entity>
+
+    <entity anm2path="hs_shockwave.anm2" subtype="0" name="shockwave HS" variant="3" id="997" baseHP="42069" boss="0" champion="0" collisionDamage="1" collisionMass="0" collisionRadius="13" friction="1" numGridCollisionPoints="8" shadowSize="0" shutdoors="false" stageHP="0" gridCollision="none"> 
+        <gibs amount="0" blood="0" bone="0" eye="0" gut="0" large="0" />
+    </entity>
+
+    <!--Jumping coffing-->
+    <entity anm2path="jc_target.anm2" subtype="0" name="target JC" variant="2103" id="960" baseHP="0" boss="0" champion="0" collisionDamage="0" collisionMass="0" collisionRadius="0" friction="1" numGridCollisionPoints="0" shadowSize="0" shutdoors="false" stageHP="0" gridCollision="none"> 
+        <gibs amount="0" blood="0" bone="0" eye="0" gut="0" large="0" />
+    </entity>
+
+    <entity anm2path="jc_bloodsplat.anm2" subtype="0" name="bloodsplat JC" variant="2104" id="960" baseHP="0" boss="0" champion="0" collisionDamage="0" collisionMass="0" collisionRadius="0" friction="1" numGridCollisionPoints="0" shadowSize="0" shutdoors="false" stageHP="0" gridCollision="none"> 
         <gibs amount="0" blood="0" bone="0" eye="0" gut="0" large="0" />
     </entity>
 
     <!--Night light-->
-    <entity anm2path="nl_fake_player.anm2" subtype="0" name="fake player NL" variant="2104" id="960" baseHP="0" boss="0" champion="0" collisionDamage="0" collisionMass="0" collisionRadius="0" friction="1" numGridCollisionPoints="0" shadowSize="0" shutdoors="false" stageHP="0" gridCollision="none"> 
+    <entity anm2path="nl_fake_player.anm2" subtype="0" name="fake player NL" variant="2105" id="960" baseHP="0" boss="0" champion="0" collisionDamage="0" collisionMass="0" collisionRadius="0" friction="1" numGridCollisionPoints="0" shadowSize="0" shutdoors="false" stageHP="0" gridCollision="none"> 
         <gibs amount="0" blood="0" bone="0" eye="0" gut="0" large="0" />
     </entity>
 
@@ -95,11 +107,11 @@
     </entity>
 
     <!--Too underground-->
-    <entity anm2path="tug_rock.anm2" subtype="0" name="rock TUG" variant="2105" id="960" baseHP="0" boss="0" champion="0" collisionDamage="0" collisionMass="0" collisionRadius="0" friction="1" numGridCollisionPoints="0" shadowSize="0" shutdoors="false" stageHP="0" gridCollision="none"> 
+    <entity anm2path="tug_rock.anm2" subtype="0" name="rock TUG" variant="2106" id="960" baseHP="0" boss="0" champion="0" collisionDamage="0" collisionMass="0" collisionRadius="0" friction="1" numGridCollisionPoints="0" shadowSize="0" shutdoors="false" stageHP="0" gridCollision="none"> 
         <gibs amount="0" blood="0" bone="0" eye="0" gut="0" large="0" />
     </entity>
 
-    <entity anm2path="tug_tear_poof.anm2" subtype="0" name="tear poof TUG" variant="2106" id="960" baseHP="0" boss="0" champion="0" collisionDamage="0" collisionMass="0" collisionRadius="0" friction="1" numGridCollisionPoints="0" shadowSize="0" shutdoors="false" stageHP="0" gridCollision="none"> 
+    <entity anm2path="tug_tear_poof.anm2" subtype="0" name="tear poof TUG" variant="2107" id="960" baseHP="0" boss="0" champion="0" collisionDamage="0" collisionMass="0" collisionRadius="0" friction="1" numGridCollisionPoints="0" shadowSize="0" shutdoors="false" stageHP="0" gridCollision="none"> 
         <gibs amount="0" blood="0" bone="0" eye="0" gut="0" large="0" />
     </entity>
 
@@ -111,7 +123,7 @@
         <gibs amount="0" blood="0" bone="0" eye="0" gut="0" large="0"/>
     </entity>
 
-    <entity anm2path="tug_dynamite.anm2" subtype="0" name="dynamite TUG" variant="2107" id="960" baseHP="0" boss="0" champion="0" collisionDamage="0" collisionMass="0" collisionRadius="0" friction="1" numGridCollisionPoints="0" shadowSize="0" shutdoors="false" stageHP="0" gridCollision="none"> 
+    <entity anm2path="tug_dynamite.anm2" subtype="0" name="dynamite TUG" variant="2108" id="960" baseHP="0" boss="0" champion="0" collisionDamage="0" collisionMass="0" collisionRadius="0" friction="1" numGridCollisionPoints="0" shadowSize="0" shutdoors="false" stageHP="0" gridCollision="none"> 
         <gibs amount="0" blood="0" bone="0" eye="0" gut="0" large="0" />
     </entity>
 </entities>

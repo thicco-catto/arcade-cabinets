@@ -36,6 +36,8 @@ local MinigameSounds = {
     TEAR_SHOOT = Isaac.GetSoundIdByName("hs tear shoot"),
     TEAR_IMPACT = Isaac.GetSoundIdByName("hs tear impact"),
 
+    STALAGMITE_DROP = Isaac.GetSoundIdByName("tug explosion"),
+
     WIN = Isaac.GetSoundIdByName("arcade cabinet win"),
     LOSE = Isaac.GetSoundIdByName("arcade cabinet lose")
 }
@@ -45,11 +47,15 @@ local MinigameMusic = Isaac.GetMusicIdByName("bsw black beat wielder")
 
 -- Entities
 local MinigameEntityTypes = {
-    CUSTOM_BOSS = Isaac.GetEntityTypeByName("satan head HS")
+    CUSTOM_ENTITY = Isaac.GetEntityTypeByName("satan head HS")
 }
 
 local MinigameEntityVariants = {
-    SATAN_HEAD = Isaac.GetEntityVariantByName("satan head HS")
+    SATAN_HEAD = Isaac.GetEntityVariantByName("satan head HS"),
+
+    STALAGMITE = Isaac.GetEntityVariantByName("stalagmite HS"),
+    STALAGMITE_SHADOW = Isaac.GetEntityVariantByName("stalagmite shadow HS"),
+    SHOCKWAVE = Isaac.GetEntityVariantByName("shockwave HS")
 }
 
 -- Constants
@@ -65,13 +71,24 @@ local MinigameTimers = {}
 
 -- States
 local CurrentMinigameState = 0
-local MinigameState = {}
+local MinigameState = {
+    INTRO = 0,
+    NO_ATTACK = 1,
+    BOSS_ATTACK = 2,
+}
+
+local CurrentSatanAttack = 0
+local SatanAttack = {
+    FALLING_STALAGMITES = 0
+}
 
 -- UI
 local PlayerHealthUI = Sprite()
 PlayerHealthUI:Load("gfx/hs_health_ui.anm2")
 local PlayerPowerUI = Sprite()
 PlayerPowerUI:Load("gfx/hs_power_ui.anm2")
+local BossHealthUI = Sprite()
+BossHealthUI:Load("gfx/hs_boss_health_ui.anm2")
 
 -- Other variables
 local PlayerHP = 0
@@ -85,6 +102,9 @@ function holy_smokes:Init()
     PlayerHP = MinigameConstants.MAX_PLAYER_HEALTH
     PlayerPower = 0
 
+    CurrentMinigameState = MinigameState.NO_ATTACK
+    CurrentSatanAttack = SatanAttack.FALLING_STALAGMITES
+
     -- Backdrop
     local backdrop = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, ArcadeCabinetVariables.Backdrop1x2Variant, 0, game:GetRoom():GetCenterPos(), Vector.Zero, nil)
     backdrop:GetSprite():ReplaceSpritesheet(0, "gfx/backdrop/hs_backdrop.png")
@@ -92,12 +112,13 @@ function holy_smokes:Init()
     backdrop.DepthOffset = -1000
 
     -- Boss
-    SatanHead = Isaac.Spawn(MinigameEntityTypes.CUSTOM_BOSS, MinigameEntityVariants.SATAN_HEAD, 0, game:GetRoom():GetCenterPos() + MinigameConstants.SATAN_HEAD_SPAWNING_OFFSET, Vector.Zero, nil)
+    SatanHead = Isaac.Spawn(MinigameEntityTypes.CUSTOM_ENTITY, MinigameEntityVariants.SATAN_HEAD, 0, game:GetRoom():GetCenterPos() + MinigameConstants.SATAN_HEAD_SPAWNING_OFFSET, Vector.Zero, nil)
     SatanHead:AddEntityFlags(EntityFlag.FLAG_NO_FLASH_ON_DAMAGE | EntityFlag.FLAG_NO_KNOCKBACK | EntityFlag.FLAG_NO_PHYSICS_KNOCKBACK)
 
     -- UI
     PlayerHealthUI:Play("Idle", true)
     PlayerPowerUI:Play("Idle", true)
+    BossHealthUI:Play("Idle", true)
 
     -- Prepare players
     local playerNum = game:GetNumPlayers()
@@ -123,19 +144,69 @@ end
 
 
 -- UPDATE CALLBACKS
-function holy_smokes:FrameUpdate()
-    for i = 1, 800, 1 do
-        if SFXManager:IsPlaying(i) then
-            print(i)
+local function SpawnStalagmite()
+    local stalagmite = Isaac.Spawn(MinigameEntityTypes.CUSTOM_ENTITY, MinigameEntityVariants.STALAGMITE, 0, stalagmiteFloorPos + Vector(0, -350), Vector.Zero, nil)
+    local shadow = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.STALAGMITE_SHADOW, 0, stalagmiteFloorPos, Vector.Zero, stalagmite)
+    shadow.DepthOffset = -50
+
+    stalagmite:AddEntityFlags(EntityFlag.FLAG_NO_FLASH_ON_DAMAGE | EntityFlag.FLAG_NO_KNOCKBACK | EntityFlag.FLAG_NO_PHYSICS_KNOCKBACK)
+    stalagmite:GetSprite():Play("Fall")
+    stalagmite.Child = shadow
+    shadow:GetSprite():Play("Shadow")
+end
+
+
+local function UpdateStalagmitesAttack()
+    local room = game:GetRoom()
+    local stalagmiteFloorPos = room:GetGridPosition(211)
+
+    local stalagmites = Isaac.FindByType(MinigameEntityTypes.CUSTOM_ENTITY, MinigameEntityVariants.STALAGMITE, -1)
+
+    if #stalagmites == 0 then
+        SpawnStalagmite()
+    else
+        local stalagmite = stalagmites[1]
+
+        if stalagmite:GetSprite():IsPlaying("Fall") then
+            if stalagmite.Position.Y >= stalagmiteFloorPos.Y then
+                stalagmite.Position = stalagmiteFloorPos
+                stalagmite:GetSprite():Play("Break")
+                stalagmite.Velocity = Vector(0, 0)
+
+                stalagmite.Child:Remove()
+                SFXManager:Play(MinigameSounds.STALAGMITE_DROP)
+            else
+                stalagmite.Velocity = Vector(0, 20)
+            end
+        elseif stalagmite:GetSprite():IsFinished("Break") then
+            stalagmite:Remove()
+            CurrentMinigameState = MinigameState.NO_ATTACK
         end
     end
+end
 
-    if game:GetFrameCount() % 70 == 0 then
-        SatanHead:GetSprite():Play("Breathe", true)
-    end
 
-    if SatanHead:GetSprite():IsFinished("Breathe") then
-        SatanHead:GetSprite():Play("Idle", true)
+function holy_smokes:FrameUpdate()
+    -- for i = 1, 800, 1 do
+    --     if SFXManager:IsPlaying(i) then
+    --         print(i)
+    --     end
+    -- end
+
+    if CurrentMinigameState == MinigameState.NO_ATTACK then
+        --Idle animation test
+        if game:GetFrameCount() % 70 == 0 then
+            SatanHead:GetSprite():Play("Breathe", true)
+        end
+
+        if SatanHead:GetSprite():IsFinished("Breathe") then
+            SatanHead:GetSprite():Play("Idle", true)
+        end
+    elseif CurrentMinigameState == MinigameState.BOSS_ATTACK then
+
+        if CurrentSatanAttack == SatanAttack.FALLING_STALAGMITES then
+            UpdateStalagmitesAttack()
+        end
     end
 end
 holy_smokes.callbacks[ModCallbacks.MC_POST_UPDATE] = holy_smokes.FrameUpdate
@@ -168,6 +239,16 @@ local function RenderUI()
     end
 
     PlayerPowerUI:Render(Vector(Isaac.GetScreenWidth() / 2, Isaac.GetScreenHeight() / 2) + Vector(-189, 0), Vector.Zero, Vector.Zero)
+
+     --Boss health
+     if BossHealthUI:IsPlaying("Flash") then
+        BossHealthUI:Update()
+    else
+        BossHealthUI:Play("Idle")
+        BossHealthUI:SetFrame(math.ceil(SatanHead.HitPoints / SatanHead.MaxHitPoints * 72))
+    end
+
+    BossHealthUI:Render(Vector(Isaac.GetScreenWidth() / 2, Isaac.GetScreenHeight() / 2) + Vector(190, 0), Vector.Zero, Vector.Zero)
 end
 
 
@@ -236,5 +317,14 @@ function holy_smokes:OnCache(player, cacheFlags)
 end
 holy_smokes.callbacks[ModCallbacks.MC_EVALUATE_CACHE] = holy_smokes.OnCache
 
+
+function holy_smokes:OnCmd(command, arg)
+	if command == "attack" then
+		print("Attack set to " .. arg)
+		CurrentSatanAttack = tonumber(arg)
+        CurrentMinigameState = MinigameState.BOSS_ATTACK
+	end
+end
+holy_smokes.callbacks[ModCallbacks.MC_EXECUTE_CMD] = holy_smokes.OnCmd
 
 return holy_smokes

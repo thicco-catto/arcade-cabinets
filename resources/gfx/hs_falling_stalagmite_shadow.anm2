@@ -1,0 +1,30 @@
+<AnimatedActor>
+	<Info CreatedBy="Unknown" CreatedOn="08/04/2022 20:02:39" Version="26" Fps="30"/>
+	<Content>
+		<Spritesheets>
+			<Spritesheet Path="effects\holy smokes\hs_falling_stalagmite.png" Id="0"/>
+		</Spritesheets>
+		<Layers>
+			<Layer Name="Main" Id="0" SpritesheetId="0"/>
+		</Layers>
+		<Nulls/>
+		<Events>
+			<Event Name="Prize" Id="0"/>
+			<Event Name="Explosion" Id="1"/>
+		</Events>
+	</Content>
+	<Animations DefaultAnimation="Shadow">
+		<Animation Name="Shadow" FrameNum="1" Loop="true">
+			<RootAnimation>
+				<Frame XPosition="0" YPosition="0" XScale="100" YScale="100" Delay="1" Visible="true" RedTint="255" GreenTint="255" BlueTint="255" AlphaTint="255" RedOffset="0" GreenOffset="0" BlueOffset="0" Rotation="0" Interpolated="false"/>
+			</RootAnimation>
+			<LayerAnimations>
+				<LayerAnimation LayerId="0" Visible="true">
+					<Frame XPosition="0" YPosition="0" XPivot="13" YPivot="5" XCrop="28" YCrop="132" Width="26" Height="10" XScale="100" YScale="100" Delay="1" Visible="true" RedTint="255" GreenTint="255" BlueTint="255" AlphaTint="255" RedOffset="0" GreenOffset="0" BlueOffset="0" Rotation="0" Interpolated="false"/>
+				</LayerAnimation>
+			</LayerAnimations>
+			<NullAnimations/>
+			<Triggers/>
+		</Animation>
+	</Animations>
+</AnimatedActor>
