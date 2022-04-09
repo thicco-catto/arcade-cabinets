@@ -69,6 +69,7 @@ local MinigameConstants = {
     MAX_SHOCKWAVE_COUNT = 10,
     FRAMES_FOR_NEXT_SHOCKWAVE = 6,
     SHOCKWAVE_COUNT_TO_STALAGMITE = 8,
+    MAX_STALAGMITES_NUM = 4,
 
     MAX_PLAYER_HEALTH = 5,
     MAX_PLAYER_POWER = 200,
@@ -103,6 +104,7 @@ local PlayerHP = 0
 local PlayerPower = 0
 local SatanHead = nil
 
+local FallenStalagmitesNum = 0
 
 -- INIT MINIGAME
 function holy_smokes:Init()
@@ -171,6 +173,8 @@ local function SpawnStalagmite(spawnLeft)
     shadow:GetSprite():Play("Shadow")
 
     SatanHead:GetSprite():Play("StalagmiteScream", true)
+
+    FallenStalagmitesNum = FallenStalagmitesNum + 1
 end
 
 
@@ -230,9 +234,12 @@ local function ManageShockWaves()
 
             if data.ShockWaveCount ~= MinigameConstants.MAX_SHOCKWAVE_COUNT then
                 SpawnNextShockWave(data.SpawnLeft, data.ShockWaveCount + 1)
+            elseif data.ShockWaveCount == MinigameConstants.MAX_SHOCKWAVE_COUNT and
+            FallenStalagmitesNum == MinigameConstants.MAX_STALAGMITES_NUM and #Isaac.FindByType(MinigameEntityTypes.CUSTOM_ENTITY, MinigameEntityVariants.STALAGMITE, -1) == 0 then
+                CurrentMinigameState = MinigameState.NO_ATTACK
             end
 
-            if data.ShockWaveCount == MinigameConstants.SHOCKWAVE_COUNT_TO_STALAGMITE then
+            if data.ShockWaveCount == MinigameConstants.SHOCKWAVE_COUNT_TO_STALAGMITE and FallenStalagmitesNum ~= MinigameConstants.MAX_STALAGMITES_NUM then
                 SpawnStalagmite(not data.SpawnLeft)
             end
         end
@@ -260,6 +267,7 @@ end
 
 
 local function InitStalagmiteAttack()
+    FallenStalagmitesNum = 0
     SpawnStalagmite(true)
 end
 
