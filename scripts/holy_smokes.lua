@@ -37,6 +37,8 @@ local MinigameSounds = {
     TEAR_IMPACT = Isaac.GetSoundIdByName("hs tear impact"),
 
     STALAGMITE_DROP = Isaac.GetSoundIdByName("tug explosion"),
+    SATAN_STALAGMITE_SCREAM = Isaac.GetSoundIdByName("jc special attack"),
+    SHOCKWAVE = Isaac.GetSoundIdByName("tug rock break"),
 
     WIN = Isaac.GetSoundIdByName("arcade cabinet win"),
     LOSE = Isaac.GetSoundIdByName("arcade cabinet lose")
@@ -60,7 +62,13 @@ local MinigameEntityVariants = {
 
 -- Constants
 local MinigameConstants = {
-    SATAN_HEAD_SPAWNING_OFFSET = Vector(0, 52),
+    SATAN_HEAD_SPAWNING_OFFSET = Vector(4.5, 52),
+
+    STALAGMITE_HEIGHT = 400,
+    STALAGMITE_SPEED = 20,
+    MAX_SHOCKWAVE_COUNT = 10,
+    FRAMES_FOR_NEXT_SHOCKWAVE = 6,
+    SHOCKWAVE_COUNT_TO_STALAGMITE = 8,
 
     MAX_PLAYER_HEALTH = 5,
     MAX_PLAYER_POWER = 200,
@@ -94,10 +102,6 @@ BossHealthUI:Load("gfx/hs_boss_health_ui.anm2")
 local PlayerHP = 0
 local PlayerPower = 0
 local SatanHead = nil
-
--- Stalagmite attack stuff
-local IsLeft = false
-local ShockWaveCount = 0
 
 
 -- INIT MINIGAME
@@ -148,35 +152,70 @@ end
 
 
 -- UPDATE CALLBACKS
-local function SpawnStalagmite()
+local function SpawnStalagmite(spawnLeft)
     local room = game:GetRoom()
 
-    local griPos = 211 and IsLeft or 223
-    local stalagmiteFloorPos = room:GetGridPosition(griPos)
+    local gridPos = spawnLeft and 211 or 223
+    local stalagmiteFloorPos = room:GetGridPosition(gridPos)
 
-    local stalagmite = Isaac.Spawn(MinigameEntityTypes.CUSTOM_ENTITY, MinigameEntityVariants.STALAGMITE, 0, stalagmiteFloorPos + Vector(0, -350), Vector.Zero, nil)
+    local stalagmite = Isaac.Spawn(MinigameEntityTypes.CUSTOM_ENTITY, MinigameEntityVariants.STALAGMITE, 0, stalagmiteFloorPos + Vector(0, -MinigameConstants.STALAGMITE_HEIGHT), Vector.Zero, nil)
     local shadow = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.STALAGMITE_SHADOW, 0, stalagmiteFloorPos, Vector.Zero, stalagmite)
     shadow.DepthOffset = -50
 
     stalagmite:AddEntityFlags(EntityFlag.FLAG_NO_FLASH_ON_DAMAGE | EntityFlag.FLAG_NO_KNOCKBACK | EntityFlag.FLAG_NO_PHYSICS_KNOCKBACK)
-    stalagmite:GetSprite():Play("Fall")
+    stalagmite:ClearEntityFlags(EntityFlag.FLAG_APPEAR)
+    stalagmite:GetData().SpawnLeft = spawnLeft
     stalagmite.Child = shadow
+
+    stalagmite:GetSprite():Play("Fall")
     shadow:GetSprite():Play("Shadow")
+
+    SatanHead:GetSprite():Play("StalagmiteScream", true)
 end
 
 
-local function SpawnNextShockWave()
+local function SpawnNextShockWave(spawnLeft, shockWaveCount)
     local room = game:GetRoom()
 
-    local gridPos = 211 and IsLeft or 223
-    gridPos = gridPos + ShockWaveCount * (1 and IsLeft or -1)
+    local gridPos = spawnLeft and 211 or 223
+    gridPos = gridPos + (shockWaveCount * (spawnLeft and 1 or -1))
     local shockwavePos = room:GetGridPosition(gridPos)
 
     local shockwave = Isaac.Spawn(MinigameEntityTypes.CUSTOM_ENTITY, MinigameEntityVariants.SHOCKWAVE, 0, shockwavePos, Vector.Zero, nil)
     shockwave:AddEntityFlags(EntityFlag.FLAG_NO_FLASH_ON_DAMAGE | EntityFlag.FLAG_NO_KNOCKBACK | EntityFlag.FLAG_NO_PHYSICS_KNOCKBACK)
     shockwave:ClearEntityFlags(EntityFlag.FLAG_APPEAR)
+    shockwave:GetData().SpawnLeft = spawnLeft
+    shockwave:GetData().ShockWaveCount = shockWaveCount
 
-    ShockWaveCount = ShockWaveCount + 1
+    shockwave:GetSprite():Play("Break", true)
+    SFXManager:Play(MinigameSounds.SHOCKWAVE)
+end
+
+
+local function ManageStalagmite()
+    local stalagmites = Isaac.FindByType(MinigameEntityTypes.CUSTOM_ENTITY, MinigameEntityVariants.STALAGMITE, -1)
+
+    if #stalagmites == 0 then return end
+
+    local stalagmite = stalagmites[1]
+
+    if stalagmite:GetSprite():IsPlaying("Fall") then
+        if stalagmite.Position.Y >= stalagmite.Child.Position.Y then
+            stalagmite.Position = stalagmite.Child.Position
+            stalagmite:GetSprite():Play("Break")
+            stalagmite.Velocity = Vector(0, 0)
+
+            stalagmite.Child:Remove()
+            SFXManager:Play(MinigameSounds.STALAGMITE_DROP)
+
+            SpawnNextShockWave(stalagmite:GetData().SpawnLeft, 0)
+        else
+            stalagmite.Velocity = Vector(0, MinigameConstants.STALAGMITE_SPEED)
+        end
+    elseif stalagmite:GetSprite():IsFinished("Break") then
+        stalagmite:Remove()
+        --CurrentMinigameState = MinigameState.NO_ATTACK
+    end
 end
 
 
@@ -186,46 +225,42 @@ local function ManageShockWaves()
     for _, shockwave in ipairs(shockwaves) do
         if shockwave:GetSprite():IsFinished("Break") then
             shockwave:Remove()
-        elseif shockwave:GetSprite():GetFrame() == 10 then
-            if ShockWaveCount == 4 then
-                IsLeft = not IsLeft
-                SpawnStalagmite()
-            else
-                SpawnNextShockWave()
+        elseif shockwave:GetSprite():GetFrame() == MinigameConstants.FRAMES_FOR_NEXT_SHOCKWAVE then
+            local data = shockwave:GetData()
+
+            if data.ShockWaveCount ~= MinigameConstants.MAX_SHOCKWAVE_COUNT then
+                SpawnNextShockWave(data.SpawnLeft, data.ShockWaveCount + 1)
+            end
+
+            if data.ShockWaveCount == MinigameConstants.SHOCKWAVE_COUNT_TO_STALAGMITE then
+                SpawnStalagmite(not data.SpawnLeft)
             end
         end
     end
 end
 
 
+local function ManageSatanStalamiteAttack()
+    if SatanHead:GetSprite():IsFinished("StalagmiteScream") then
+        SatanHead:GetSprite():Play("Idle", true)
+    elseif SatanHead:GetSprite():IsPlaying("StalagmiteScream") and SatanHead:GetSprite():GetFrame() == 6 then
+        SFXManager:Play(MinigameSounds.SATAN_STALAGMITE_SCREAM)
+        game:ShakeScreen(14)
+    end
+end
+
+
 local function UpdateStalagmitesAttack()
-    local stalagmites = Isaac.FindByType(MinigameEntityTypes.CUSTOM_ENTITY, MinigameEntityVariants.STALAGMITE, -1)
+    ManageStalagmite()
 
     ManageShockWaves()
 
-    if #stalagmites == 0 then
-        SpawnStalagmite()
-    else
-        local stalagmite = stalagmites[1]
+    ManageSatanStalamiteAttack()
+end
 
-        if stalagmite:GetSprite():IsPlaying("Fall") then
-            if stalagmite.Position.Y >= stalagmite.Child.Position.Y then
-                stalagmite.Position = stalagmite.Child.Position
-                stalagmite:GetSprite():Play("Break")
-                stalagmite.Velocity = Vector(0, 0)
 
-                stalagmite.Child:Remove()
-                SFXManager:Play(MinigameSounds.STALAGMITE_DROP)
-
-                SpawnNextShockWave()
-            else
-                stalagmite.Velocity = Vector(0, 20)
-            end
-        elseif stalagmite:GetSprite():IsFinished("Break") then
-            stalagmite:Remove()
-            CurrentMinigameState = MinigameState.NO_ATTACK
-        end
-    end
+local function InitStalagmiteAttack()
+    SpawnStalagmite(true)
 end
 
 
@@ -366,6 +401,10 @@ function holy_smokes:OnCmd(command, arg)
 		print("Attack set to " .. arg)
 		CurrentSatanAttack = tonumber(arg)
         CurrentMinigameState = MinigameState.BOSS_ATTACK
+
+        if CurrentSatanAttack == SatanAttack.FALLING_STALAGMITES then
+            InitStalagmiteAttack()
+        end
 	end
 end
 holy_smokes.callbacks[ModCallbacks.MC_EXECUTE_CMD] = holy_smokes.OnCmd
