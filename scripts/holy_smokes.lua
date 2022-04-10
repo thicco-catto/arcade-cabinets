@@ -88,7 +88,8 @@ local MinigameState = {
 
 local CurrentSatanAttack = 0
 local SatanAttack = {
-    FALLING_STALAGMITES = 0
+    FALLING_STALAGMITES = 0,
+    DIAMOND_PROJECTILES = 1,
 }
 
 -- UI
@@ -105,6 +106,9 @@ local PlayerPower = 0
 local SatanHead = nil
 
 local FallenStalagmitesNum = 0
+
+local attackNum = 0
+local goingDown = false
 
 -- INIT MINIGAME
 function holy_smokes:Init()
@@ -272,6 +276,41 @@ local function InitStalagmiteAttack()
 end
 
 
+local function ManageSatanDiamondProjectileAttack()
+    if SatanHead:GetSprite():IsFinished("ShootDiamondProjectiles") then
+        SatanHead:GetSprite():Play("ShootDiamondProjectiles", true)
+    elseif SatanHead:GetSprite():GetFrame() == 18 then
+        local spawningPos = SatanHead.Position + Vector(0, 25)
+        local spawningSpeed = (game:GetPlayer(0).Position - spawningPos):Normalized() * 10
+        local params = ProjectileParams()
+        params.Spread = 1
+        SatanHead:ToNPC():FireProjectiles(spawningPos, spawningSpeed, attackNum % 3, params)
+
+        if goingDown then
+            attackNum = attackNum - 1
+        else
+            attackNum = attackNum + 1
+        end
+
+        if attackNum == 0 then
+            goingDown = false
+        elseif attackNum == 2 then
+            goingDown = true
+        end
+    end
+end
+
+
+local function UpdateDiamondProjectileAttack()
+    ManageSatanDiamondProjectileAttack()
+end
+
+
+local function InitDiamondProjectileAttack()
+    SatanHead:GetSprite():Play("ShootDiamondProjectiles", true)
+end
+
+
 function holy_smokes:FrameUpdate()
     -- for i = 1, 800, 1 do
     --     if SFXManager:IsPlaying(i) then
@@ -292,6 +331,8 @@ function holy_smokes:FrameUpdate()
 
         if CurrentSatanAttack == SatanAttack.FALLING_STALAGMITES then
             UpdateStalagmitesAttack()
+        elseif CurrentSatanAttack == SatanAttack.DIAMOND_PROJECTILES then
+            UpdateDiamondProjectileAttack()
         end
     end
 end
@@ -412,6 +453,8 @@ function holy_smokes:OnCmd(command, arg)
 
         if CurrentSatanAttack == SatanAttack.FALLING_STALAGMITES then
             InitStalagmiteAttack()
+        elseif CurrentSatanAttack == SatanAttack.DIAMOND_PROJECTILES then
+            InitDiamondProjectileAttack()
         end
 	end
 end
