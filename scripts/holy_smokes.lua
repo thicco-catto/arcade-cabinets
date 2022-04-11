@@ -71,6 +71,14 @@ local MinigameConstants = {
     SHOCKWAVE_COUNT_TO_STALAGMITE = 8,
     MAX_STALAGMITES_NUM = 4,
 
+    DIAMOND_PROJECTILE_SHOOTING_PATTERN = {
+        0,
+        1,
+        2,
+        1
+    },
+    AMOUNT_OF_PROJECTILE_WAVES_DIAMOND = 16,
+
     MAX_PLAYER_HEALTH = 5,
     MAX_PLAYER_POWER = 200,
 }
@@ -107,8 +115,7 @@ local SatanHead = nil
 
 local FallenStalagmitesNum = 0
 
-local attackNum = 0
-local goingDown = false
+local NumDiamondProjectileWaves = 0
 
 -- INIT MINIGAME
 function holy_smokes:Init()
@@ -276,27 +283,28 @@ local function InitStalagmiteAttack()
 end
 
 
+local function ShootDiamondProjectiles()
+    local spawningPos = SatanHead.Position + Vector(0, 25)
+    local spawningSpeed = (game:GetPlayer(0).Position - spawningPos):Normalized() * 10
+    local projectileType = MinigameConstants.DIAMOND_PROJECTILE_SHOOTING_PATTERN[(NumDiamondProjectileWaves % #MinigameConstants.DIAMOND_PROJECTILE_SHOOTING_PATTERN) + 1]
+    local params = ProjectileParams()
+    params.BulletFlags = ProjectileFlags.NO_WALL_COLLIDE
+    params.Spread = 1
+    SatanHead:ToNPC():FireProjectiles(spawningPos, spawningSpeed, projectileType, params)
+end
+
+
 local function ManageSatanDiamondProjectileAttack()
     if SatanHead:GetSprite():IsFinished("ShootDiamondProjectiles") then
-        SatanHead:GetSprite():Play("ShootDiamondProjectiles", true)
-    elseif SatanHead:GetSprite():GetFrame() == 18 then
-        local spawningPos = SatanHead.Position + Vector(0, 25)
-        local spawningSpeed = (game:GetPlayer(0).Position - spawningPos):Normalized() * 10
-        local params = ProjectileParams()
-        params.Spread = 1
-        SatanHead:ToNPC():FireProjectiles(spawningPos, spawningSpeed, attackNum % 3, params)
-
-        if goingDown then
-            attackNum = attackNum - 1
+        if NumDiamondProjectileWaves == MinigameConstants.AMOUNT_OF_PROJECTILE_WAVES_DIAMOND then
+            SatanHead:GetSprite():Play("Idle", true)
+            CurrentMinigameState = MinigameState.NO_ATTACK
         else
-            attackNum = attackNum + 1
+            SatanHead:GetSprite():Play("ShootDiamondProjectiles", true)
         end
-
-        if attackNum == 0 then
-            goingDown = false
-        elseif attackNum == 2 then
-            goingDown = true
-        end
+    elseif SatanHead:GetSprite():GetFrame() == 12 then
+        ShootDiamondProjectiles()
+        NumDiamondProjectileWaves = NumDiamondProjectileWaves + 1
     end
 end
 
@@ -307,6 +315,7 @@ end
 
 
 local function InitDiamondProjectileAttack()
+    NumDiamondProjectileWaves = 0
     SatanHead:GetSprite():Play("ShootDiamondProjectiles", true)
 end
 
@@ -425,6 +434,21 @@ end
 holy_smokes.callbacks[ModCallbacks.MC_POST_FIRE_TEAR] = holy_smokes.OnTearFire
 
 
+function holy_smokes:OnProjectileInit(projectile)
+    projectile:GetSprite():Load("gfx/hs_satan_projectile.anm2", true)
+    projectile:GetSprite():Play("Idle", true)
+end
+holy_smokes.callbacks[ModCallbacks.MC_POST_PROJECTILE_INIT] = holy_smokes.OnProjectileInit
+
+function holy_smokes:OnProjectileUpdate(projectile)
+    if projectile.Color.A < 1 then
+        projectile:SetColor(Color(1, 1, 1, 1, 0, 0, 0), 300, -1, false, false)
+    end
+
+    projectile.FallingSpeed = 0
+    projectile.FallingAccel = -0.1
+end
+holy_smokes.callbacks[ModCallbacks.MC_POST_PROJECTILE_UPDATE] = holy_smokes.OnProjectileUpdate
 function holy_smokes:OnCache(player, cacheFlags)
     if cacheFlags == CacheFlag.CACHE_DAMAGE then
         player.Damage = 2
