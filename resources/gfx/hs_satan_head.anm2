@@ -1,5 +1,5 @@
 <AnimatedActor>
-	<Info CreatedBy="Unknown" CreatedOn="12/04/2022 11:56:35" Version="54" Fps="30"/>
+	<Info CreatedBy="Unknown" CreatedOn="12/04/2022 12:55:39" Version="55" Fps="30"/>
 	<Content>
 		<Spritesheets>
 			<Spritesheet Path="enemies\hs_satan_head.png" Id="0"/>

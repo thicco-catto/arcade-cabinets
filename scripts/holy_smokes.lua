@@ -414,6 +414,11 @@ local function ManageFloorCracks()
             fire:GetSprite():Play("Idle", true)
 
             crack.Child = fire
+
+            if not SFXManager:IsPlaying(MinigameSounds.SATAN_STALAGMITE_SCREAM) then
+                SFXManager:Play(MinigameSounds.SATAN_STALAGMITE_SCREAM)
+                game:ShakeScreen(60)
+            end
         end
 
         if crack:GetSprite():IsFinished("Close") then
@@ -483,10 +488,12 @@ local function InitNoseLaserAttack()
     local leftLaser = EntityLaser.ShootAngle(1, SatanHead.Position, 90 - 60, 90, Vector.Zero, SatanHead)
     leftLaser:SetActiveRotation(50, 40, 1, false)
     leftLaser.DepthOffset = 100
+    --leftLaser.Visible = false
 
     local rightLaser = EntityLaser.ShootAngle(1, SatanHead.Position, 90 + 60, 90, Vector.Zero, SatanHead)
     rightLaser:SetActiveRotation(50, -40, -1, false)
     rightLaser.DepthOffset = 100
+    --rightLaser.Visible = false
 end
 
 
@@ -564,6 +571,12 @@ end
 
 function holy_smokes:OnRender()
     RenderUI()
+
+    -- for _, entity in ipairs(Isaac.FindByType(EntityType.ENTITY_EFFECT, -1, -1)) do
+    --     local pos = Isaac.WorldToScreen(entity.Position)
+
+    --     Isaac.RenderText(entity.Variant, pos.X, pos.Y, 1, 1, 1, 255)
+    -- end
 end
 holy_smokes.callbacks[ModCallbacks.MC_POST_RENDER] = holy_smokes.OnRender
 
@@ -587,6 +600,10 @@ function holy_smokes:OnEffectInit(effect)
 
         effect:GetSprite():Load("gfx/hs_holy_tear_splash.anm2", true)
         effect:GetSprite():Play("Poof", true)
+    elseif effect.Variant == EffectVariant.BULLET_POOF then
+        effect.Visible = false
+    elseif effect.Variant == EffectVariant.WATER_SPLASH then
+        effect:Remove()
     end
 end
 holy_smokes.callbacks[ModCallbacks.MC_POST_EFFECT_INIT] = holy_smokes.OnEffectInit
