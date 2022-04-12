@@ -38,6 +38,18 @@
         <sample weight="1" path="holy smokes/tear impact.wav" />
     </sound>
 
+    <sound name="hs spit">
+        <sample weight="1" path="holy smokes/spit.wav" />
+    </sound>
+
+    <sound name="hs open crack">
+        <sample weight="1" path="holy smokes/crack.wav" />
+    </sound>
+
+    <sound name="hs fire loop">
+        <sample weight="1" path="holy smokes/fire.wav" />
+    </sound>
+
     <!--Jumping coffing-->
     <sound name="jc sword swing">
         <sample weight="1" path="jumping coffing/swing.wav" />

@@ -40,6 +40,11 @@ local MinigameSounds = {
     SATAN_STALAGMITE_SCREAM = Isaac.GetSoundIdByName("jc special attack"),
     SHOCKWAVE = Isaac.GetSoundIdByName("tug rock break"),
 
+    SPIT = Isaac.GetSoundIdByName("hs spit"),
+
+    OPEN_CRACK = Isaac.GetSoundIdByName("hs open crack"),
+    FIRE_LOOP = Isaac.GetSoundIdByName("hs fire loop"),
+
     WIN = Isaac.GetSoundIdByName("arcade cabinet win"),
     LOSE = Isaac.GetSoundIdByName("arcade cabinet lose")
 }
@@ -57,7 +62,10 @@ local MinigameEntityVariants = {
 
     STALAGMITE = Isaac.GetEntityVariantByName("stalagmite HS"),
     STALAGMITE_SHADOW = Isaac.GetEntityVariantByName("stalagmite shadow HS"),
-    SHOCKWAVE = Isaac.GetEntityVariantByName("shockwave HS")
+    SHOCKWAVE = Isaac.GetEntityVariantByName("shockwave HS"),
+
+    FLOOR_CRACK = Isaac.GetEntityVariantByName("floor crack HS"),
+    FIRE_GEYSER = Isaac.GetEntityVariantByName("fire geyser HS")
 }
 
 -- Constants
@@ -79,6 +87,13 @@ local MinigameConstants = {
     },
     AMOUNT_OF_PROJECTILE_WAVES_DIAMOND = 16,
 
+    FLOOR_CRACK_PATTERN = {
+        3,
+        4,
+        5,
+        6
+    },
+
     MAX_PLAYER_HEALTH = 5,
     MAX_PLAYER_POWER = 200,
 }
@@ -98,6 +113,8 @@ local CurrentSatanAttack = 0
 local SatanAttack = {
     FALLING_STALAGMITES = 0,
     DIAMOND_PROJECTILES = 1,
+    FLOOR_CRACKING = 2,
+    NOSE_LASER = 3
 }
 
 -- UI
@@ -115,7 +132,9 @@ local SatanHead = nil
 
 local FallenStalagmitesNum = 0
 
-local NumDiamondProjectileWaves = 0
+local DiamondProjectileWavesNum = 0
+
+local FloorCracksNum = 0
 
 -- INIT MINIGAME
 function holy_smokes:Init()
@@ -126,6 +145,8 @@ function holy_smokes:Init()
     CurrentMinigameState = MinigameState.NO_ATTACK
     CurrentSatanAttack = SatanAttack.FALLING_STALAGMITES
 
+    rng:SetSeed(game:GetSeeds():GetStartSeed(), 35)
+
     -- Backdrop
     local backdrop = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, ArcadeCabinetVariables.Backdrop1x2Variant, 0, game:GetRoom():GetCenterPos(), Vector.Zero, nil)
     backdrop:GetSprite():ReplaceSpritesheet(0, "gfx/backdrop/hs_backdrop.png")
@@ -135,6 +156,7 @@ function holy_smokes:Init()
     -- Boss
     SatanHead = Isaac.Spawn(MinigameEntityTypes.CUSTOM_ENTITY, MinigameEntityVariants.SATAN_HEAD, 0, game:GetRoom():GetCenterPos() + MinigameConstants.SATAN_HEAD_SPAWNING_OFFSET, Vector.Zero, nil)
     SatanHead:AddEntityFlags(EntityFlag.FLAG_NO_FLASH_ON_DAMAGE | EntityFlag.FLAG_NO_KNOCKBACK | EntityFlag.FLAG_NO_PHYSICS_KNOCKBACK)
+    SatanHead:ClearEntityFlags(EntityFlag.FLAG_APPEAR)
 
     -- UI
     PlayerHealthUI:Play("Idle", true)
@@ -239,15 +261,18 @@ local function ManageShockWaves()
 
     for _, shockwave in ipairs(shockwaves) do
         if shockwave:GetSprite():IsFinished("Break") then
+            if shockwave:GetData().ShockWaveCount == MinigameConstants.MAX_SHOCKWAVE_COUNT and
+            FallenStalagmitesNum == MinigameConstants.MAX_STALAGMITES_NUM and
+            #Isaac.FindByType(MinigameEntityTypes.CUSTOM_ENTITY, MinigameEntityVariants.STALAGMITE, -1) == 0 then
+                CurrentMinigameState = MinigameState.NO_ATTACK
+            end
+
             shockwave:Remove()
         elseif shockwave:GetSprite():GetFrame() == MinigameConstants.FRAMES_FOR_NEXT_SHOCKWAVE then
             local data = shockwave:GetData()
 
             if data.ShockWaveCount ~= MinigameConstants.MAX_SHOCKWAVE_COUNT then
                 SpawnNextShockWave(data.SpawnLeft, data.ShockWaveCount + 1)
-            elseif data.ShockWaveCount == MinigameConstants.MAX_SHOCKWAVE_COUNT and
-            FallenStalagmitesNum == MinigameConstants.MAX_STALAGMITES_NUM and #Isaac.FindByType(MinigameEntityTypes.CUSTOM_ENTITY, MinigameEntityVariants.STALAGMITE, -1) == 0 then
-                CurrentMinigameState = MinigameState.NO_ATTACK
             end
 
             if data.ShockWaveCount == MinigameConstants.SHOCKWAVE_COUNT_TO_STALAGMITE and FallenStalagmitesNum ~= MinigameConstants.MAX_STALAGMITES_NUM then
@@ -286,7 +311,7 @@ end
 local function ShootDiamondProjectiles()
     local spawningPos = SatanHead.Position + Vector(0, 25)
     local spawningSpeed = (game:GetPlayer(0).Position - spawningPos):Normalized() * 10
-    local projectileType = MinigameConstants.DIAMOND_PROJECTILE_SHOOTING_PATTERN[(NumDiamondProjectileWaves % #MinigameConstants.DIAMOND_PROJECTILE_SHOOTING_PATTERN) + 1]
+    local projectileType = MinigameConstants.DIAMOND_PROJECTILE_SHOOTING_PATTERN[(DiamondProjectileWavesNum % #MinigameConstants.DIAMOND_PROJECTILE_SHOOTING_PATTERN) + 1]
     local params = ProjectileParams()
     params.BulletFlags = ProjectileFlags.NO_WALL_COLLIDE
     params.Spread = 1
@@ -296,15 +321,16 @@ end
 
 local function ManageSatanDiamondProjectileAttack()
     if SatanHead:GetSprite():IsFinished("ShootDiamondProjectiles") then
-        if NumDiamondProjectileWaves == MinigameConstants.AMOUNT_OF_PROJECTILE_WAVES_DIAMOND then
+        if DiamondProjectileWavesNum == MinigameConstants.AMOUNT_OF_PROJECTILE_WAVES_DIAMOND then
             SatanHead:GetSprite():Play("Idle", true)
             CurrentMinigameState = MinigameState.NO_ATTACK
         else
             SatanHead:GetSprite():Play("ShootDiamondProjectiles", true)
         end
     elseif SatanHead:GetSprite():GetFrame() == 12 then
+        SFXManager:Play(MinigameSounds.SPIT)
         ShootDiamondProjectiles()
-        NumDiamondProjectileWaves = NumDiamondProjectileWaves + 1
+        DiamondProjectileWavesNum = DiamondProjectileWavesNum + 1
     end
 end
 
@@ -315,8 +341,152 @@ end
 
 
 local function InitDiamondProjectileAttack()
-    NumDiamondProjectileWaves = 0
+    DiamondProjectileWavesNum = 0
     SatanHead:GetSprite():Play("ShootDiamondProjectiles", true)
+end
+
+
+local function RemoveTakenPositions(posiblePosition, chosenPosition)
+    local sol = {}
+
+    for _, pos in ipairs(posiblePosition) do
+        if pos ~= chosenPosition - 1 and pos ~= chosenPosition and pos ~= chosenPosition + 1 then
+            sol[#sol+1] = pos
+        end
+    end
+
+    return sol
+end
+
+
+local function SpawnFloorCracks()
+    local cracksNum = MinigameConstants.FLOOR_CRACK_PATTERN[FloorCracksNum]
+    if not cracksNum then return end
+
+    local room = game:GetRoom()
+    local posbileSpawns = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}
+    local chosenSpawns = {}
+
+    for _, crack in ipairs(Isaac.FindByType(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.FLOOR_CRACK, 0)) do
+        posbileSpawns = RemoveTakenPositions(posbileSpawns, room:GetClampedGridIndex(crack.Position))
+    end
+
+    chosenSpawns[1] = room:GetClampedGridIndex(game:GetPlayer(0).Position) - 211
+
+    for _ = 2, cracksNum, 1 do
+        posbileSpawns = RemoveTakenPositions(posbileSpawns, chosenSpawns[#chosenSpawns])
+
+        if #posbileSpawns == 0 then
+            break
+        end
+
+        chosenSpawns[#chosenSpawns+1] = posbileSpawns[rng:RandomInt(#posbileSpawns) + 1]
+    end
+
+    for _, pos in ipairs(chosenSpawns) do
+        local crack = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.FLOOR_CRACK, 0, room:GetGridPosition(pos + 211), Vector.Zero, nil)
+        crack:ClearEntityFlags(EntityFlag.FLAG_APPEAR)
+        crack:GetSprite():Play("Open", true)
+        crack.DepthOffset = -50
+
+        crack:GetData().IsLast = (FloorCracksNum == #MinigameConstants.FLOOR_CRACK_PATTERN)
+    end
+
+    SFXManager:Play(MinigameSounds.OPEN_CRACK)
+    FloorCracksNum = FloorCracksNum + 1
+end
+
+
+local function ManageFloorCracks()
+    local cracks = Isaac.FindByType(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.FLOOR_CRACK, 0)
+    if #cracks == 0 then return end
+
+    for _, crack in ipairs(cracks) do
+        if crack:GetSprite():IsPlaying("Open") and crack:GetSprite():GetFrame() == 10 and
+         not SatanHead:GetSprite():IsPlaying("FloorCrackScream") then
+            SatanHead:GetSprite():Play("FloorCrackScream", true)
+        end
+
+        if crack:GetSprite():IsFinished("Open") and not crack.Child then
+            local fire = Isaac.Spawn(MinigameEntityTypes.CUSTOM_ENTITY, MinigameEntityVariants.FIRE_GEYSER, 0, crack.Position, Vector.Zero, nil)
+            fire:AddEntityFlags(EntityFlag.FLAG_NO_FLASH_ON_DAMAGE | EntityFlag.FLAG_NO_KNOCKBACK | EntityFlag.FLAG_NO_PHYSICS_KNOCKBACK)
+            fire:ClearEntityFlags(EntityFlag.FLAG_APPEAR)
+            fire:GetSprite():Play("Idle", true)
+
+            crack.Child = fire
+        end
+
+        if crack:GetSprite():IsFinished("Close") then
+            if crack:GetData().IsLast then
+                CurrentMinigameState = MinigameState.NO_ATTACK
+            end
+
+            crack:Remove()
+        end
+    end
+end
+
+
+local function ManageFireGeysers()
+    local fires = Isaac.FindByType(MinigameEntityTypes.CUSTOM_ENTITY, MinigameEntityVariants.FIRE_GEYSER, 0)
+    if #fires == 0 then 
+        SFXManager:Stop(MinigameSounds.FIRE_LOOP)
+        return
+    end
+
+    if not SFXManager:IsPlaying(MinigameSounds.FIRE_LOOP) then
+        SFXManager:Play(MinigameSounds.FIRE_LOOP)
+    end
+end
+
+
+local function ManageSatanFloorCrackingAttack()
+    if SatanHead:GetSprite():IsFinished("FloorCrackScream") then
+        SatanHead:GetSprite():Play("Idle", true)
+    end
+
+    if SatanHead:GetSprite():IsPlaying("FloorCrackScream") and SatanHead:GetSprite():GetFrame() == 66 then
+        for _, crack in ipairs(Isaac.FindByType(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.FLOOR_CRACK, 0)) do
+            crack:GetSprite():Play("Close", true)
+        end
+
+        for _, fire in ipairs(Isaac.FindByType(MinigameEntityTypes.CUSTOM_ENTITY, MinigameEntityVariants.FIRE_GEYSER, 0)) do
+            fire:Remove()
+        end
+
+        SpawnFloorCracks()
+    end
+end
+
+
+local function UpdateFloorCrackingAttack()
+    ManageFloorCracks()
+
+    ManageFireGeysers()
+
+    ManageSatanFloorCrackingAttack()
+end
+
+
+local function InitFloorCrackingAttack()
+    FloorCracksNum = 1
+
+    SpawnFloorCracks()
+end
+
+
+local function UpdateNoseLaserAttack()
+end
+
+
+local function InitNoseLaserAttack()
+    local leftLaser = EntityLaser.ShootAngle(1, SatanHead.Position, 90 - 60, 90, Vector.Zero, SatanHead)
+    leftLaser:SetActiveRotation(50, 40, 1, false)
+    leftLaser.DepthOffset = 100
+
+    local rightLaser = EntityLaser.ShootAngle(1, SatanHead.Position, 90 + 60, 90, Vector.Zero, SatanHead)
+    rightLaser:SetActiveRotation(50, -40, -1, false)
+    rightLaser.DepthOffset = 100
 end
 
 
@@ -342,6 +512,10 @@ function holy_smokes:FrameUpdate()
             UpdateStalagmitesAttack()
         elseif CurrentSatanAttack == SatanAttack.DIAMOND_PROJECTILES then
             UpdateDiamondProjectileAttack()
+        elseif CurrentSatanAttack == SatanAttack.FLOOR_CRACKING then
+            UpdateFloorCrackingAttack()
+        elseif CurrentSatanAttack == SatanAttack.NOSE_LASER then
+            UpdateNoseLaserAttack()
         end
     end
 end
@@ -418,6 +592,16 @@ end
 holy_smokes.callbacks[ModCallbacks.MC_POST_EFFECT_INIT] = holy_smokes.OnEffectInit
 
 
+function holy_smokes:OnEffectUpdate(effect)
+    if effect.Variant == EffectVariant.BULLET_POOF then
+        --Remove this there because otherwise it doesnt stop the sound lmao
+        effect:Remove()
+        SFXManager:Stop(SoundEffect.SOUND_TEARIMPACTS)
+    end
+end
+holy_smokes.callbacks[ModCallbacks.MC_POST_EFFECT_UPDATE] = holy_smokes.OnEffectUpdate
+
+
 function holy_smokes:OnTearFire(tear)
     SFXManager:Stop(SoundEffect.SOUND_TEARS_FIRE)
 
@@ -440,6 +624,7 @@ function holy_smokes:OnProjectileInit(projectile)
 end
 holy_smokes.callbacks[ModCallbacks.MC_POST_PROJECTILE_INIT] = holy_smokes.OnProjectileInit
 
+
 function holy_smokes:OnProjectileUpdate(projectile)
     if projectile.Color.A < 1 then
         projectile:SetColor(Color(1, 1, 1, 1, 0, 0, 0), 300, -1, false, false)
@@ -449,6 +634,8 @@ function holy_smokes:OnProjectileUpdate(projectile)
     projectile.FallingAccel = -0.1
 end
 holy_smokes.callbacks[ModCallbacks.MC_POST_PROJECTILE_UPDATE] = holy_smokes.OnProjectileUpdate
+
+
 function holy_smokes:OnCache(player, cacheFlags)
     if cacheFlags == CacheFlag.CACHE_DAMAGE then
         player.Damage = 2
@@ -479,6 +666,10 @@ function holy_smokes:OnCmd(command, arg)
             InitStalagmiteAttack()
         elseif CurrentSatanAttack == SatanAttack.DIAMOND_PROJECTILES then
             InitDiamondProjectileAttack()
+        elseif CurrentSatanAttack == SatanAttack.FLOOR_CRACKING then
+            InitFloorCrackingAttack()
+        elseif CurrentSatanAttack == SatanAttack.NOSE_LASER then
+            InitNoseLaserAttack()
         end
 	end
 end
