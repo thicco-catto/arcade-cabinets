@@ -65,7 +65,9 @@ local MinigameEntityVariants = {
     SHOCKWAVE = Isaac.GetEntityVariantByName("shockwave HS"),
 
     FLOOR_CRACK = Isaac.GetEntityVariantByName("floor crack HS"),
-    FIRE_GEYSER = Isaac.GetEntityVariantByName("fire geyser HS")
+    FIRE_GEYSER = Isaac.GetEntityVariantByName("fire geyser HS"),
+
+    DOUBLE_LASER = Isaac.GetEntityVariantByName("double laser HS")
 }
 
 -- Constants
@@ -480,20 +482,75 @@ local function InitFloorCrackingAttack()
 end
 
 
+local function ShootNoseLasers()
+    local leftLaser = EntityLaser.ShootAngle(1, SatanHead.Position, 90 - 50, 500, Vector.Zero, SatanHead)
+    leftLaser:SetActiveRotation(10, 30, 0.3, true)
+    leftLaser.Visible = false
+
+    local rightLaser = EntityLaser.ShootAngle(1, SatanHead.Position, 90 + 50, 500, Vector.Zero, SatanHead)
+    rightLaser:SetActiveRotation(10, -30, -0.3, true)
+    rightLaser.Visible = false
+
+    local fakeLaser = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.DOUBLE_LASER, 0, SatanHead.Position, Vector.Zero, nil)
+    fakeLaser.DepthOffset = 100
+    fakeLaser:GetSprite():Play("CloseIn", true)
+end
+
+
+local function ManageSatanNoseLaserAttack()
+    if SatanHead:GetSprite():IsPlaying("FireNoseLaser") and SatanHead:GetSprite():GetFrame() == 10 then
+        ShootNoseLasers()
+    elseif SatanHead:GetSprite():IsFinished("FireNoseLaser") then
+        
+    end
+end
+
+
+local function SpawnFireAtGrid(pos)
+    local fire = Isaac.Spawn(MinigameEntityTypes.CUSTOM_ENTITY, MinigameEntityVariants.FIRE_GEYSER, 0, pos, Vector.Zero, nil)
+    fire:AddEntityFlags(EntityFlag.FLAG_NO_FLASH_ON_DAMAGE | EntityFlag.FLAG_NO_KNOCKBACK | EntityFlag.FLAG_NO_PHYSICS_KNOCKBACK)
+    fire:ClearEntityFlags(EntityFlag.FLAG_APPEAR)
+    fire:GetSprite():ReplaceSpritesheet(0, "gfx/effects/holy smokes/hs_flat_fire.png")
+    fire:GetSprite():LoadGraphics()
+    fire:GetSprite():Play("Idle", true)
+end
+
+
+local function SpawnLaserFires(frames)
+    local room = game:GetRoom()
+    local maxPos = room:GetGridPosition(223) + Vector(10, 5)
+    local minPos = room:GetGridPosition(211) + Vector(-10, 5)
+
+    if (frames + 8) % 9 == 0 then
+        local offset = (frames + 8) / 9
+        SpawnFireAtGrid(maxPos - Vector(15, 0) * offset)
+        SpawnFireAtGrid(minPos + Vector(15, 0) * offset)
+    end
+end
+
+
+local function ManageDoubleLaser()
+    local doubleLaser = Isaac.FindByType(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.DOUBLE_LASER, 0)[1]
+
+    if not doubleLaser then return end
+
+    if doubleLaser:GetSprite():IsPlaying("CloseIn") then
+        SpawnLaserFires(doubleLaser:GetSprite():GetFrame())
+    elseif doubleLaser:GetSprite():IsFinished("CloseIn") then
+        doubleLaser:GetSprite():Play("Idle")
+    end
+end
+
+
 local function UpdateNoseLaserAttack()
+    ManageSatanNoseLaserAttack()
+
+    ManageDoubleLaser()
 end
 
 
 local function InitNoseLaserAttack()
-    local leftLaser = EntityLaser.ShootAngle(1, SatanHead.Position, 90 - 60, 90, Vector.Zero, SatanHead)
-    leftLaser:SetActiveRotation(50, 40, 1, false)
-    leftLaser.DepthOffset = 100
-    --leftLaser.Visible = false
-
-    local rightLaser = EntityLaser.ShootAngle(1, SatanHead.Position, 90 + 60, 90, Vector.Zero, SatanHead)
-    rightLaser:SetActiveRotation(50, -40, -1, false)
-    rightLaser.DepthOffset = 100
-    --rightLaser.Visible = false
+    SatanHead:GetSprite():Play("FireNoseLaser", true)
 end
 
 

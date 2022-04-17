@@ -1,5 +1,5 @@
 <AnimatedActor>
-	<Info CreatedBy="Unknown" CreatedOn="17/04/2022 20:35:07" Version="31" Fps="30"/>
+	<Info CreatedBy="Unknown" CreatedOn="17/04/2022 14:30:01" Version="30" Fps="30"/>
 	<Content>
 		<Spritesheets>
 			<Spritesheet Path="effects\holy smokes\hs_fire_geyser.png" Id="0"/>
