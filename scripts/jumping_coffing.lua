@@ -603,7 +603,7 @@ local function RenderUI()
         HeartsUI:Play("Idle", true)
         HeartsUI:SetFrame(PlayerHP)
     end
-    HeartsUI:Render(Vector(Isaac.GetScreenWidth() / 2, Isaac.GetScreenHeight() / 2) - Vector(160, 120), Vector.Zero, Vector.Zero)
+    HeartsUI:Render(Vector(Isaac.GetScreenWidth() / 2, Isaac.GetScreenHeight() / 2) - Vector(190, 120), Vector.Zero, Vector.Zero)
 
     --Render charge bar
     local chargeRate = (ChargeFrames / MinigameConstants.MAX_SPIRIT_SWORD_CHARGE) * 10

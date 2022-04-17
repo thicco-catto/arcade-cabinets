@@ -168,8 +168,9 @@ function night_light:Init()
     SFXManager:Play(MinigameSounds.TRANSITION)
 
     --Backdrop
-    local backdrop = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, ArcadeCabinetVariables.BackdropVariant, 0, room:GetCenterPos(), Vector.Zero, nil)
-    backdrop:GetSprite():Load("gfx/backdrop/nl_backdrop.anm2", true)
+    local backdrop = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, ArcadeCabinetVariables.Backdrop2x2Variant, 0, room:GetCenterPos(), Vector.Zero, nil)
+    backdrop:GetSprite():ReplaceSpritesheet(0, "gfx/backdrop/nl_backdrop.png")
+    backdrop:GetSprite():LoadGraphics()
     backdrop.DepthOffset = -500
 
     --Fake player

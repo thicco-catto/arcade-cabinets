@@ -417,7 +417,7 @@ local function ManageFloorCracks()
 
             if not SFXManager:IsPlaying(MinigameSounds.SATAN_STALAGMITE_SCREAM) then
                 SFXManager:Play(MinigameSounds.SATAN_STALAGMITE_SCREAM)
-                game:ShakeScreen(60)
+                game:ShakeScreen(10)
             end
         end
 
