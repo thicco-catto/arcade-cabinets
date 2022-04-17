@@ -69,4 +69,95 @@
                 }
 		]]></fragment>
 	</shader>
+
+	<shader name="MinigameShaderV2">
+        <parameters>
+			<param name="Time" type="float"/>
+			<param name="Enabled" type="float"/>
+        </parameters>
+		<vertex><![CDATA[
+			attribute vec3 Position;										
+			attribute vec4 Color;											
+			attribute vec2 TexCoord;										
+			attribute vec2 ScreenSize;										
+			attribute vec2 TextureSize;			
+            attribute vec4 RenderData;
+            varying vec4 RenderDataOut; 
+			attribute float Scale;
+			attribute float Time;			
+			attribute float Enabled;
+			varying vec4 Color0;											
+			varying vec2 TexCoord0;										
+			varying float ScaleOut;
+			varying float TimeOut;
+			varying float EnabledOut;
+			uniform mat4 Transform;										
+
+			void main(void)												
+			{
+				RenderDataOut = RenderData;
+				ScaleOut = Scale;			
+				TimeOut = Time;
+				EnabledOut = Enabled;	
+				Color0 = Color;												
+				TexCoord0 = TexCoord;
+				gl_Position = Transform * vec4(Position.xyz, 1.0);			
+			}
+		]]></vertex>
+		<fragment><![CDATA[
+			varying lowp vec4 Color0;										
+			varying mediump vec2 TexCoord0;								
+			varying lowp float ScaleOut;
+            varying lowp vec4 RenderDataOut;
+			varying mediump float TimeOut;
+			varying lowp float EnabledOut;
+			uniform sampler2D Texture0;											
+
+			vec4 sample_screen2(vec2 coords){	
+				vec4 outcolor = texture2D(Texture0, coords.xy);
+				
+				if(coords.x<0.0||coords.y<0.0||coords.x>1.0||coords.y>1.0) outcolor = vec4(0,0,0,1);
+				
+				outcolor *= min(1.0, max(.3,(sin(coords.y*400.0 - TimeOut * 20.0)) + 1.8));
+				
+				outcolor.r *= min(1.0, max(.8,(sin(coords.x*1000.0 )) + .2));
+				outcolor.g *= min(1.0, max(.8,(sin(coords.x*1000.0+ 2.094)) + .2));
+				outcolor.b *= min(1.0, max(.8,(sin(coords.x*1000.0+ 4.189)) + .2));
+				outcolor *= 1.2;
+					
+				return outcolor;
+			}
+						
+			void main(void)												
+			{			
+				if(EnabledOut == 1.0){					
+					vec4 screencoords = gl_FragCoord;
+					
+					screencoords.x /= RenderDataOut.z;
+					screencoords.y /= RenderDataOut.w;
+
+					screencoords.xy = (screencoords.xy - .5) * 2.0;
+					screencoords.x *= 1.0+pow(abs(screencoords.y)/3.5, 2.0);
+					screencoords.y *= 1.0+pow(abs(screencoords.x)/3.5, 2.0);
+
+					screencoords.xy = (screencoords.xy * .5) + .5;
+					
+					vec4 outcolor = sample_screen2(screencoords.xy) * 3.0
+						+ sample_screen2(screencoords.xy + vec2( 1.0,0.0)/1200.0)*2.0 
+						+ sample_screen2(screencoords.xy + vec2(-1.0,0.0)/1200.0)*2.0
+						+ sample_screen2(screencoords.xy + vec2( 2.0,0.0)/1200.0)*1.0
+						+ sample_screen2(screencoords.xy + vec2(-2.0,0.0)/1200.0)*1.0
+					;
+					outcolor /= 7.0;
+					
+					outcolor *= min(1.2, 1.0-pow(length(screencoords.xy - .5)*1.2, 2.0));
+
+					outcolor.a = 1.0;
+					gl_FragColor = outcolor;
+				}else{
+					gl_FragColor = Color0 * texture2D(Texture0, TexCoord0);
+				}
+			}
+		]]></fragment>
+	</shader>
 </shaders>

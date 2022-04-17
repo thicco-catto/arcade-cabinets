@@ -386,14 +386,20 @@ ArcadeCabinetMod:AddCallback(ModCallbacks.MC_POST_RENDER, ArcadeCabinetMod.OnRen
 function ArcadeCabinetMod:GetShaderParams(shaderName)
 
 	if shaderName == 'MinigameShader' then
-        local isEnabled = 0
-        if ArcadeCabinetVariables.CurrentGameState == ArcadeCabinetVariables.GameState.TRANSITION or 
-        ArcadeCabinetVariables.CurrentGameState == ArcadeCabinetVariables.GameState.PLAYING then isEnabled = 1 end
-        local params = { 
+        local params = {
                 Time = Isaac.GetFrameCount(),
                 Amount = "1",
-                Enabled = isEnabled
+                Enabled = 0
             }
+        return params;
+    elseif shaderName == "MinigameShaderV2" then
+        local isEnabled = 0
+        if ArcadeCabinetVariables.CurrentGameState == ArcadeCabinetVariables.GameState.TRANSITION or
+        ArcadeCabinetVariables.CurrentGameState == ArcadeCabinetVariables.GameState.PLAYING then isEnabled = 1 end
+        local params = { 
+            Time = Isaac.GetFrameCount(),
+            Enabled = isEnabled
+        }
         return params;
     end
 end
