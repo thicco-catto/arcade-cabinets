@@ -96,6 +96,8 @@ local MinigameConstants = {
         6
     },
 
+    AMOUNT_OF_PROJECTILE_WAVES_LASER = 10,
+
     MAX_PLAYER_HEALTH = 5,
     MAX_PLAYER_POWER = 200,
 }
@@ -137,6 +139,8 @@ local FallenStalagmitesNum = 0
 local DiamondProjectileWavesNum = 0
 
 local FloorCracksNum = 0
+
+local DoubleLaserProjectilesNum = 0
 
 -- INIT MINIGAME
 function holy_smokes:Init()
@@ -497,11 +501,28 @@ local function ShootNoseLasers()
 end
 
 
+local function ShootDoubleLaserProjectiles()
+    local spawningPos = SatanHead.Position + Vector(0, 25)
+    local spawningSpeed = Vector(0, 10)
+    local projectileType = 1 + DoubleLaserProjectilesNum % 2
+    local params = ProjectileParams()
+    params.BulletFlags = ProjectileFlags.NO_WALL_COLLIDE
+    params.Spread = 1
+    SatanHead:ToNPC():FireProjectiles(spawningPos, spawningSpeed, projectileType, params)
+
+    DoubleLaserProjectilesNum = DoubleLaserProjectilesNum + 1
+end
+
+
 local function ManageSatanNoseLaserAttack()
     if SatanHead:GetSprite():IsPlaying("FireNoseLaser") and SatanHead:GetSprite():GetFrame() == 10 then
         ShootNoseLasers()
+    elseif SatanHead:GetSprite():IsFinished("FireNoseLaser") or (SatanHead:GetSprite():IsFinished("ShootDoubleLaserProjectiles") and DoubleLaserProjectilesNum < MinigameConstants.AMOUNT_OF_PROJECTILE_WAVES_LASER) then
+        SatanHead:GetSprite():Play("ShootDoubleLaserProjectiles", true)
+    elseif SatanHead:GetSprite():IsPlaying("ShootDoubleLaserProjectiles") and SatanHead:GetSprite():GetFrame() == 12 then
+        ShootDoubleLaserProjectiles()
     elseif SatanHead:GetSprite():IsFinished("FireNoseLaser") then
-        
+        print("okay")
     end
 end
 
@@ -550,6 +571,7 @@ end
 
 
 local function InitNoseLaserAttack()
+    DoubleLaserProjectilesNum = 0
     SatanHead:GetSprite():Play("FireNoseLaser", true)
 end
 
