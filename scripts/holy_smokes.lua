@@ -514,6 +514,27 @@ local function ShootDoubleLaserProjectiles()
 end
 
 
+local function RemoveFireAndDoubleLasers()
+    for _, fire in ipairs(Isaac.FindByType(MinigameEntityTypes.CUSTOM_ENTITY, MinigameEntityVariants.FIRE_GEYSER, 0)) do
+        fire:Remove()
+    end
+
+    Isaac.FindByType(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.DOUBLE_LASER, 0)[1]:Remove()
+end
+
+
+local function ShootGigaLaser()
+    local gigaLaser = EntityLaser.ShootAngle(11, SatanHead.Position, 90, 30, Vector.Zero, SatanHead)
+    gigaLaser.Visible = false
+
+    local fakeLaser = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.DOUBLE_LASER, 0, SatanHead.Position + Vector(0, 20), Vector.Zero, nil)
+    fakeLaser:GetSprite():Load("gfx/hs_giga_laser.anm2", true)
+    fakeLaser:GetSprite():Play("Idle", true)
+    fakeLaser.DepthOffset = 200
+    fakeLaser:GetData().IsGigaLaser = true
+end
+
+
 local function ManageSatanNoseLaserAttack()
     if SatanHead:GetSprite():IsPlaying("FireNoseLaser") and SatanHead:GetSprite():GetFrame() == 10 then
         ShootNoseLasers()
@@ -521,8 +542,14 @@ local function ManageSatanNoseLaserAttack()
         SatanHead:GetSprite():Play("ShootDoubleLaserProjectiles", true)
     elseif SatanHead:GetSprite():IsPlaying("ShootDoubleLaserProjectiles") and SatanHead:GetSprite():GetFrame() == 12 then
         ShootDoubleLaserProjectiles()
-    elseif SatanHead:GetSprite():IsFinished("FireNoseLaser") then
-        print("okay")
+    elseif SatanHead:GetSprite():IsFinished("ShootDoubleLaserProjectiles") then
+        SatanHead:GetSprite():Play("ShootGigaLaser", true)
+    elseif SatanHead:GetSprite():IsPlaying("ShootGigaLaser") and SatanHead:GetSprite():GetFrame() == 30 then
+        RemoveFireAndDoubleLasers()
+    elseif SatanHead:GetSprite():IsPlaying("ShootGigaLaser") and SatanHead:GetSprite():GetFrame() == 54 then
+        ShootGigaLaser()
+    elseif SatanHead:GetSprite():IsFinished("ShootGigaLaser") then
+        CurrentMinigameState = MinigameState.NO_ATTACK
     end
 end
 
@@ -555,10 +582,16 @@ local function ManageDoubleLaser()
 
     if not doubleLaser then return end
 
-    if doubleLaser:GetSprite():IsPlaying("CloseIn") then
-        SpawnLaserFires(doubleLaser:GetSprite():GetFrame())
-    elseif doubleLaser:GetSprite():IsFinished("CloseIn") then
-        doubleLaser:GetSprite():Play("Idle")
+    if doubleLaser:GetData().IsGigaLaser then
+        if doubleLaser.FrameCount == 30 then
+            doubleLaser:Remove()
+        end
+    else
+        if doubleLaser:GetSprite():IsPlaying("CloseIn") then
+            SpawnLaserFires(doubleLaser:GetSprite():GetFrame())
+        elseif doubleLaser:GetSprite():IsFinished("CloseIn") then
+            doubleLaser:GetSprite():Play("Idle")
+        end
     end
 end
 
