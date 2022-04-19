@@ -82,7 +82,7 @@ local MinigameConstants = {
 
     STALAGMITE_HEIGHT = 400,
     STALAGMITE_SPEED = 20,
-    MAX_SHOCKWAVE_COUNT = 10,
+    MAX_SHOCKWAVE_COUNT = 9,
     FRAMES_FOR_NEXT_SHOCKWAVE = 6,
     SHOCKWAVE_COUNT_TO_STALAGMITE = 8,
     MAX_STALAGMITES_NUM = 4,
@@ -105,7 +105,7 @@ local MinigameConstants = {
     AMOUNT_OF_PROJECTILE_WAVES_LASER = 10,
 
     MAX_PLAYER_HEALTH = 5,
-    MAX_PLAYER_POWER = 200,
+    MAX_PLAYER_POWER = 50,
 }
 
 -- Timers
@@ -727,13 +727,13 @@ local function RenderUI()
         PlayerPowerUI:Update()
     else
         PlayerPowerUI:Play("Idle")
-        PlayerPowerUI:SetFrame(PlayerPower)
+        PlayerPowerUI:SetFrame(math.ceil(PlayerPower / MinigameConstants.MAX_PLAYER_POWER * 22))
     end
 
     PlayerPowerUI:Render(Vector(Isaac.GetScreenWidth() / 2, Isaac.GetScreenHeight() / 2) + Vector(-189, 0), Vector.Zero, Vector.Zero)
 
      --Boss health
-     if BossHealthUI:IsPlaying("Flash") then
+    if BossHealthUI:IsPlaying("Flash") then
         BossHealthUI:Update()
     else
         BossHealthUI:Play("Idle")
@@ -757,7 +757,7 @@ holy_smokes.callbacks[ModCallbacks.MC_POST_RENDER] = holy_smokes.OnRender
 
 
 --ENTITY CALLBACKS
-function holy_smokes:OnEntityDamage(tookDamage, _, _, _)
+function holy_smokes:OnEntityDamage(tookDamage, damageAmount, _, _)
     if tookDamage:ToPlayer() then
         if MinigameTimers.IFramesTimer <= 0 then
             MinigameTimers.IFramesTimer = MinigameConstants.MAX_PLAYER_IFRAMES
@@ -768,6 +768,14 @@ function holy_smokes:OnEntityDamage(tookDamage, _, _, _)
         end
 
         return false
+    elseif tookDamage.Type == MinigameEntityTypes.CUSTOM_ENTITY and tookDamage.Variant == MinigameEntityVariants.SATAN_HEAD then
+        BossHealthUI:Play("Flash", true)
+
+        PlayerPower = PlayerPower + damageAmount
+
+        if PlayerPower > MinigameConstants.MAX_PLAYER_POWER then
+            PlayerPowerUI:Play("Flash", true)
+        end
     end
 end
 holy_smokes.callbacks[ModCallbacks.MC_ENTITY_TAKE_DMG] = holy_smokes.OnEntityDamage
