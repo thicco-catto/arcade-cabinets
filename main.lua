@@ -29,6 +29,8 @@ ArcadeCabinetVariables.ArcadeCabinetScripts = {
     [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_TOOUNDERGROUND] = loadFile("scripts/too_underground")
 }
 
+local SlowShaderFrame = 0
+
 local function InitPlayerForMinigame(player)
     local data = player:GetData().ArcadeCabinet
 
@@ -384,7 +386,6 @@ ArcadeCabinetMod:AddCallback(ModCallbacks.MC_POST_RENDER, ArcadeCabinetMod.OnRen
 
 
 function ArcadeCabinetMod:GetShaderParams(shaderName)
-
 	if shaderName == 'MinigameShader' then
         local params = {
                 Time = Isaac.GetFrameCount(),
@@ -397,7 +398,7 @@ function ArcadeCabinetMod:GetShaderParams(shaderName)
         if ArcadeCabinetVariables.CurrentGameState == ArcadeCabinetVariables.GameState.TRANSITION or
         ArcadeCabinetVariables.CurrentGameState == ArcadeCabinetVariables.GameState.PLAYING then isEnabled = 1 end
         local params = { 
-            Time = Isaac.GetFrameCount(),
+            Time = game:GetFrameCount(),
             Enabled = isEnabled
         }
         return params;
