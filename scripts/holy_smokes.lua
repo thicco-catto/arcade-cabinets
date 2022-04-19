@@ -45,6 +45,8 @@ local MinigameSounds = {
     OPEN_CRACK = Isaac.GetSoundIdByName("hs open crack"),
     FIRE_LOOP = Isaac.GetSoundIdByName("hs fire loop"),
 
+    GIGA_LASER = Isaac.GetSoundIdByName("hs giga laser"),
+
     WIN = Isaac.GetSoundIdByName("arcade cabinet win"),
     LOSE = Isaac.GetSoundIdByName("arcade cabinet lose")
 }

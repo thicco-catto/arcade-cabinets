@@ -29,8 +29,6 @@ ArcadeCabinetVariables.ArcadeCabinetScripts = {
     [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_TOOUNDERGROUND] = loadFile("scripts/too_underground")
 }
 
-local SlowShaderFrame = 0
-
 local function InitPlayerForMinigame(player)
     local data = player:GetData().ArcadeCabinet
 
