@@ -414,6 +414,8 @@ local function ManageFloorCracks()
     local cracks = Isaac.FindByType(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.FLOOR_CRACK, 0)
     if #cracks == 0 then return end
 
+    local hasAlreadySpawnedCracks = false
+
     for _, crack in ipairs(cracks) do
         if crack:GetSprite():IsPlaying("Open") and crack:GetSprite():GetFrame() == 10 and
          not SatanHead:GetSprite():IsPlaying("FloorCrackScream") then
@@ -437,6 +439,11 @@ local function ManageFloorCracks()
         if crack:GetSprite():IsFinished("Close") then
             if crack:GetData().IsLast then
                 CurrentMinigameState = MinigameState.NO_ATTACK
+            end
+
+            if not hasAlreadySpawnedCracks then
+                SpawnFloorCracks()
+                hasAlreadySpawnedCracks = true
             end
 
             crack:Remove()
@@ -471,8 +478,6 @@ local function ManageSatanFloorCrackingAttack()
         for _, fire in ipairs(Isaac.FindByType(MinigameEntityTypes.CUSTOM_ENTITY, MinigameEntityVariants.FIRE_GEYSER, 0)) do
             fire:Remove()
         end
-
-        SpawnFloorCracks()
     end
 end
 
