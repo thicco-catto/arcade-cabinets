@@ -210,7 +210,6 @@ local function EndAttack()
     CurrentMinigameState = MinigameState.NO_ATTACK
 
     MinigameTimers.NextAttackTimer = math.max(30, MinigameConstants.MAX_NO_ATTACK_FRAMES - math.floor((SatanHead.MaxHitPoints - SatanHead.HitPoints) / 4))
-    print(MinigameTimers.NextAttackTimer)
 end
 
 
