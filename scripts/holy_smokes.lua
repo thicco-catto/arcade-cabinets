@@ -79,6 +79,7 @@ local MinigameConstants = {
 
     MAX_PLAYER_IFRAMES = 30,
     MAX_NO_ATTACK_FRAMES = 120,
+    MAX_BOSS_HEALTH_FLASH_FRAMES = 9,
 
     STALAGMITE_HEIGHT = 400,
     STALAGMITE_SPEED = 20,
@@ -112,6 +113,7 @@ local MinigameConstants = {
 local MinigameTimers = {
     IFramesTimer = 0,
     NextAttackTimer = 0,
+    BossHealthFlashTimer = 0
 }
 
 -- States
@@ -671,9 +673,24 @@ local function StartAttack()
 end
 
 
+local function CheckForSpecialAttack()
+    if PlayerPower < MinigameConstants.MAX_PLAYER_POWER then return end
+
+    if Input.IsActionPressed(ButtonAction.ACTION_ITEM, 0) then
+        local player = game:GetPlayer(0)
+        local playerLaser = player:FireBrimstone(Vector(0, -1), player, 0.5)
+        playerLaser:GetData().IsPlayerLaser = true
+        PlayerPower = 0
+    end
+end
+
+
 function holy_smokes:FrameUpdate()
     if MinigameTimers.IFramesTimer > 0 then MinigameTimers.IFramesTimer = MinigameTimers.IFramesTimer - 1 end
     if MinigameTimers.NextAttackTimer > 0 then MinigameTimers.NextAttackTimer = MinigameTimers.NextAttackTimer - 1 end
+    if MinigameTimers.BossHealthFlashTimer > 0 then MinigameTimers.BossHealthFlashTimer = MinigameTimers.BossHealthFlashTimer - 1 end
+
+    CheckForSpecialAttack()
 
     if CurrentMinigameState == MinigameState.NO_ATTACK then
         --Idle animation test
@@ -723,23 +740,23 @@ local function RenderUI()
     PlayerHealthUI:Render(Vector(Isaac.GetScreenWidth() / 2, Isaac.GetScreenHeight() / 2) + Vector(-200, 0), Vector.Zero, Vector.Zero)
 
     --Power
-    if PlayerPowerUI:IsPlaying("Flash") then
+    if PlayerPowerUI:IsPlaying("Flash") and PlayerPower >= MinigameConstants.MAX_PLAYER_POWER then
         PlayerPowerUI:Update()
     else
         PlayerPowerUI:Play("Idle")
-        PlayerPowerUI:SetFrame(math.ceil(PlayerPower / MinigameConstants.MAX_PLAYER_POWER * 22))
+        PlayerPowerUI:SetFrame(math.floor(PlayerPower / MinigameConstants.MAX_PLAYER_POWER * 22))
     end
 
     PlayerPowerUI:Render(Vector(Isaac.GetScreenWidth() / 2, Isaac.GetScreenHeight() / 2) + Vector(-189, 0), Vector.Zero, Vector.Zero)
 
      --Boss health
-    if BossHealthUI:IsPlaying("Flash") then
-        BossHealthUI:Update()
+    if MinigameTimers.BossHealthFlashTimer > 0 then
+        BossHealthUI:Play("Flash")
     else
         BossHealthUI:Play("Idle")
-        BossHealthUI:SetFrame(math.ceil(SatanHead.HitPoints / SatanHead.MaxHitPoints * 72))
     end
 
+    BossHealthUI:SetFrame(math.ceil(SatanHead.HitPoints / SatanHead.MaxHitPoints * 72))
     BossHealthUI:Render(Vector(Isaac.GetScreenWidth() / 2, Isaac.GetScreenHeight() / 2) + Vector(190, 0), Vector.Zero, Vector.Zero)
 end
 
@@ -757,10 +774,22 @@ holy_smokes.callbacks[ModCallbacks.MC_POST_RENDER] = holy_smokes.OnRender
 
 
 --ENTITY CALLBACKS
+local function IsSpecialAttack()
+    for _, laser in ipairs(Isaac.FindByType(EntityType.ENTITY_LASER, -1, -1)) do
+        if laser:GetData().IsPlayerLaser then
+            return true
+        end
+    end
+
+    return false
+end
+
+
 function holy_smokes:OnEntityDamage(tookDamage, damageAmount, _, _)
     if tookDamage:ToPlayer() then
         if MinigameTimers.IFramesTimer <= 0 then
             MinigameTimers.IFramesTimer = MinigameConstants.MAX_PLAYER_IFRAMES
+            PlayerPower = 0
             PlayerHP = PlayerHP - 1
             PlayerHealthUI:Play("Flash", true)
             SFXManager:Play(MinigameSounds.PLAYER_HIT)
@@ -769,12 +798,13 @@ function holy_smokes:OnEntityDamage(tookDamage, damageAmount, _, _)
 
         return false
     elseif tookDamage.Type == MinigameEntityTypes.CUSTOM_ENTITY and tookDamage.Variant == MinigameEntityVariants.SATAN_HEAD then
-        BossHealthUI:Play("Flash", true)
+        MinigameTimers.BossHealthFlashTimer = MinigameConstants.MAX_BOSS_HEALTH_FLASH_FRAMES
 
         PlayerPower = PlayerPower + damageAmount
 
-        if PlayerPower > MinigameConstants.MAX_PLAYER_POWER then
+        if PlayerPower >= MinigameConstants.MAX_PLAYER_POWER and not PlayerPowerUI:IsPlaying("Flash") and not IsSpecialAttack() then
             PlayerPowerUI:Play("Flash", true)
+            
         end
     end
 end
@@ -813,7 +843,7 @@ holy_smokes.callbacks[ModCallbacks.MC_POST_EFFECT_UPDATE] = holy_smokes.OnEffect
 function holy_smokes:OnTearFire(tear)
     SFXManager:Stop(SoundEffect.SOUND_TEARS_FIRE)
 
-    if tear.Velocity:Normalized().Y > 0 or tear.Velocity:Normalized().X > 0.5 or tear.Velocity:Normalized().X < -0.5 then
+    if tear.Velocity:Normalized().Y > 0 or tear.Velocity:Normalized().X > 0.5 or tear.Velocity:Normalized().X < -0.5 or IsSpecialAttack() then
         tear:Remove()
     else
         SFXManager:Play(MinigameSounds.TEAR_SHOOT)
@@ -824,6 +854,12 @@ function holy_smokes:OnTearFire(tear)
     end
 end
 holy_smokes.callbacks[ModCallbacks.MC_POST_FIRE_TEAR] = holy_smokes.OnTearFire
+
+
+function holy_smokes:OnLaserUpdate(laser)
+    --laser.Position = game:GetPlayer(0).Position
+end
+holy_smokes.callbacks[ModCallbacks.MC_POST_LASER_UPDATE] = holy_smokes.OnLaserUpdate
 
 
 function holy_smokes:OnProjectileInit(projectile)
