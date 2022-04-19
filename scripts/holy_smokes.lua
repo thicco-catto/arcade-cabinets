@@ -63,6 +63,8 @@ local MinigameEntityTypes = {
 
 local MinigameEntityVariants = {
     SATAN_HEAD = Isaac.GetEntityVariantByName("satan head HS"),
+    STAGE_ELEMENT = Isaac.GetEntityVariantByName("stage element HS"),
+    HOLY_LASER = Isaac.GetEntityVariantByName("holy laser HS"),
 
     STALAGMITE = Isaac.GetEntityVariantByName("stalagmite HS"),
     STALAGMITE_SHADOW = Isaac.GetEntityVariantByName("stalagmite shadow HS"),
@@ -81,6 +83,7 @@ local MinigameConstants = {
     MAX_PLAYER_IFRAMES = 30,
     MAX_NO_ATTACK_FRAMES = 120,
     MAX_BOSS_HEALTH_FLASH_FRAMES = 9,
+    MAX_SPECIAL_ATTACK_FRAMES = 20,
 
     STALAGMITE_HEIGHT = 400,
     STALAGMITE_SPEED = 20,
@@ -114,7 +117,8 @@ local MinigameConstants = {
 local MinigameTimers = {
     IFramesTimer = 0,
     NextAttackTimer = 0,
-    BossHealthFlashTimer = 0
+    BossHealthFlashTimer = 0,
+    SpecialAttackTimer = 0,
 }
 
 -- States
@@ -171,9 +175,8 @@ function holy_smokes:Init()
 
     -- Backdrop
     local backdrop = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, ArcadeCabinetVariables.Backdrop1x2Variant, 0, game:GetRoom():GetCenterPos(), Vector.Zero, nil)
-    backdrop:GetSprite():ReplaceSpritesheet(0, "gfx/backdrop/hs_backdrop.png")
-    backdrop:GetSprite():LoadGraphics()
-    backdrop.DepthOffset = -1000
+    backdrop:GetSprite():Load("gfx/backdrop/backdrop_hs.anm2", true)
+    backdrop.DepthOffset = -9000
 
     -- Boss
     SatanHead = Isaac.Spawn(MinigameEntityTypes.CUSTOM_ENTITY, MinigameEntityVariants.SATAN_HEAD, 0, game:GetRoom():GetCenterPos() + MinigameConstants.SATAN_HEAD_SPAWNING_OFFSET, Vector.Zero, nil)
@@ -677,11 +680,35 @@ end
 local function CheckForSpecialAttack()
     if PlayerPower < MinigameConstants.MAX_PLAYER_POWER then return end
 
+    if  laser then return end
     if Input.IsActionPressed(ButtonAction.ACTION_ITEM, 0) then
         local player = game:GetPlayer(0)
-        local playerLaser = player:FireBrimstone(Vector(0, -1), player, 0.5)
+        local playerLaser = player:FireBrimstone(Vector(0, -1), player, 2.5)
         playerLaser:GetData().IsPlayerLaser = true
+        playerLaser.Visible = false
+
+        local fakeLaser = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.HOLY_LASER, 0, player.Position - Vector(0, 1), Vector.Zero, nil)
+        fakeLaser:GetSprite():Play("Loop", true)
+
         PlayerPower = 0
+        MinigameTimers.SpecialAttackTimer = MinigameConstants.MAX_SPECIAL_ATTACK_FRAMES
+    end
+end
+
+
+local function ManageHolyLaser()
+    local laser = Isaac.FindByType(EntityType.ENTITY_EFFECT, MinigameEntityVariants.HOLY_LASER, 0)[1]
+
+    if not laser then return end
+
+    laser.Position = game:GetPlayer(0).Position
+
+    if MinigameTimers.SpecialAttackTimer == 1 and not laser:GetSprite():IsPlaying("End") then
+        laser:GetSprite():Play("End", true)
+    end
+
+    if laser:GetSprite():IsFinished("End") then
+        laser:Remove()
     end
 end
 
@@ -690,11 +717,14 @@ function holy_smokes:FrameUpdate()
     if MinigameTimers.IFramesTimer > 0 then MinigameTimers.IFramesTimer = MinigameTimers.IFramesTimer - 1 end
     if MinigameTimers.NextAttackTimer > 0 then MinigameTimers.NextAttackTimer = MinigameTimers.NextAttackTimer - 1 end
     if MinigameTimers.BossHealthFlashTimer > 0 then MinigameTimers.BossHealthFlashTimer = MinigameTimers.BossHealthFlashTimer - 1 end
+    if MinigameTimers.SpecialAttackTimer > 0 then MinigameTimers.SpecialAttackTimer = MinigameTimers.SpecialAttackTimer - 1 end
+
 
     CheckForSpecialAttack()
 
+    ManageHolyLaser()
+
     if CurrentMinigameState == MinigameState.NO_ATTACK then
-        --Idle animation test
         if game:GetFrameCount() % 70 == 0 then
             SatanHead:GetSprite():Play("Breathe", true)
         end
@@ -765,27 +795,12 @@ end
 function holy_smokes:OnRender()
     RenderUI()
 
-    -- for _, entity in ipairs(Isaac.FindByType(EntityType.ENTITY_EFFECT, -1, -1)) do
-    --     local pos = Isaac.WorldToScreen(entity.Position)
-
-    --     Isaac.RenderText(entity.Variant, pos.X, pos.Y, 1, 1, 1, 255)
-    -- end
+    Isaac.RenderText(MinigameTimers.SpecialAttackTimer, 100, 100, 1, 1, 1, 255)
 end
 holy_smokes.callbacks[ModCallbacks.MC_POST_RENDER] = holy_smokes.OnRender
 
 
 --ENTITY CALLBACKS
-local function IsSpecialAttack()
-    for _, laser in ipairs(Isaac.FindByType(EntityType.ENTITY_LASER, -1, -1)) do
-        if laser:GetData().IsPlayerLaser then
-            return true
-        end
-    end
-
-    return false
-end
-
-
 function holy_smokes:OnEntityDamage(tookDamage, damageAmount, _, _)
     if tookDamage:ToPlayer() then
         if MinigameTimers.IFramesTimer <= 0 then
@@ -801,9 +816,11 @@ function holy_smokes:OnEntityDamage(tookDamage, damageAmount, _, _)
     elseif tookDamage.Type == MinigameEntityTypes.CUSTOM_ENTITY and tookDamage.Variant == MinigameEntityVariants.SATAN_HEAD then
         MinigameTimers.BossHealthFlashTimer = MinigameConstants.MAX_BOSS_HEALTH_FLASH_FRAMES
 
-        PlayerPower = PlayerPower + damageAmount
+        if MinigameTimers.SpecialAttackTimer <= 0 then
+            PlayerPower = PlayerPower + damageAmount
+        end
 
-        if PlayerPower >= MinigameConstants.MAX_PLAYER_POWER and not PlayerPowerUI:IsPlaying("Flash") and not IsSpecialAttack() then
+        if PlayerPower >= MinigameConstants.MAX_PLAYER_POWER and not PlayerPowerUI:IsPlaying("Flash")then
             PlayerPowerUI:Play("Flash", true)
             SFXManager:Play(MinigameSounds.CHARGED)
         end
@@ -844,7 +861,7 @@ holy_smokes.callbacks[ModCallbacks.MC_POST_EFFECT_UPDATE] = holy_smokes.OnEffect
 function holy_smokes:OnTearFire(tear)
     SFXManager:Stop(SoundEffect.SOUND_TEARS_FIRE)
 
-    if tear.Velocity:Normalized().Y > 0 or tear.Velocity:Normalized().X > 0.5 or tear.Velocity:Normalized().X < -0.5 or IsSpecialAttack() then
+    if tear.Velocity:Normalized().Y > 0 or tear.Velocity:Normalized().X > 0.5 or tear.Velocity:Normalized().X < -0.5 or MinigameTimers.SpecialAttackTimer > 0 then
         tear:Remove()
     else
         SFXManager:Play(MinigameSounds.TEAR_SHOOT)
@@ -857,10 +874,12 @@ end
 holy_smokes.callbacks[ModCallbacks.MC_POST_FIRE_TEAR] = holy_smokes.OnTearFire
 
 
-function holy_smokes:OnLaserUpdate(laser)
-    --laser.Position = game:GetPlayer(0).Position
+function holy_smokes:OnTearCollision(_, collider)
+    if collider.Type ~= MinigameEntityTypes.CUSTOM_ENTITY or collider.Variant ~= MinigameEntityVariants.SATAN_HEAD then
+        return true
+    end
 end
-holy_smokes.callbacks[ModCallbacks.MC_POST_LASER_UPDATE] = holy_smokes.OnLaserUpdate
+holy_smokes.callbacks[ModCallbacks.MC_PRE_TEAR_COLLISION] = holy_smokes.OnTearCollision
 
 
 function holy_smokes:OnProjectileInit(projectile)
