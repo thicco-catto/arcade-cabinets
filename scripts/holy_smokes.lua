@@ -35,6 +35,7 @@ local BannedSounds = {
 local MinigameSounds = {
     TEAR_SHOOT = Isaac.GetSoundIdByName("hs tear shoot"),
     TEAR_IMPACT = Isaac.GetSoundIdByName("hs tear impact"),
+    PLAYER_HIT = Isaac.GetSoundIdByName("bsw player hit"),
 
     STALAGMITE_DROP = Isaac.GetSoundIdByName("tug explosion"),
     SATAN_STALAGMITE_SCREAM = Isaac.GetSoundIdByName("jc special attack"),
@@ -76,6 +77,8 @@ local MinigameEntityVariants = {
 local MinigameConstants = {
     SATAN_HEAD_SPAWNING_OFFSET = Vector(4.5, 52),
 
+    MAX_PLAYER_IFRAMES = 30,
+
     STALAGMITE_HEIGHT = 400,
     STALAGMITE_SPEED = 20,
     MAX_SHOCKWAVE_COUNT = 10,
@@ -105,7 +108,9 @@ local MinigameConstants = {
 }
 
 -- Timers
-local MinigameTimers = {}
+local MinigameTimers = {
+    IFramesTimer = 0,
+}
 
 -- States
 local CurrentMinigameState = 0
@@ -513,6 +518,8 @@ local function ShootDoubleLaserProjectiles()
     SatanHead:ToNPC():FireProjectiles(spawningPos, spawningSpeed, projectileType, params)
 
     DoubleLaserProjectilesNum = DoubleLaserProjectilesNum + 1
+
+    SFXManager:Play(MinigameSounds.SPIT)
 end
 
 
@@ -534,6 +541,8 @@ local function ShootGigaLaser()
     fakeLaser:GetSprite():Play("Idle", true)
     fakeLaser.DepthOffset = 200
     fakeLaser:GetData().IsGigaLaser = true
+
+    SFXManager:Play(MinigameSounds.GIGA_LASER)
 end
 
 
@@ -582,13 +591,20 @@ end
 local function ManageDoubleLaser()
     local doubleLaser = Isaac.FindByType(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.DOUBLE_LASER, 0)[1]
 
-    if not doubleLaser then return end
+    if not doubleLaser then
+        SFXManager:Stop(MinigameSounds.FIRE_LOOP)
+        return
+    end
 
     if doubleLaser:GetData().IsGigaLaser then
         if doubleLaser.FrameCount == 30 then
             doubleLaser:Remove()
         end
     else
+        if not SFXManager:IsPlaying(MinigameSounds.FIRE_LOOP) then
+            SFXManager:Play(MinigameSounds.FIRE_LOOP)
+        end
+
         if doubleLaser:GetSprite():IsPlaying("CloseIn") then
             SpawnLaserFires(doubleLaser:GetSprite():GetFrame())
         elseif doubleLaser:GetSprite():IsFinished("CloseIn") then
@@ -612,11 +628,7 @@ end
 
 
 function holy_smokes:FrameUpdate()
-    -- for i = 1, 800, 1 do
-    --     if SFXManager:IsPlaying(i) then
-    --         print(i)
-    --     end
-    -- end
+    if MinigameTimers.IFramesTimer > 0 then MinigameTimers.IFramesTimer = MinigameTimers.IFramesTimer - 1 end
 
     if CurrentMinigameState == MinigameState.NO_ATTACK then
         --Idle animation test
@@ -698,6 +710,14 @@ holy_smokes.callbacks[ModCallbacks.MC_POST_RENDER] = holy_smokes.OnRender
 --ENTITY CALLBACKS
 function holy_smokes:OnEntityDamage(tookDamage, _, _, _)
     if tookDamage:ToPlayer() then
+        if MinigameTimers.IFramesTimer <= 0 then
+            MinigameTimers.IFramesTimer = MinigameConstants.MAX_PLAYER_IFRAMES
+            PlayerHP = PlayerHP - 1
+            PlayerHealthUI:Play("Flash", true)
+            SFXManager:Play(MinigameSounds.PLAYER_HIT)
+            tookDamage:ToPlayer():PlayExtraAnimation("Hit")
+        end
+
         return false
     end
 end
