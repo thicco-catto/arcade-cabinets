@@ -36,6 +36,7 @@ local MinigameSounds = {
     TEAR_SHOOT = Isaac.GetSoundIdByName("hs tear shoot"),
     TEAR_IMPACT = Isaac.GetSoundIdByName("hs tear impact"),
     PLAYER_HIT = Isaac.GetSoundIdByName("bsw player hit"),
+    CHARGED = Isaac.GetSoundIdByName("hs charged"),
 
     STALAGMITE_DROP = Isaac.GetSoundIdByName("tug explosion"),
     SATAN_STALAGMITE_SCREAM = Isaac.GetSoundIdByName("jc special attack"),
@@ -804,7 +805,7 @@ function holy_smokes:OnEntityDamage(tookDamage, damageAmount, _, _)
 
         if PlayerPower >= MinigameConstants.MAX_PLAYER_POWER and not PlayerPowerUI:IsPlaying("Flash") and not IsSpecialAttack() then
             PlayerPowerUI:Play("Flash", true)
-            
+            SFXManager:Play(MinigameSounds.CHARGED)
         end
     end
 end

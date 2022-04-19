@@ -54,6 +54,10 @@
         <sample weight="1" path="holy smokes/huge laser.wav" />
     </sound>
 
+    <sound name="hs charged">
+        <sample weight="1" path="holy smokes/charged.wav" />
+    </sound>
+
     <!--Jumping coffing-->
     <sound name="jc sword swing">
         <sample weight="1" path="jumping coffing/swing.wav" />
