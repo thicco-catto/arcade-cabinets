@@ -78,6 +78,7 @@ local MinigameConstants = {
     SATAN_HEAD_SPAWNING_OFFSET = Vector(4.5, 52),
 
     MAX_PLAYER_IFRAMES = 30,
+    MAX_NO_ATTACK_FRAMES = 120,
 
     STALAGMITE_HEIGHT = 400,
     STALAGMITE_SPEED = 20,
@@ -110,6 +111,7 @@ local MinigameConstants = {
 -- Timers
 local MinigameTimers = {
     IFramesTimer = 0,
+    NextAttackTimer = 0,
 }
 
 -- States
@@ -140,6 +142,7 @@ BossHealthUI:Load("gfx/hs_boss_health_ui.anm2")
 local PlayerHP = 0
 local PlayerPower = 0
 local SatanHead = nil
+local LastAttack = nil
 
 local FallenStalagmitesNum = 0
 
@@ -159,6 +162,9 @@ function holy_smokes:Init()
     CurrentSatanAttack = SatanAttack.FALLING_STALAGMITES
 
     rng:SetSeed(game:GetSeeds():GetStartSeed(), 35)
+
+
+    MinigameTimers.NextAttackTimer = 30
 
     -- Backdrop
     local backdrop = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, ArcadeCabinetVariables.Backdrop1x2Variant, 0, game:GetRoom():GetCenterPos(), Vector.Zero, nil)
@@ -200,6 +206,12 @@ end
 
 
 -- UPDATE CALLBACKS
+local function EndAttack()
+    CurrentMinigameState = MinigameState.NO_ATTACK
+    MinigameTimers.NextAttackTimer = MinigameConstants.MAX_NO_ATTACK_FRAMES
+end
+
+
 local function SpawnStalagmite(spawnLeft)
     local room = game:GetRoom()
 
@@ -264,7 +276,6 @@ local function ManageStalagmite()
         end
     elseif stalagmite:GetSprite():IsFinished("Break") then
         stalagmite:Remove()
-        --CurrentMinigameState = MinigameState.NO_ATTACK
     end
 end
 
@@ -277,7 +288,7 @@ local function ManageShockWaves()
             if shockwave:GetData().ShockWaveCount == MinigameConstants.MAX_SHOCKWAVE_COUNT and
             FallenStalagmitesNum == MinigameConstants.MAX_STALAGMITES_NUM and
             #Isaac.FindByType(MinigameEntityTypes.CUSTOM_ENTITY, MinigameEntityVariants.STALAGMITE, -1) == 0 then
-                CurrentMinigameState = MinigameState.NO_ATTACK
+                EndAttack()
             end
 
             shockwave:Remove()
@@ -336,7 +347,7 @@ local function ManageSatanDiamondProjectileAttack()
     if SatanHead:GetSprite():IsFinished("ShootDiamondProjectiles") then
         if DiamondProjectileWavesNum == MinigameConstants.AMOUNT_OF_PROJECTILE_WAVES_DIAMOND then
             SatanHead:GetSprite():Play("Idle", true)
-            CurrentMinigameState = MinigameState.NO_ATTACK
+            EndAttack()
         else
             SatanHead:GetSprite():Play("ShootDiamondProjectiles", true)
         end
@@ -438,7 +449,7 @@ local function ManageFloorCracks()
 
         if crack:GetSprite():IsFinished("Close") then
             if crack:GetData().IsLast then
-                CurrentMinigameState = MinigameState.NO_ATTACK
+                EndAttack()
             end
 
             if not hasAlreadySpawnedCracks then
@@ -565,7 +576,7 @@ local function ManageSatanNoseLaserAttack()
     elseif SatanHead:GetSprite():IsPlaying("ShootGigaLaser") and SatanHead:GetSprite():GetFrame() == 54 then
         ShootGigaLaser()
     elseif SatanHead:GetSprite():IsFinished("ShootGigaLaser") then
-        CurrentMinigameState = MinigameState.NO_ATTACK
+        EndAttack()
     end
 end
 
@@ -632,8 +643,36 @@ local function InitNoseLaserAttack()
 end
 
 
+local function StartAttack()
+    local chosenAttack
+
+    if LastAttack then
+        chosenAttack = rng:RandomInt(3)
+        if chosenAttack >= LastAttack then chosenAttack = chosenAttack + 1 end
+    else
+        chosenAttack = rng:RandomInt(4)
+    end
+
+    LastAttack = chosenAttack
+
+    CurrentSatanAttack = chosenAttack
+    CurrentMinigameState = MinigameState.BOSS_ATTACK
+
+    if CurrentSatanAttack == SatanAttack.FALLING_STALAGMITES then
+        InitStalagmiteAttack()
+    elseif CurrentSatanAttack == SatanAttack.DIAMOND_PROJECTILES then
+        InitDiamondProjectileAttack()
+    elseif CurrentSatanAttack == SatanAttack.FLOOR_CRACKING then
+        InitFloorCrackingAttack()
+    elseif CurrentSatanAttack == SatanAttack.NOSE_LASER then
+        InitNoseLaserAttack()
+    end
+end
+
+
 function holy_smokes:FrameUpdate()
     if MinigameTimers.IFramesTimer > 0 then MinigameTimers.IFramesTimer = MinigameTimers.IFramesTimer - 1 end
+    if MinigameTimers.NextAttackTimer > 0 then MinigameTimers.NextAttackTimer = MinigameTimers.NextAttackTimer - 1 end
 
     if CurrentMinigameState == MinigameState.NO_ATTACK then
         --Idle animation test
@@ -643,6 +682,10 @@ function holy_smokes:FrameUpdate()
 
         if SatanHead:GetSprite():IsFinished("Breathe") then
             SatanHead:GetSprite():Play("Idle", true)
+        end
+
+        if MinigameTimers.NextAttackTimer == 0 then
+            StartAttack()
         end
     elseif CurrentMinigameState == MinigameState.BOSS_ATTACK then
 
