@@ -63,6 +63,7 @@ local MinigameEntityTypes = {
 }
 
 local MinigameEntityVariants = {
+    PLATFORM = Isaac.GetEntityVariantByName("platform HS"),
     SATAN_HEAD = Isaac.GetEntityVariantByName("satan head HS"),
     STAGE_ELEMENT = Isaac.GetEntityVariantByName("stage element HS"),
     HOLY_LASER = Isaac.GetEntityVariantByName("holy laser HS"),
@@ -81,11 +82,13 @@ local MinigameEntityVariants = {
 -- Constants
 local MinigameConstants = {
     SATAN_HEAD_SPAWNING_OFFSET = Vector(4.5, 52),
+    PLATFORM_SPAWNING_OFFSET = Vector(0, 200),
 
     MAX_PLAYER_IFRAMES = 30,
     MAX_NO_ATTACK_FRAMES = 120,
     MAX_BOSS_HEALTH_FLASH_FRAMES = 9,
     MAX_SPECIAL_ATTACK_FRAMES = 20,
+    MAX_END_WAIT_FRAMES = 30,
 
     STALAGMITE_HEIGHT = 400,
     STALAGMITE_SPEED = 20,
@@ -116,7 +119,8 @@ local MinigameConstants = {
 
     MAX_END_EXPLOSIONS = 5,
     FRAMES_BETWEEN_END_EXPLOSIONS = 3,
-    END_EXPLOSION_SPAWNING_OFFSET = Vector(100, 100)
+    END_EXPLOSION_SPAWNING_AREA = Vector(100, 100),
+    END_EXPLOSION_SPAWNING_OFFSET = Vector(0, 75),
 }
 
 -- Timers
@@ -125,6 +129,8 @@ local MinigameTimers = {
     NextAttackTimer = 0,
     BossHealthFlashTimer = 0,
     SpecialAttackTimer = 0,
+    EndExplosionsTimer = 0,
+    EndWaitTimer = 0,
 }
 
 -- States
@@ -185,6 +191,9 @@ function holy_smokes:Init()
     Backdrop = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, ArcadeCabinetVariables.Backdrop1x2Variant, 0, game:GetRoom():GetCenterPos(), Vector.Zero, nil)
     Backdrop:GetSprite():Load("gfx/backdrop/backdrop_hs.anm2", true)
     Backdrop.DepthOffset = -9000
+
+    local platform = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.PLATFORM, 0, game:GetRoom():GetCenterPos() + MinigameConstants.PLATFORM_SPAWNING_OFFSET, Vector.Zero, nil)
+    platform.DepthOffset = -500
 
     -- Boss
     SatanHead = Isaac.Spawn(MinigameEntityTypes.CUSTOM_ENTITY, MinigameEntityVariants.SATAN_HEAD, 0, game:GetRoom():GetCenterPos() + MinigameConstants.SATAN_HEAD_SPAWNING_OFFSET, Vector.Zero, nil)
@@ -738,15 +747,17 @@ local function SpawnEndExplosions()
     if game:GetFrameCount() % MinigameConstants.FRAMES_BETWEEN_END_EXPLOSIONS ~= 0 then return end
 
     if numExplosions < MinigameConstants.MAX_END_EXPLOSIONS then
-        game:ShakeScreen(2)
-        local spawningPos = SatanHead.Position - MinigameConstants.END_EXPLOSION_SPAWNING_OFFSET
+        game:ShakeScreen(4)
+        local spawningPos = SatanHead.Position - MinigameConstants.END_EXPLOSION_SPAWNING_AREA - MinigameConstants.END_EXPLOSION_SPAWNING_OFFSET
+        spawningPos = spawningPos + Vector(0, MinigameTimers.EndExplosionsTimer * 3)
 
-        spawningPos = Vector(spawningPos.X + rng:RandomInt(MinigameConstants.END_EXPLOSION_SPAWNING_OFFSET.X * 2),
-        spawningPos.Y + rng:RandomInt(MinigameConstants.END_EXPLOSION_SPAWNING_OFFSET.Y * 2))
+        spawningPos = Vector(spawningPos.X + rng:RandomInt(MinigameConstants.END_EXPLOSION_SPAWNING_AREA.X * 2),
+        spawningPos.Y + rng:RandomInt(MinigameConstants.END_EXPLOSION_SPAWNING_AREA.Y * 2))
 
         local explosion = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.END_EXPLOSION, 0, spawningPos, Vector.Zero, nil)
         explosion:GetSprite():Play("Idle", true)
-        explosion.DepthOffset = 1000
+        explosion.DepthOffset = -1000
+        SFXManager:Play(MinigameSounds.STALAGMITE_DROP)
     end
 end
 
@@ -785,6 +796,7 @@ function holy_smokes:FrameUpdate()
             UpdateNoseLaserAttack()
         end
     elseif CurrentMinigameState == MinigameState.SATAN_DYING then
+        MinigameTimers.EndExplosionsTimer = MinigameTimers.EndExplosionsTimer + 1
         SpawnEndExplosions()
     end
 end
@@ -847,6 +859,7 @@ local function EndAllAttacks()
     for _, entity in ipairs(Isaac.GetRoomEntities()) do
         if not (entity:ToPlayer() or
         (entity.Type == EntityType.ENTITY_GENERIC_PROP and entity.Variant == ArcadeCabinetVariables.Backdrop1x2Variant) or
+        (entity.Type == EntityType.ENTITY_GENERIC_PROP and entity.Variant == MinigameEntityVariants.PLATFORM) or
         entity:ToTear() or
         entity:ToEffect()) then
             entity:Remove()
