@@ -37,6 +37,7 @@ local MinigameSounds = {
     TEAR_IMPACT = Isaac.GetSoundIdByName("hs tear impact"),
     PLAYER_HIT = Isaac.GetSoundIdByName("bsw player hit"),
     CHARGED = Isaac.GetSoundIdByName("hs charged"),
+    HOLY_LASER = Isaac.GetSoundIdByName("hs holy laser"),
 
     STALAGMITE_DROP = Isaac.GetSoundIdByName("tug explosion"),
     SATAN_STALAGMITE_SCREAM = Isaac.GetSoundIdByName("jc special attack"),
@@ -127,6 +128,7 @@ local MinigameState = {
     INTRO = 0,
     NO_ATTACK = 1,
     BOSS_ATTACK = 2,
+    SATAN_DYING = 3,
 }
 
 local CurrentSatanAttack = 0
@@ -150,6 +152,7 @@ local PlayerHP = 0
 local PlayerPower = 0
 local SatanHead = nil
 local LastAttack = nil
+local Backdrop = nil
 
 local FallenStalagmitesNum = 0
 
@@ -174,9 +177,9 @@ function holy_smokes:Init()
     MinigameTimers.NextAttackTimer = 30
 
     -- Backdrop
-    local backdrop = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, ArcadeCabinetVariables.Backdrop1x2Variant, 0, game:GetRoom():GetCenterPos(), Vector.Zero, nil)
-    backdrop:GetSprite():Load("gfx/backdrop/backdrop_hs.anm2", true)
-    backdrop.DepthOffset = -9000
+    Backdrop = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, ArcadeCabinetVariables.Backdrop1x2Variant, 0, game:GetRoom():GetCenterPos(), Vector.Zero, nil)
+    Backdrop:GetSprite():Load("gfx/backdrop/backdrop_hs.anm2", true)
+    Backdrop.DepthOffset = -9000
 
     -- Boss
     SatanHead = Isaac.Spawn(MinigameEntityTypes.CUSTOM_ENTITY, MinigameEntityVariants.SATAN_HEAD, 0, game:GetRoom():GetCenterPos() + MinigameConstants.SATAN_HEAD_SPAWNING_OFFSET, Vector.Zero, nil)
@@ -692,6 +695,8 @@ local function CheckForSpecialAttack()
 
         PlayerPower = 0
         MinigameTimers.SpecialAttackTimer = MinigameConstants.MAX_SPECIAL_ATTACK_FRAMES
+
+        SFXManager:Play(MinigameSounds.HOLY_LASER)
     end
 end
 
@@ -787,7 +792,12 @@ local function RenderUI()
         BossHealthUI:Play("Idle")
     end
 
-    BossHealthUI:SetFrame(math.ceil(SatanHead.HitPoints / SatanHead.MaxHitPoints * 72))
+    if SatanHead:Exists() then
+        BossHealthUI:SetFrame(math.ceil(SatanHead.HitPoints / SatanHead.MaxHitPoints * 72))
+    else
+        BossHealthUI:SetFrame(0)
+    end
+   
     BossHealthUI:Render(Vector(Isaac.GetScreenWidth() / 2, Isaac.GetScreenHeight() / 2) + Vector(190, 0), Vector.Zero, Vector.Zero)
 end
 
@@ -801,6 +811,22 @@ holy_smokes.callbacks[ModCallbacks.MC_POST_RENDER] = holy_smokes.OnRender
 
 
 --ENTITY CALLBACKS
+local function EndAllAttacks()
+    for _, entity in ipairs(Isaac.GetRoomEntities()) do
+        if not (entity:ToPlayer() or
+        (entity.Type == EntityType.ENTITY_GENERIC_PROP and entity.Variant == ArcadeCabinetVariables.Backdrop1x2Variant) or
+        entity:ToTear() or
+        entity:ToEffect()) then
+            entity:Remove()
+        end
+    end
+
+    for _, sound in ipairs(MinigameSounds) do
+        SFXManager:Stop(sound)
+    end
+end
+
+
 function holy_smokes:OnEntityDamage(tookDamage, damageAmount, _, _)
     if tookDamage:ToPlayer() then
         if MinigameTimers.IFramesTimer <= 0 then
@@ -823,6 +849,15 @@ function holy_smokes:OnEntityDamage(tookDamage, damageAmount, _, _)
         if PlayerPower >= MinigameConstants.MAX_PLAYER_POWER and not PlayerPowerUI:IsPlaying("Flash")then
             PlayerPowerUI:Play("Flash", true)
             SFXManager:Play(MinigameSounds.CHARGED)
+        end
+
+        if tookDamage.HitPoints <= damageAmount then
+            tookDamage:Remove()
+
+            EndAllAttacks()
+
+            CurrentMinigameState = MinigameState.SATAN_DYING
+            Backdrop:GetSprite():Play("Die")
         end
     end
 end
