@@ -66,6 +66,7 @@ local MinigameEntityVariants = {
     SATAN_HEAD = Isaac.GetEntityVariantByName("satan head HS"),
     STAGE_ELEMENT = Isaac.GetEntityVariantByName("stage element HS"),
     HOLY_LASER = Isaac.GetEntityVariantByName("holy laser HS"),
+    END_EXPLOSION = Isaac.GetEntityVariantByName("end explosion HS"),
 
     STALAGMITE = Isaac.GetEntityVariantByName("stalagmite HS"),
     STALAGMITE_SHADOW = Isaac.GetEntityVariantByName("stalagmite shadow HS"),
@@ -112,6 +113,10 @@ local MinigameConstants = {
 
     MAX_PLAYER_HEALTH = 5,
     MAX_PLAYER_POWER = 50,
+
+    MAX_END_EXPLOSIONS = 5,
+    FRAMES_BETWEEN_END_EXPLOSIONS = 3,
+    END_EXPLOSION_SPAWNING_OFFSET = Vector(100, 100)
 }
 
 -- Timers
@@ -718,6 +723,34 @@ local function ManageHolyLaser()
 end
 
 
+local function SpawnEndExplosions()
+    local explosions = Isaac.FindByType(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.END_EXPLOSION, 0)
+
+    local numExplosions = 0
+    for _, explosion in ipairs(explosions) do
+        if explosion:GetSprite():IsFinished("Idle") then
+            explosion:Remove()
+        else
+            numExplosions = numExplosions + 1
+        end
+    end
+
+    if game:GetFrameCount() % MinigameConstants.FRAMES_BETWEEN_END_EXPLOSIONS ~= 0 then return end
+
+    if numExplosions < MinigameConstants.MAX_END_EXPLOSIONS then
+        game:ShakeScreen(2)
+        local spawningPos = SatanHead.Position - MinigameConstants.END_EXPLOSION_SPAWNING_OFFSET
+
+        spawningPos = Vector(spawningPos.X + rng:RandomInt(MinigameConstants.END_EXPLOSION_SPAWNING_OFFSET.X * 2),
+        spawningPos.Y + rng:RandomInt(MinigameConstants.END_EXPLOSION_SPAWNING_OFFSET.Y * 2))
+
+        local explosion = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.END_EXPLOSION, 0, spawningPos, Vector.Zero, nil)
+        explosion:GetSprite():Play("Idle", true)
+        explosion.DepthOffset = 1000
+    end
+end
+
+
 function holy_smokes:FrameUpdate()
     if MinigameTimers.IFramesTimer > 0 then MinigameTimers.IFramesTimer = MinigameTimers.IFramesTimer - 1 end
     if MinigameTimers.NextAttackTimer > 0 then MinigameTimers.NextAttackTimer = MinigameTimers.NextAttackTimer - 1 end
@@ -742,7 +775,6 @@ function holy_smokes:FrameUpdate()
             StartAttack()
         end
     elseif CurrentMinigameState == MinigameState.BOSS_ATTACK then
-
         if CurrentSatanAttack == SatanAttack.FALLING_STALAGMITES then
             UpdateStalagmitesAttack()
         elseif CurrentSatanAttack == SatanAttack.DIAMOND_PROJECTILES then
@@ -752,6 +784,8 @@ function holy_smokes:FrameUpdate()
         elseif CurrentSatanAttack == SatanAttack.NOSE_LASER then
             UpdateNoseLaserAttack()
         end
+    elseif CurrentMinigameState == MinigameState.SATAN_DYING then
+        SpawnEndExplosions()
     end
 end
 holy_smokes.callbacks[ModCallbacks.MC_POST_UPDATE] = holy_smokes.FrameUpdate
@@ -804,8 +838,6 @@ end
 
 function holy_smokes:OnRender()
     RenderUI()
-
-    Isaac.RenderText(MinigameTimers.SpecialAttackTimer, 100, 100, 1, 1, 1, 255)
 end
 holy_smokes.callbacks[ModCallbacks.MC_POST_RENDER] = holy_smokes.OnRender
 
