@@ -107,12 +107,6 @@ local function IsPlayerOnFloor(player)
     local gridIndex = room:GetClampedGridIndex(player.Position)
     local collisionClass = room:GetGridCollision(gridIndex + MinigameConstants.GRID_OFFSET_TO_GET_UNDER)
 
-    if collisionClass == GridCollisionClass.COLLISION_SOLID or collisionClass == GridCollisionClass.COLLISION_WALL then
-        print(collisionClass .. " yay")
-    else
-        print(collisionClass .. " nay")
-    end
-
     return collisionClass == GridCollisionClass.COLLISION_SOLID or collisionClass == GridCollisionClass.COLLISION_WALL
 end
 
