@@ -130,11 +130,37 @@
 						
 			void main(void)												
 			{			
-				if(EnabledOut == 1.0){					
+				if(EnabledOut == 1.0){	
+							            vec2 screenRatio = RenderDataOut.zw / RenderDataOut.xy;
+		            vec2 newCoords = TexCoord0 * screenRatio;
+
+					if(newCoords.y < 0.5){
+						newCoords -= vec2(.5,.5);
+	    	        	newCoords.x *= 1.0 + pow(abs(newCoords.y) / 2, 2.0);
+		            	newCoords.y *= 1.0 + pow(abs(newCoords.x) / 1.2, 2.0);
+		            	newCoords += vec2(.5,.5);
+					}
+
+					newCoords /= screenRatio;
+
+					vec4 outcolor = sample_screen2(newCoords.xy) * 3.0
+						+ sample_screen2(newCoords.xy + vec2( 1.0,0.0)/1200.0)*2.0 
+						+ sample_screen2(newCoords.xy + vec2(-1.0,0.0)/1200.0)*2.0
+						+ sample_screen2(newCoords.xy + vec2( 2.0,0.0)/1200.0)*1.0
+						+ sample_screen2(newCoords.xy + vec2(-2.0,0.0)/1200.0)*1.0
+					;
+
+					outcolor /= 7.0;
+					
+					outcolor *= min(1.2, 1.0-pow(length(newCoords.xy - .5)*1.2, 2.0));
+
+					outcolor.a = 1.0;
+					gl_FragColor = outcolor;
+				}else if(EnabledOut==2.0){
 					vec4 screencoords = gl_FragCoord;
 					
-					screencoords.x /= RenderDataOut.z;
-					screencoords.y /= RenderDataOut.w;
+					screencoords.x /= RenderDataOut.y;
+					screencoords.y /= RenderDataOut.x;
 
 					screencoords.xy = (screencoords.xy - .5) * 2.0;
 					screencoords.x *= 1.0+pow(abs(screencoords.y)/3.5, 2.0);
