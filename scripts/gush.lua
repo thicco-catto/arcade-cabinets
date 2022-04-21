@@ -40,7 +40,9 @@ local MinigameEntityVariants = {
 local MinigameConstants = {
     JUMPING_SPEED_THRESHOLD = 0.17,
     GRID_OFFSET_TO_GET_UNDER = 28,
-    JUMPING_STRENGTH = 7
+    JUMPING_STRENGTH = 4,
+    EXTRA_JUMP_STRENGTH = 0.7,
+    EXTRA_JUMP_FRAMES = 6,
 }
 
 --Timers
@@ -97,6 +99,9 @@ function gush:Init()
         -- playerSprite:ReplaceSpritesheet(4, "gfx/characters/isaac_jc.png")
         -- playerSprite:ReplaceSpritesheet(12, "gfx/characters/isaac_jc.png")
         -- playerSprite:LoadGraphics()
+
+        player:GetData().IsGrounded = false
+        player:GetData().ExtraJumpFrames = 0
     end
 end
 
@@ -111,11 +116,19 @@ local function IsPlayerOnFloor(player)
 end
 
 function gush:PlayerUpdate(player)
-    player:GetData().IsGrounded = math.abs(player.Velocity.Y) < MinigameConstants.JUMPING_SPEED_THRESHOLD
+    player:GetData().IsGrounded = math.abs(player.Velocity.Y) < MinigameConstants.JUMPING_SPEED_THRESHOLD and IsPlayerOnFloor(player)
 
-    if Input.IsActionPressed(ButtonAction.ACTION_ITEM, player.ControllerIndex) and
-     player:GetData().IsGrounded and IsPlayerOnFloor(player) then
-        player.Velocity = player.Velocity + Vector(0, -MinigameConstants.JUMPING_STRENGTH)
+    if Input.IsActionPressed(ButtonAction.ACTION_ITEM, player.ControllerIndex) then
+        if player:GetData().IsGrounded then
+            player.Velocity = player.Velocity + Vector(0, -MinigameConstants.JUMPING_STRENGTH)
+            player:GetData().ExtraJumpFrames = MinigameConstants.EXTRA_JUMP_FRAMES
+
+        elseif player:GetData().ExtraJumpFrames > 0 then
+            player.Velocity = player.Velocity + Vector(0, -MinigameConstants.EXTRA_JUMP_STRENGTH)
+            player:GetData().ExtraJumpFrames = player:GetData().ExtraJumpFrames - 1
+        end
+    else
+        player:GetData().ExtraJumpFrames = 0
     end
 end
 gush.callbacks[ModCallbacks.MC_POST_PLAYER_UPDATE] = gush.PlayerUpdate
