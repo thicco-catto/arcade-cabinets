@@ -34,11 +34,14 @@ local MinigameMusic = Isaac.GetMusicIdByName("jc corpse beat")
 
 --Entities
 local MinigameEntityVariants = {
+    PLATFORM = Isaac.GetEntityVariantByName("platform GUSH"),
+    PLAYER = Isaac.GetEntityVariantByName("player GUSH"),
 }
 
 --Constants
 local MinigameConstants = {
     JUMPING_SPEED_THRESHOLD = 0.17,
+    TOP_JUMPING_SPEED_THRESHOLD = 2.5,
     GRID_OFFSET_TO_GET_UNDER = 28,
     JUMPING_STRENGTH = 15,
     EXTRA_JUMP_FRAMES = 15,
@@ -47,6 +50,8 @@ local MinigameConstants = {
 
     TERMINAL_VELOCITY = 15,
     GRAVITY_STRENGTH = 0.7,
+
+    DISTANCE_FROM_PLAYER_TO_PLATFORM = 10
 }
 
 --Timers
@@ -65,6 +70,19 @@ local WaveTransitionScreen = Sprite()
 WaveTransitionScreen:Load("gfx/minigame_transition.anm2")
 
 local IsExtraJumpStrength = false
+local RoomPlatforms = {}
+
+
+local function FindPlatforms()
+    RoomPlatforms = {}
+    local room = game:GetRoom()
+    local foundPlatforms = Isaac.FindByType(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.PLATFORM, 0)
+
+    for _, platform in ipairs(foundPlatforms) do
+        RoomPlatforms[room:GetClampedGridIndex(platform.Position)] = true
+    end
+end
+
 
 --INIT
 function gush:Init()
@@ -72,6 +90,8 @@ function gush:Init()
 
     --Reset variables
     gush.result = nil
+
+    FindPlatforms()
 
     rng:SetSeed(game:GetSeeds():GetStartSeed(), 35)
 
@@ -108,12 +128,16 @@ function gush:Init()
 
         player:GetData().IsGrounded = false
         player:GetData().ExtraJumpFrames = 0
+
+        player.Visible = false
+        local fakePlayer = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.PLAYER, 0, player.Position, Vector.Zero, player)
+        player:GetData().FakePlayer = fakePlayer
     end
 end
 
 
 --UPDATE CALLBACKS
-function gush:OnInput(entity, inputHook, buttonAction)
+function gush:OnInput(_, inputHook, buttonAction)
     if buttonAction == ButtonAction.ACTION_UP or buttonAction == ButtonAction.ACTION_DOWN then
         if inputHook > InputHook.IS_ACTION_TRIGGERED then
             return 0
@@ -130,7 +154,31 @@ local function IsPlayerOnFloor(player)
     local gridIndex = room:GetClampedGridIndex(player.Position)
     local collisionClass = room:GetGridCollision(gridIndex + MinigameConstants.GRID_OFFSET_TO_GET_UNDER)
 
-    return collisionClass == GridCollisionClass.COLLISION_SOLID or collisionClass == GridCollisionClass.COLLISION_WALL
+    return collisionClass == GridCollisionClass.COLLISION_WALL or RoomPlatforms[gridIndex + MinigameConstants.GRID_OFFSET_TO_GET_UNDER]
+end
+
+
+local function IsPlayerGrounded(player)
+    return math.abs(player.Velocity.Y) < MinigameConstants.JUMPING_SPEED_THRESHOLD and IsPlayerOnFloor(player)
+end
+
+
+local function MakePlayerStandOnFloor(player)
+    if not IsPlayerOnFloor(player) then return false end
+
+    local room = game:GetRoom()
+    local playerGridIndex = room:GetClampedGridIndex(player.Position)
+    local playerClampedPos = room:GetGridPosition(playerGridIndex)
+
+    if player.Position.Y - playerClampedPos.Y >= MinigameConstants.DISTANCE_FROM_PLAYER_TO_PLATFORM and 
+     player.Velocity.Y >= 0 then
+        player.Position = Vector(player.Position.X,playerClampedPos.Y + MinigameConstants.DISTANCE_FROM_PLAYER_TO_PLATFORM)
+        player.Velocity = Vector(player.Velocity.X, 0)
+
+        return true
+    end
+
+    return false
 end
 
 
@@ -145,15 +193,36 @@ local function ApplyGravity(player, gravity)
 end
 
 
-function gush:PlayerUpdate(player)
-    player:GetData().IsGrounded = math.abs(player.Velocity.Y) < MinigameConstants.JUMPING_SPEED_THRESHOLD and IsPlayerOnFloor(player)
+local function ManageFakePlayer(player)
+    local fakePlayer = player:GetData().FakePlayer
+    local fakePlayerSprite = fakePlayer:GetSprite()
 
+    fakePlayer.Position = player.Position + Vector(0, 1)
+
+    
+    if player.Velocity.Y < 0 and fakePlayerSprite:IsFinished("StartJump") then
+        fakePlayerSprite:Play("JumpLoop", true)
+    elseif math.abs(player.Velocity.Y) < MinigameConstants.TOP_JUMPING_SPEED_THRESHOLD and not IsPlayerOnFloor(player) then
+        fakePlayerSprite:Play("EndJump", true)
+    elseif player.Velocity.Y > 0 and not fakePlayerSprite:IsPlaying("FallLoop") then
+        fakePlayerSprite:Play("FallLoop", true)
+    elseif IsPlayerGrounded(player) and fakePlayerSprite:IsPlaying("FallLoop") then
+        fakePlayerSprite:Play("TouchGround", true)
+    elseif fakePlayerSprite:IsFinished("TouchGround") then
+        fakePlayerSprite:Play("Idle", true)
+    end
+end
+
+
+function gush:PlayerUpdate(player)
     local gravity
 
     if Input.IsActionPressed(ButtonAction.ACTION_ITEM, player.ControllerIndex) then
-        if player:GetData().IsGrounded then
+        if IsPlayerGrounded(player) then
             player.Velocity = player.Velocity - Vector(0, MinigameConstants.JUMPING_STRENGTH)
             player:GetData().ExtraJumpFrames = MinigameConstants.EXTRA_JUMP_FRAMES
+
+            player:GetData().FakePlayer:GetSprite():Play("StartJump", true)
 
             if not IsExtraJumpStrength then
                 gravity = MinigameConstants.EXTRA_JUMP_REDUCED_GRAVITY
@@ -171,7 +240,13 @@ function gush:PlayerUpdate(player)
         player:GetData().ExtraJumpFrames = 0
     end
 
-    ApplyGravity(player, gravity)
+    local shouldIgnoreGravity = MakePlayerStandOnFloor(player)
+
+    if not shouldIgnoreGravity then
+        ApplyGravity(player, gravity)
+    end
+
+    ManageFakePlayer(player)
 end
 gush.callbacks[ModCallbacks.MC_POST_PLAYER_UPDATE] = gush.PlayerUpdate
 
@@ -219,6 +294,13 @@ end
 gush.callbacks[ModCallbacks.MC_POST_RENDER] = gush.OnRender
 
 
+-- function gush:OnEffectUpdate(effect)
+--     if effect.Variant == MinigameEntityVariants.PLAYER then
+--         effect.Position = effect.Parent.Position
+--     end
+-- end
+-- gush.callbacks[ModCallbacks.MC_POST_EFFECT_UPDATE] = gush.OnEffectUpdate
+
 local function mysplit (inputstr, sep)
     if sep == nil then
             sep = "%s"
@@ -241,7 +323,7 @@ function gush:OnCMD(command, args)
         else
             print("Jumping mode changed to reduced gravity")
         end
-        
+
     elseif command == "change" then
 
         if args[1] == "js" then
@@ -258,7 +340,7 @@ function gush:OnCMD(command, args)
 
         elseif args[1] == "ejrg" then
             MinigameConstants.EXTRA_JUMP_REDUCED_GRAVITY = tonumber(args[2])
-            print("Changed gravity strength to " .. MinigameConstants.EXTRA_JUMP_REDUCED_GRAVITY)
+            print("Changed extra jump reduced gravity to " .. MinigameConstants.EXTRA_JUMP_REDUCED_GRAVITY)
 
         elseif args[1] == "gs" then
             MinigameConstants.GRAVITY_STRENGTH = tonumber(args[2])
@@ -268,6 +350,8 @@ function gush:OnCMD(command, args)
             MinigameConstants.TERMINAL_VELOCITY = tonumber(args[2])
             print("Changed terminal velocity to " .. MinigameConstants.TERMINAL_VELOCITY)
         end
+    elseif command == "floor" then
+        print(RoomPlatforms[tonumber(args)])
     end
 end
 gush.callbacks[ModCallbacks.MC_EXECUTE_CMD] = gush.OnCMD

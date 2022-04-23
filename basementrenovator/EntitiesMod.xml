@@ -1,4 +1,4 @@
-<data>
-	<entity Metadata="1" Group="Events" ID="999" Image="icons/jumping_coffing.png" Kind="Arcade Cabinets" Name="Jumping Coffing Backdrop" Variant="1948" Subtype="0" NoBlockDoors="1" >
+<data>	
+	<entity Metadata="1" Group="Grid" ID="960" Image="icons/gush_platform.png" Kind="Arcade Cabinets" Name="Gush Platform" Variant="2114" Subtype="0" NoBlockDoors="1" >
     </entity>
 </data>
