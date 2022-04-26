@@ -35,14 +35,21 @@ local MinigameMusic = Isaac.GetMusicIdByName("jc corpse beat")
 --Entities
 local MinigameEntityVariants = {
     PLATFORM = Isaac.GetEntityVariantByName("platform GUSH"),
+    SPIKE = Isaac.GetEntityVariantByName("spike GUSH"),
+    SPAWN = Isaac.GetEntityVariantByName("spawn GUSH"),
     PLAYER = Isaac.GetEntityVariantByName("player GUSH"),
 }
 
 --Constants
 local MinigameConstants = {
     JUMPING_SPEED_THRESHOLD = 0.17,
-    TOP_JUMPING_SPEED_THRESHOLD = 2.5,
+    TOP_JUMPING_SPEED_THRESHOLD = 2.5, --Only for visual animation
+    HORIZONTAL_SPEED_THRESHOLD = 0.5, --Only for visual animation
     GRID_OFFSET_TO_GET_UNDER = 28,
+
+    JUMP_BUFFER_FRAMES = 7,
+    COYOTE_TIME_FRAMES = 7,
+
     JUMPING_STRENGTH = 15,
     EXTRA_JUMP_FRAMES = 15,
     EXTRA_JUMP_REDUCED_GRAVITY = 0.01,
@@ -72,16 +79,26 @@ WaveTransitionScreen:Load("gfx/minigame_transition.anm2")
 
 local IsExtraJumpStrength = false
 RoomPlatforms = {}
+RoomSpikes = {}
+RoomSpawn = nil
 
 
-local function FindPlatforms()
+local function FindGrid()
     RoomPlatforms = {}
     local room = game:GetRoom()
-    local foundPlatforms = Isaac.FindByType(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.PLATFORM, 0)
 
+    local foundPlatforms = Isaac.FindByType(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.PLATFORM, 0)
     for _, platform in ipairs(foundPlatforms) do
         RoomPlatforms[room:GetClampedGridIndex(platform.Position)] = true
     end
+
+    local foundSpikes = Isaac.FindByType(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.SPIKE, 0)
+
+    for _, spike in ipairs(foundSpikes) do
+        RoomSpikes[room:GetClampedGridIndex(spike.Position)] = true
+    end
+
+    RoomSpawn = Isaac.FindByType(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.SPAWN, 0)[1]
 end
 
 
@@ -92,7 +109,7 @@ function gush:Init()
     --Reset variables
     gush.result = nil
 
-    FindPlatforms()
+    FindGrid()
 
     rng:SetSeed(game:GetSeeds():GetStartSeed(), 35)
 
@@ -164,6 +181,32 @@ local function IsPlayerGrounded(player)
 end
 
 
+local function CanPlayerJump(player)
+    return IsPlayerGrounded(player) or player:GetData().CoyoteTime
+end
+
+
+local function Jump(player)
+    player.Velocity = player.Velocity - Vector(0, MinigameConstants.JUMPING_STRENGTH)
+    player:GetData().ExtraJumpFrames = MinigameConstants.EXTRA_JUMP_FRAMES
+
+    player:GetData().FakePlayer:GetSprite():Play("StartJump", true)
+
+    if not IsExtraJumpStrength then
+        gravity = MinigameConstants.EXTRA_JUMP_REDUCED_GRAVITY
+    end
+end
+
+
+local function ExtraJump(player)
+    player:GetData().ExtraJumpFrames = player:GetData().ExtraJumpFrames - 1
+
+    if IsExtraJumpStrength then
+        player.Velocity = player.Velocity - Vector(0, MinigameConstants.EXTRA_JUMP_STRENGTH)
+    end
+end
+
+
 local function MakePlayerStandOnFloor(player)
     if not IsPlayerOnFloor(player) then return false end
 
@@ -228,6 +271,17 @@ local function MakePlayerHitWall(player)
 end
 
 
+local function CheckIfPlayerHitSpike(player)
+    local room = game:GetRoom()
+    local playerGridIndex = room:GetClampedGridIndex(player.Position)
+
+    if RoomSpikes[playerGridIndex] then
+        player.Position = RoomSpawn.Position
+        player.Velocity = Vector.Zero
+    end
+end
+
+
 local function ManageFakePlayer(player)
     local fakePlayer = player:GetData().FakePlayer
     local fakePlayerSprite = fakePlayer:GetSprite()
@@ -240,10 +294,14 @@ local function ManageFakePlayer(player)
         fakePlayerSprite:Play("EndJump", true)
     elseif player.Velocity.Y > 0 and not fakePlayerSprite:IsPlaying("FallLoop") then
         fakePlayerSprite:Play("FallLoop", true)
-    elseif IsPlayerGrounded(player) and fakePlayerSprite:IsPlaying("FallLoop") then
-        fakePlayerSprite:Play("TouchGround", true)
-    elseif fakePlayerSprite:IsFinished("TouchGround") then
-        fakePlayerSprite:Play("Idle", true)
+    elseif IsPlayerGrounded(player) and not fakePlayerSprite:IsPlaying("TouchGround") then
+        if math.abs(player.Velocity.X) < MinigameConstants.HORIZONTAL_SPEED_THRESHOLD then
+            fakePlayerSprite:Play("Idle", true)
+        elseif player.Velocity.X < 0 and not fakePlayerSprite:IsPlaying("MoveLeft") then
+            fakePlayerSprite:Play("MoveLeft", true)
+        elseif player.Velocity.X > 0 and not fakePlayerSprite:IsPlaying("MoveRight") then
+            fakePlayerSprite:Play("MoveRight", true)
+        end
     end
 end
 
@@ -251,27 +309,38 @@ end
 function gush:PlayerUpdate(player)
     local gravity
 
+    if player:GetData().WasGrounded and not IsPlayerGrounded(player) and player.Velocity.Y >= 0 then
+        player:GetData().CoyoteTime = MinigameConstants.COYOTE_TIME_FRAMES
+    elseif not player:GetData().WasGrounded and IsPlayerGrounded(player) then
+        player:GetData().FakePlayer:GetSprite():Play("TouchGround", true)
+    end
+    player:GetData().WasGrounded = IsPlayerGrounded(player)
+
+    if Input.IsActionTriggered(ButtonAction.ACTION_ITEM, player.ControllerIndex) or player:GetData().JumpBuffer then
+        if CanPlayerJump(player) then
+            Jump(player)
+        elseif Input.IsActionTriggered(ButtonAction.ACTION_ITEM, player.ControllerIndex) then
+            --Check the input again for false positives
+            player:GetData().JumpBuffer = MinigameConstants.JUMP_BUFFER_FRAMES
+        end
+    end
+
     if Input.IsActionPressed(ButtonAction.ACTION_ITEM, player.ControllerIndex) then
-        if IsPlayerGrounded(player) then
-            player.Velocity = player.Velocity - Vector(0, MinigameConstants.JUMPING_STRENGTH)
-            player:GetData().ExtraJumpFrames = MinigameConstants.EXTRA_JUMP_FRAMES
-
-            player:GetData().FakePlayer:GetSprite():Play("StartJump", true)
-
-            if not IsExtraJumpStrength then
-                gravity = MinigameConstants.EXTRA_JUMP_REDUCED_GRAVITY
-            end
-        elseif player:GetData().ExtraJumpFrames > 0 then
-            player:GetData().ExtraJumpFrames = player:GetData().ExtraJumpFrames - 1
-
-            if IsExtraJumpStrength then
-                player.Velocity = player.Velocity - Vector(0, MinigameConstants.EXTRA_JUMP_STRENGTH)
-            else
-                gravity = MinigameConstants.EXTRA_JUMP_REDUCED_GRAVITY
-            end
+        if player:GetData().ExtraJumpFrames > 0 then
+            ExtraJump(player)
+            gravity = MinigameConstants.EXTRA_JUMP_REDUCED_GRAVITY
         end
     else
         player:GetData().ExtraJumpFrames = 0
+    end
+
+    if player:GetData().JumpBuffer then
+        player:GetData().JumpBuffer = player:GetData().JumpBuffer - 1
+        if player:GetData().JumpBuffer == 0 then player:GetData().JumpBuffer = nil end
+    end
+    if player:GetData().CoyoteTime then
+        player:GetData().CoyoteTime = player:GetData().CoyoteTime - 1
+        if player:GetData().CoyoteTime == 0 then player:GetData().CoyoteTime = nil end
     end
 
     if MakePlayerHitCeiling(player) then
@@ -285,6 +354,8 @@ function gush:PlayerUpdate(player)
     end
 
     MakePlayerHitWall(player)
+
+    CheckIfPlayerHitSpike(player)
 
     ManageFakePlayer(player)
 end
