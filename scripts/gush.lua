@@ -48,10 +48,11 @@ local MinigameConstants = {
     EXTRA_JUMP_REDUCED_GRAVITY = 0.01,
     EXTRA_JUMP_STRENGTH = 2,
 
-    TERMINAL_VELOCITY = 15,
+    TERMINAL_VELOCITY = 20,
     GRAVITY_STRENGTH = 0.7,
 
-    DISTANCE_FROM_PLAYER_TO_PLATFORM = 10
+    DISTANCE_FROM_PLAYER_TO_FLOOR = 10,
+    DISTANCE_FROM_PLAYER_TO_WALL = 6
 }
 
 --Timers
@@ -70,7 +71,7 @@ local WaveTransitionScreen = Sprite()
 WaveTransitionScreen:Load("gfx/minigame_transition.anm2")
 
 local IsExtraJumpStrength = false
-local RoomPlatforms = {}
+RoomPlatforms = {}
 
 
 local function FindPlatforms()
@@ -170,15 +171,32 @@ local function MakePlayerStandOnFloor(player)
     local playerGridIndex = room:GetClampedGridIndex(player.Position)
     local playerClampedPos = room:GetGridPosition(playerGridIndex)
 
-    if player.Position.Y - playerClampedPos.Y >= MinigameConstants.DISTANCE_FROM_PLAYER_TO_PLATFORM and 
+    if player.Position.Y - playerClampedPos.Y >= MinigameConstants.DISTANCE_FROM_PLAYER_TO_FLOOR and 
      player.Velocity.Y >= 0 then
-        player.Position = Vector(player.Position.X,playerClampedPos.Y + MinigameConstants.DISTANCE_FROM_PLAYER_TO_PLATFORM)
+        player.Position = Vector(player.Position.X, playerClampedPos.Y + MinigameConstants.DISTANCE_FROM_PLAYER_TO_FLOOR)
         player.Velocity = Vector(player.Velocity.X, 0)
 
         return true
     end
 
     return false
+end
+
+
+local function MakePlayerHitCeiling(player)
+    local room = game:GetRoom()
+    local playerGridIndex = room:GetClampedGridIndex(player.Position)
+    local playerClampedPos = room:GetGridPosition(playerGridIndex)
+
+    if not RoomPlatforms[playerGridIndex - MinigameConstants.GRID_OFFSET_TO_GET_UNDER] and not RoomPlatforms[playerGridIndex] then return end
+
+    if playerClampedPos.Y - player.Position.Y >= MinigameConstants.DISTANCE_FROM_PLAYER_TO_FLOOR and
+     player.Velocity.Y < 0 then
+        player.Position = Vector(player.Position.X, playerClampedPos.Y - MinigameConstants.DISTANCE_FROM_PLAYER_TO_FLOOR)
+        player.Velocity = Vector(player.Velocity.X, 0)
+
+        return true
+    end
 end
 
 
@@ -193,13 +211,29 @@ local function ApplyGravity(player, gravity)
 end
 
 
+local function MakePlayerHitWall(player)
+    local room = game:GetRoom()
+    local playerGridIndex = room:GetClampedGridIndex(player.Position)
+    local playerClampedPos = room:GetGridPosition(playerGridIndex)
+
+    if RoomPlatforms[playerGridIndex + 1] and
+    player.Position.X - playerClampedPos.X >= MinigameConstants.DISTANCE_FROM_PLAYER_TO_WALL then
+        player.Position = Vector(playerClampedPos.X + MinigameConstants.DISTANCE_FROM_PLAYER_TO_WALL, player.Position.Y)
+    end
+
+    if RoomPlatforms[playerGridIndex - 1] and
+    playerClampedPos.X - player.Position.X >= MinigameConstants.DISTANCE_FROM_PLAYER_TO_WALL then
+        player.Position = Vector(playerClampedPos.X - MinigameConstants.DISTANCE_FROM_PLAYER_TO_WALL, player.Position.Y)
+    end
+end
+
+
 local function ManageFakePlayer(player)
     local fakePlayer = player:GetData().FakePlayer
     local fakePlayerSprite = fakePlayer:GetSprite()
 
     fakePlayer.Position = player.Position + Vector(0, 1)
 
-    
     if player.Velocity.Y < 0 and fakePlayerSprite:IsFinished("StartJump") then
         fakePlayerSprite:Play("JumpLoop", true)
     elseif math.abs(player.Velocity.Y) < MinigameConstants.TOP_JUMPING_SPEED_THRESHOLD and not IsPlayerOnFloor(player) then
@@ -240,11 +274,17 @@ function gush:PlayerUpdate(player)
         player:GetData().ExtraJumpFrames = 0
     end
 
+    if MakePlayerHitCeiling(player) then
+        player:GetData().ExtraJumpFrames = 0
+    end
+
     local shouldIgnoreGravity = MakePlayerStandOnFloor(player)
 
     if not shouldIgnoreGravity then
         ApplyGravity(player, gravity)
     end
+
+    MakePlayerHitWall(player)
 
     ManageFakePlayer(player)
 end
