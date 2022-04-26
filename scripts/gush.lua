@@ -45,6 +45,7 @@ local MinigameConstants = {
     JUMPING_SPEED_THRESHOLD = 0.17,
     TOP_JUMPING_SPEED_THRESHOLD = 2.5, --Only for visual animation
     HORIZONTAL_SPEED_THRESHOLD = 0.5, --Only for visual animation
+    OFFSET_TO_CHECK_FOR_FLOOR = 10,
     GRID_OFFSET_TO_GET_UNDER = 28,
 
     JUMP_BUFFER_FRAMES = 7,
@@ -169,10 +170,11 @@ gush.callbacks[ModCallbacks.MC_INPUT_ACTION] = gush.OnInput
 
 local function IsPlayerOnFloor(player)
     local room = game:GetRoom()
-    local gridIndex = room:GetClampedGridIndex(player.Position)
-    local collisionClass = room:GetGridCollision(gridIndex + MinigameConstants.GRID_OFFSET_TO_GET_UNDER)
+    local gridIndexLeft = room:GetClampedGridIndex(player.Position - Vector(MinigameConstants.OFFSET_TO_CHECK_FOR_FLOOR, 0))
+    local gridIndexRight = room:GetClampedGridIndex(player.Position + Vector(MinigameConstants.OFFSET_TO_CHECK_FOR_FLOOR, 0))
 
-    return collisionClass == GridCollisionClass.COLLISION_WALL or RoomPlatforms[gridIndex + MinigameConstants.GRID_OFFSET_TO_GET_UNDER]
+    return RoomPlatforms[gridIndexLeft + MinigameConstants.GRID_OFFSET_TO_GET_UNDER] or
+        RoomPlatforms[gridIndexRight + MinigameConstants.GRID_OFFSET_TO_GET_UNDER]
 end
 
 
