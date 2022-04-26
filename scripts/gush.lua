@@ -173,8 +173,8 @@ local function IsPlayerOnFloor(player)
     local gridIndexLeft = room:GetClampedGridIndex(player.Position - Vector(MinigameConstants.OFFSET_TO_CHECK_FOR_FLOOR, 0))
     local gridIndexRight = room:GetClampedGridIndex(player.Position + Vector(MinigameConstants.OFFSET_TO_CHECK_FOR_FLOOR, 0))
 
-    return RoomPlatforms[gridIndexLeft + MinigameConstants.GRID_OFFSET_TO_GET_UNDER] or
-        RoomPlatforms[gridIndexRight + MinigameConstants.GRID_OFFSET_TO_GET_UNDER]
+    return (RoomPlatforms[gridIndexLeft + MinigameConstants.GRID_OFFSET_TO_GET_UNDER] and not RoomPlatforms[gridIndexLeft]) or
+        (RoomPlatforms[gridIndexRight + MinigameConstants.GRID_OFFSET_TO_GET_UNDER] and not RoomPlatforms[gridIndexRight])
 end
 
 
