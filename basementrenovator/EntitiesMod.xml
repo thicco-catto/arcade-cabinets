@@ -7,4 +7,7 @@
 
     <entity Metadata="1" Group="Grid" ID="960" Image="icons/gush_spawn.png" Kind="Arcade Cabinets" Name="Gush Spawn" Variant="2116" Subtype="0" NoBlockDoors="1" >
     </entity>
+
+    <entity Metadata="1" Group="Grid" ID="960" Image="icons/gush_exit.png" Kind="Arcade Cabinets" Name="Gush Exit" Variant="2117" Subtype="0" NoBlockDoors="1" >
+    </entity>
 </data>

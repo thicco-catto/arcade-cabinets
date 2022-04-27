@@ -78,7 +78,7 @@ local CurrentMinigameState = 0
 local WaveTransitionScreen = Sprite()
 WaveTransitionScreen:Load("gfx/minigame_transition.anm2")
 
-local IsExtraJumpStrength = false
+local IsExtraJumpStrength = true
 RoomPlatforms = {}
 RoomSpikes = {}
 RoomSpawn = nil

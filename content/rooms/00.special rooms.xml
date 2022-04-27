@@ -342,6 +342,9 @@
 		<spawn x="17" y="11">
 			<entity type="960" variant="2114" subtype="0" weight="1.0"/>
 		</spawn>
+		<spawn x="20" y="11">
+			<entity type="960" variant="2117" subtype="0" weight="1.0"/>
+		</spawn>
 		<spawn x="2" y="12">
 			<entity type="960" variant="2116" subtype="0" weight="1.0"/>
 		</spawn>
