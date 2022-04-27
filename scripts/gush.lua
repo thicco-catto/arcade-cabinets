@@ -37,6 +37,7 @@ local MinigameEntityVariants = {
     PLATFORM = Isaac.GetEntityVariantByName("platform GUSH"),
     SPIKE = Isaac.GetEntityVariantByName("spike GUSH"),
     SPAWN = Isaac.GetEntityVariantByName("spawn GUSH"),
+    EXIT = Isaac.GetEntityVariantByName("exit GUSH"),
     PLAYER = Isaac.GetEntityVariantByName("player GUSH"),
 }
 
@@ -82,10 +83,13 @@ local IsExtraJumpStrength = true
 RoomPlatforms = {}
 RoomSpikes = {}
 RoomSpawn = nil
+RoomExit = nil
 
 
 local function FindGrid()
     RoomPlatforms = {}
+    RoomSpikes = {}
+
     local room = game:GetRoom()
 
     local foundPlatforms = Isaac.FindByType(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.PLATFORM, 0)
@@ -94,12 +98,28 @@ local function FindGrid()
     end
 
     local foundSpikes = Isaac.FindByType(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.SPIKE, 0)
-
     for _, spike in ipairs(foundSpikes) do
         RoomSpikes[room:GetClampedGridIndex(spike.Position)] = true
     end
 
     RoomSpawn = Isaac.FindByType(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.SPAWN, 0)[1]
+
+    RoomExit = Isaac.FindByType(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.EXIT, 0)[1]
+end
+
+
+local function PrepareForRoom()
+    FindGrid()
+
+    local playerNum = game:GetNumPlayers()
+    for i = 0, playerNum - 1, 1 do
+        local player = game:GetPlayer(i)
+
+        player.Position = RoomSpawn.Position
+        local fakePlayer = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.PLAYER, 0, player.Position, Vector.Zero, player)
+        player:GetData().FakePlayer = fakePlayer
+        player:GetData().IsExiting = false
+    end
 end
 
 
@@ -110,9 +130,9 @@ function gush:Init()
     --Reset variables
     gush.result = nil
 
-    FindGrid()
-
     rng:SetSeed(game:GetSeeds():GetStartSeed(), 35)
+
+    PrepareForRoom()
 
     --Reset timers
     for _, timer in pairs(MinigameTimers) do
@@ -147,10 +167,6 @@ function gush:Init()
 
         player:GetData().IsGrounded = false
         player:GetData().ExtraJumpFrames = 0
-
-        player.Visible = false
-        local fakePlayer = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.PLAYER, 0, player.Position, Vector.Zero, player)
-        player:GetData().FakePlayer = fakePlayer
     end
 end
 
@@ -284,6 +300,20 @@ local function CheckIfPlayerHitSpike(player)
 end
 
 
+local function CheckIfPlayerIsInPortal(player)
+    if player:GetData().IsExiting then return end
+
+    local room = game:GetRoom()
+    local playerGridIndex = room:GetClampedGridIndex(player.Position)
+    local exitGridIndex = room:GetClampedGridIndex(RoomExit.Position)
+
+    if playerGridIndex == exitGridIndex then
+        player:GetData().IsExiting = true
+        Isaac.ExecuteCommand("goto s.isaacs." .. game:GetLevel():GetCurrentRoomDesc().Data.Variant + 1)
+    end
+end
+
+
 local function ManageFakePlayer(player)
     local fakePlayer = player:GetData().FakePlayer
     local fakePlayerSprite = fakePlayer:GetSprite()
@@ -310,6 +340,8 @@ end
 
 function gush:PlayerUpdate(player)
     local gravity
+
+    player.Visible = false --Do this here because it sucks
 
     if player:GetData().WasGrounded and not IsPlayerGrounded(player) and player.Velocity.Y >= 0 then
         player:GetData().CoyoteTime = MinigameConstants.COYOTE_TIME_FRAMES
@@ -359,6 +391,8 @@ function gush:PlayerUpdate(player)
 
     CheckIfPlayerHitSpike(player)
 
+    CheckIfPlayerIsInPortal(player)
+
     ManageFakePlayer(player)
 end
 gush.callbacks[ModCallbacks.MC_POST_PLAYER_UPDATE] = gush.PlayerUpdate
@@ -407,12 +441,11 @@ end
 gush.callbacks[ModCallbacks.MC_POST_RENDER] = gush.OnRender
 
 
--- function gush:OnEffectUpdate(effect)
---     if effect.Variant == MinigameEntityVariants.PLAYER then
---         effect.Position = effect.Parent.Position
---     end
--- end
--- gush.callbacks[ModCallbacks.MC_POST_EFFECT_UPDATE] = gush.OnEffectUpdate
+function gush:OnNewRoom()
+    PrepareForRoom()
+end
+gush.callbacks[ModCallbacks.MC_POST_NEW_ROOM] = gush.OnNewRoom
+
 
 local function mysplit (inputstr, sep)
     if sep == nil then
