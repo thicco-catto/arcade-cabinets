@@ -173,7 +173,9 @@ end
 
 --UPDATE CALLBACKS
 function gush:OnInput(_, inputHook, buttonAction)
-    if buttonAction == ButtonAction.ACTION_UP or buttonAction == ButtonAction.ACTION_DOWN then
+    if buttonAction == ButtonAction.ACTION_UP or buttonAction == ButtonAction.ACTION_DOWN or
+     buttonAction == ButtonAction.ACTION_SHOOTLEFT or buttonAction == ButtonAction.ACTION_SHOOTRIGHT or
+     buttonAction == ButtonAction.ACTION_SHOOTUP or buttonAction == ButtonAction.ACTION_SHOOTDOWN then
         if inputHook > InputHook.IS_ACTION_TRIGGERED then
             return 0
         else
