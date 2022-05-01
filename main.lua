@@ -407,7 +407,7 @@ ArcadeCabinetMod:AddCallback(ModCallbacks.MC_GET_SHADER_PARAMS, ArcadeCabinetMod
 
 function ArcadeCabinetMod:OnFrameUpdate()
 
-    if game:GetFrameCount() == 1 then
+    if game:GetFrameCount() == 1 and ArcadeCabinetVariables.CurrentMinigame == ArcadeCabinetVariables.GameState.NOT_PLAYING then
 		Isaac.Spawn(6, ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_BLACKSTONEWIELDER, 0, Vector(100, 150), Vector.Zero, nil)
         Isaac.Spawn(6, ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_GUSH, 0, Vector(170, 150), Vector.Zero, nil)
         Isaac.Spawn(6, ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_HOLYSMOKES, 0, Vector(240, 150), Vector.Zero, nil)
@@ -482,6 +482,25 @@ function ArcadeCabinetMod:OnPlayerUpdate(player)
 end
 ArcadeCabinetMod:AddCallback(ModCallbacks.MC_POST_PEFFECT_UPDATE, ArcadeCabinetMod.OnPlayerUpdate)
 
+
+function ArcadeCabinetMod:OnCMD(cmd, _)
+    if cmd == "gush" then
+        ArcadeCabinetVariables.CurrentGameState = ArcadeCabinetVariables.GameState.PLAYING
+        ArcadeCabinetVariables.CurrentScript = ArcadeCabinetVariables.ArcadeCabinetScripts[ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_GUSH]
+        ArcadeCabinetVariables.CurrentMinigame = ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_GUSH
+
+        ArcadeCabinetVariables.CurrentScript:Init()
+
+        for callback, funct in pairs(ArcadeCabinetVariables.CurrentScript.callbacks) do
+            ArcadeCabinetMod:AddCallback(callback, funct)
+        end
+
+        for _, entity in ipairs(Isaac.FindByType(EntityType.ENTITY_SLOT, -1, -1)) do
+            entity:Remove()
+        end
+    end
+end
+ArcadeCabinetMod:AddCallback(ModCallbacks.MC_EXECUTE_CMD, ArcadeCabinetMod.OnCMD)
 
 -- function ArcadeCabinetMod:CheckForCabinet()
 --     local cabinetExists = Isaac.CountEntities(cabinmod, EntityType.ENTITY_SLOT, Arcade_Cabinet_Var, -1)
