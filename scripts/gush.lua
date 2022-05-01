@@ -53,6 +53,7 @@ local MinigameConstants = {
 
     JUMP_BUFFER_FRAMES = 7,
     COYOTE_TIME_FRAMES = 7,
+    SKIP_ONE_WAYS_FRAMES = 14,
 
     JUMPING_STRENGTH = 13,
     EXTRA_JUMP_FRAMES = 15,
@@ -215,14 +216,20 @@ local function IsPlayerOnFloor(player)
     local gridIndexLeft = room:GetClampedGridIndex(player.Position - Vector(MinigameConstants.OFFSET_TO_CHECK_FOR_FLOOR, 0))
     local gridIndexRight = room:GetClampedGridIndex(player.Position + Vector(MinigameConstants.OFFSET_TO_CHECK_FOR_FLOOR, 0))
 
-    return (RoomPlatforms[gridIndexLeft + MinigameConstants.GRID_OFFSET_TO_GET_UNDER] and not RoomPlatforms[gridIndexLeft]) or
+    if player:GetData().SkipOneWays then
+        return (RoomPlatforms[gridIndexLeft + MinigameConstants.GRID_OFFSET_TO_GET_UNDER] and not RoomPlatforms[gridIndexLeft]) or
+        (RoomPlatforms[gridIndexRight + MinigameConstants.GRID_OFFSET_TO_GET_UNDER] and not RoomPlatforms[gridIndexRight])
+    else
+        return (RoomPlatforms[gridIndexLeft + MinigameConstants.GRID_OFFSET_TO_GET_UNDER] and not RoomPlatforms[gridIndexLeft]) or
         (RoomPlatforms[gridIndexRight + MinigameConstants.GRID_OFFSET_TO_GET_UNDER] and not RoomPlatforms[gridIndexRight]) or
         (RoomOneWays[gridIndexLeft + MinigameConstants.GRID_OFFSET_TO_GET_UNDER] and not RoomOneWays[gridIndexLeft]) or
         (RoomOneWays[gridIndexRight + MinigameConstants.GRID_OFFSET_TO_GET_UNDER] and not RoomOneWays[gridIndexRight])
+    end
 end
 
 
 local function IsPlayerGrounded(player)
+    print(IsPlayerOnFloor(player))
     return math.abs(player.Velocity.Y) < MinigameConstants.JUMPING_SPEED_THRESHOLD and IsPlayerOnFloor(player)
 end
 
@@ -396,6 +403,10 @@ function gush:OnPlayerUpdate(player)
         player:GetData().ExtraJumpFrames = 0
     end
 
+    if Input.IsActionTriggered(ButtonAction.ACTION_DOWN, player.ControllerIndex) then
+        player:GetData().SkipOneWays = MinigameConstants.SKIP_ONE_WAYS_FRAMES
+    end
+
     if player:GetData().JumpBuffer then
         player:GetData().JumpBuffer = player:GetData().JumpBuffer - 1
         if player:GetData().JumpBuffer == 0 then player:GetData().JumpBuffer = nil end
@@ -403,6 +414,10 @@ function gush:OnPlayerUpdate(player)
     if player:GetData().CoyoteTime then
         player:GetData().CoyoteTime = player:GetData().CoyoteTime - 1
         if player:GetData().CoyoteTime == 0 then player:GetData().CoyoteTime = nil end
+    end
+    if player:GetData().SkipOneWays then
+        player:GetData().SkipOneWays = player:GetData().SkipOneWays - 1
+        if player:GetData().SkipOneWays == 0 then player:GetData().SkipOneWays = nil end
     end
 
     if MakePlayerHitCeiling(player) then
