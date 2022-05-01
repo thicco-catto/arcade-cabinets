@@ -321,7 +321,7 @@
 			<entity type="1940" variant="0" subtype="0" weight="1.0"/>
 		</spawn>
 	</room>
-	<room variant="50" name="gush a1" type="18" subtype="0" shape="8" width="26" height="14" difficulty="0" weight="1.0" lastTestTime="2022-05-01T19:48+00:00">
+	<room variant="50" name="gush a1" type="18" subtype="0" shape="8" width="26" height="14" difficulty="0" weight="1.0" lastTestTime="2022-05-01T22:04+00:00">
 		<door exists="False" x="-1" y="3"/>
 		<door exists="False" x="-1" y="10"/>
 		<door exists="False" x="6" y="-1"/>
@@ -330,281 +330,17 @@
 		<door exists="False" x="19" y="14"/>
 		<door exists="False" x="26" y="3"/>
 		<door exists="False" x="26" y="10"/>
-		<spawn x="8" y="0">
-			<entity type="960" variant="2119" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="9" y="0">
-			<entity type="960" variant="2119" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="10" y="0">
-			<entity type="960" variant="2119" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="11" y="0">
-			<entity type="960" variant="2119" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="8" y="1">
-			<entity type="960" variant="2119" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="9" y="1">
-			<entity type="960" variant="2119" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="10" y="1">
-			<entity type="960" variant="2119" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="11" y="1">
-			<entity type="960" variant="2119" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="8" y="2">
-			<entity type="960" variant="2119" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="11" y="2">
-			<entity type="960" variant="2119" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="8" y="3">
-			<entity type="960" variant="2119" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="11" y="3">
-			<entity type="960" variant="2119" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="0" y="4">
-			<entity type="960" variant="2118" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="1" y="4">
-			<entity type="960" variant="2118" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="2" y="4">
-			<entity type="960" variant="2118" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="3" y="4">
-			<entity type="960" variant="2114" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="4" y="4">
-			<entity type="960" variant="2119" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="5" y="4">
-			<entity type="960" variant="2119" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="6" y="4">
-			<entity type="960" variant="2119" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="8" y="4">
-			<entity type="960" variant="2114" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="9" y="4">
-			<entity type="960" variant="2114" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="10" y="4">
-			<entity type="960" variant="2114" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="11" y="4">
-			<entity type="960" variant="2119" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="12" y="4">
-			<entity type="960" variant="2119" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="3" y="5">
-			<entity type="960" variant="2114" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="4" y="5">
-			<entity type="960" variant="2118" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="5" y="5">
-			<entity type="960" variant="2118" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="6" y="5">
-			<entity type="960" variant="2118" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="7" y="5">
-			<entity type="960" variant="2119" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="8" y="5">
-			<entity type="960" variant="2119" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="9" y="5">
-			<entity type="960" variant="2119" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="10" y="5">
-			<entity type="960" variant="2114" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="11" y="5">
-			<entity type="960" variant="2119" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="12" y="5">
-			<entity type="960" variant="2119" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="3" y="6">
-			<entity type="960" variant="2114" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="4" y="6">
-			<entity type="960" variant="2119" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="5" y="6">
-			<entity type="960" variant="2119" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="6" y="6">
-			<entity type="960" variant="2119" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="7" y="6">
-			<entity type="960" variant="2118" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="8" y="6">
-			<entity type="960" variant="2114" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="9" y="6">
-			<entity type="960" variant="2114" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="10" y="6">
-			<entity type="960" variant="2114" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="11" y="6">
-			<entity type="960" variant="2119" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="12" y="6">
-			<entity type="960" variant="2119" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="0" y="7">
-			<entity type="960" variant="2118" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="1" y="7">
-			<entity type="960" variant="2118" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="2" y="7">
-			<entity type="960" variant="2118" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="3" y="7">
-			<entity type="960" variant="2114" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="4" y="7">
-			<entity type="960" variant="2114" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="5" y="7">
-			<entity type="960" variant="2114" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="6" y="7">
-			<entity type="960" variant="2114" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="7" y="7">
-			<entity type="960" variant="2114" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="8" y="7">
-			<entity type="960" variant="2114" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="3" y="8">
-			<entity type="960" variant="2114" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="8" y="8">
-			<entity type="960" variant="2114" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="3" y="9">
-			<entity type="960" variant="2114" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="8" y="9">
-			<entity type="960" variant="2114" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="0" y="10">
-			<entity type="960" variant="2118" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="1" y="10">
-			<entity type="960" variant="2118" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="2" y="10">
-			<entity type="960" variant="2118" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="3" y="10">
-			<entity type="960" variant="2114" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="4" y="10">
-			<entity type="960" variant="2119" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="5" y="10">
-			<entity type="960" variant="2119" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="6" y="10">
-			<entity type="960" variant="2119" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="7" y="10">
-			<entity type="960" variant="2119" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="8" y="10">
-			<entity type="960" variant="2114" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="14" y="10">
-			<entity type="960" variant="2114" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="3" y="11">
-			<entity type="960" variant="2119" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="8" y="11">
-			<entity type="960" variant="2119" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="12" y="11">
-			<entity type="960" variant="2114" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="14" y="11">
-			<entity type="960" variant="2114" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="17" y="11">
-			<entity type="960" variant="2114" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="20" y="11">
-			<entity type="960" variant="2117" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="2" y="12">
+		<spawn x="0" y="1">
 			<entity type="960" variant="2116" subtype="0" weight="1.0"/>
 		</spawn>
-		<spawn x="3" y="12">
-			<entity type="960" variant="2119" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="8" y="12">
-			<entity type="960" variant="2119" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="10" y="12">
-			<entity type="960" variant="2114" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="11" y="12">
+		<spawn x="0" y="12">
 			<entity type="960" variant="2115" subtype="0" weight="1.0"/>
 		</spawn>
-		<spawn x="12" y="12">
-			<entity type="960" variant="2114" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="13" y="12">
-			<entity type="960" variant="2115" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="14" y="12">
-			<entity type="960" variant="2114" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="15" y="12">
-			<entity type="960" variant="2115" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="16" y="12">
-			<entity type="960" variant="2115" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="17" y="12">
-			<entity type="960" variant="2114" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="18" y="12">
-			<entity type="960" variant="2115" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="19" y="12">
-			<entity type="960" variant="2115" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="20" y="12">
-			<entity type="960" variant="2114" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="21" y="12">
-			<entity type="960" variant="2115" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="22" y="12">
-			<entity type="960" variant="2115" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="23" y="12">
-			<entity type="960" variant="2115" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="24" y="12">
+		<spawn x="1" y="12">
 			<entity type="960" variant="2115" subtype="0" weight="1.0"/>
 		</spawn>
 		<spawn x="25" y="12">
-			<entity type="960" variant="2115" subtype="0" weight="1.0"/>
+			<entity type="960" variant="2117" subtype="0" weight="1.0"/>
 		</spawn>
 		<spawn x="0" y="13">
 			<entity type="960" variant="2114" subtype="0" weight="1.0"/>
@@ -685,7 +421,7 @@
 			<entity type="960" variant="2114" subtype="0" weight="1.0"/>
 		</spawn>
 	</room>
-	<room variant="0" name="New Room" type="18" subtype="0" shape="8" width="26" height="14" difficulty="1" weight="1.0" lastTestTime="2022-05-01T18:09+00:00">
+	<room variant="0" name="New Room" type="18" subtype="0" shape="8" width="26" height="14" difficulty="1" weight="1.0" lastTestTime="2022-05-01T22:02+00:00">
 		<door exists="True" x="-1" y="3"/>
 		<door exists="False" x="-1" y="10"/>
 		<door exists="False" x="6" y="-1"/>

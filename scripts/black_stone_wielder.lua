@@ -460,6 +460,12 @@ local function RenderFadeOut()
 
             local costume = Isaac.GetCostumeIdByPath("gfx/costumes/bsw_robes.anm2")
             player:TryRemoveNullCostume(costume)
+
+            for _, entity in ipairs(Isaac.GetRoomEntities()) do
+                if entity:IsVulnerableEnemy() then
+                    entity:Remove()
+                end
+            end
         end
 
         if CurrentMinigameState == MinigameState.WINNING then
