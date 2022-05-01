@@ -55,7 +55,7 @@ local MinigameConstants = {
     JUMP_BUFFER_FRAMES = 7,
     COYOTE_TIME_FRAMES = 7,
     SKIP_ONE_WAYS_FRAMES = 14,
-    COLLAPSING_PLATFORM_TIMER = 30,
+    COLLAPSING_PLATFORM_TIMER = 20,
 
     JUMPING_STRENGTH = 13,
     EXTRA_JUMP_FRAMES = 15,
@@ -102,6 +102,7 @@ local RoomSpawn = nil
 local RoomExit = nil
 
 local CollapsingPlatforms = {}
+local CollapsingPlatformsToSpawn = {}
 
 
 local function FillGridList(gridList, entityVariant)
@@ -369,6 +370,15 @@ local function CheckIfPlayerHitSpike(player)
     if RoomSpikes[playerGridIndex] then
         player.Position = RoomSpawn.Position
         player.Velocity = Vector.Zero
+
+        for _, gridIndex in ipairs(CollapsingPlatformsToSpawn) do
+            local position = room:GetGridPosition(gridIndex)
+            Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.COLLAPSING, 0, position, Vector.Zero, nil)
+        end
+
+        CollapsingPlatformsToSpawn = {}
+        RoomCollapsings = {}
+        FillGridList(RoomCollapsings, MinigameEntityVariants.COLLAPSING)
     end
 end
 
@@ -488,6 +498,7 @@ local function UpdatePlaying()
 
             RoomCollapsings[gridIndex] = nil
             CollapsingPlatforms[gridIndex] = nil
+            table.insert(CollapsingPlatformsToSpawn, gridIndex)
             collapsing:Remove()
         end
     end
@@ -547,8 +558,6 @@ function gush:OnRender()
         local text = ""
         if collapsing:GetData().CollapseTimer then
             text = collapsing:GetData().CollapseTimer
-        else
-            text = "nil"
         end
 
         Isaac.RenderText(text, pos.X, pos.Y, 1, 1, 1, 255)
