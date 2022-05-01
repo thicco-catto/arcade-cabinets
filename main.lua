@@ -505,7 +505,7 @@ ArcadeCabinetMod:AddCallback(ModCallbacks.MC_EXECUTE_CMD, ArcadeCabinetMod.OnCMD
 function ArcadeCabinetMod:OnNewRoomGush()
     local platforms = Isaac.FindByType(960, 2114, 0)
 
-    if #platforms > 0 and ArcadeCabinetVariables.CurrentGameState ~= ArcadeCabinetVariables.GameState.PLAYING then
+    if #platforms > 0 and ArcadeCabinetVariables.CurrentGameState == ArcadeCabinetVariables.GameState.NOT_PLAYING then
         ArcadeCabinetVariables.CurrentGameState = ArcadeCabinetVariables.GameState.PLAYING
         ArcadeCabinetVariables.CurrentScript = ArcadeCabinetVariables.ArcadeCabinetScripts[ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_GUSH]
         ArcadeCabinetVariables.CurrentMinigame = ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_GUSH

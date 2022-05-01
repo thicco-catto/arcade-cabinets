@@ -35,8 +35,10 @@ local MinigameMusic = Isaac.GetMusicIdByName("jc corpse beat")
 --Entities
 local MinigameEntityVariants = {
     PLATFORM = Isaac.GetEntityVariantByName("platform GUSH"),
+    ONE_WAY = Isaac.GetEntityVariantByName("one way GUSH"),
     SPIKE = Isaac.GetEntityVariantByName("spike GUSH"),
     SPAWN = Isaac.GetEntityVariantByName("spawn GUSH"),
+
     EXIT = Isaac.GetEntityVariantByName("exit GUSH"),
     PLAYER = Isaac.GetEntityVariantByName("player GUSH"),
 }
@@ -61,15 +63,21 @@ local MinigameConstants = {
     GRAVITY_STRENGTH = 1.1,
 
     DISTANCE_FROM_PLAYER_TO_FLOOR = 10,
-    DISTANCE_FROM_PLAYER_TO_WALL = 6
+    DISTANCE_FROM_PLAYER_TO_WALL = 6,
+
+    MAX_INTRO_SCREEN_TIMER = 50,
 }
 
 --Timers
 local MinigameTimers = {
+    IntroTimer = 0
 }
 
 --States
 local MinigameStates = {
+    INTRO_SCREEN = 0,
+    PLAYING = 1,
+
     WINNING = 4,
     LOSING = 5
 }
@@ -77,10 +85,14 @@ local CurrentMinigameState = 0
 
 --UI
 local WaveTransitionScreen = Sprite()
-WaveTransitionScreen:Load("gfx/minigame_transition.anm2")
+WaveTransitionScreen:Load("gfx/minigame_transition.anm2", true)
+WaveTransitionScreen:ReplaceSpritesheet(0, "gfx/effects/gush/gush_intro_screen.png")
+WaveTransitionScreen:ReplaceSpritesheet(1, "gfx/effects/gush/gush_intro_screen.png")
+WaveTransitionScreen:LoadGraphics()
 
 local IsExtraJumpStrength = true
 RoomPlatforms = {}
+RoomOneWays = {}
 RoomSpikes = {}
 RoomSpawn = nil
 RoomExit = nil
@@ -88,6 +100,7 @@ RoomExit = nil
 
 local function FindGrid()
     RoomPlatforms = {}
+    RoomOneWays = {}
     RoomSpikes = {}
 
     local room = game:GetRoom()
@@ -95,6 +108,11 @@ local function FindGrid()
     local foundPlatforms = Isaac.FindByType(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.PLATFORM, 0)
     for _, platform in ipairs(foundPlatforms) do
         RoomPlatforms[room:GetClampedGridIndex(platform.Position)] = true
+    end
+
+    local foundOneWays = Isaac.FindByType(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.ONE_WAY, 0)
+    for _, oneWay in ipairs(foundOneWays) do
+        RoomOneWays[room:GetClampedGridIndex(oneWay.Position)] = true
     end
 
     local foundSpikes = Isaac.FindByType(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.SPIKE, 0)
@@ -139,6 +157,11 @@ function gush:Init()
         timer = 0
     end
 
+    --Intro stuff
+    WaveTransitionScreen:Play("Idle", true)
+    CurrentMinigameState = MinigameStates.INTRO_SCREEN
+    MinigameTimers.IntroTimer = MinigameConstants.MAX_INTRO_SCREEN_TIMER
+
     --Spawn the backdrop
     -- local backdrop = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, ArcadeCabinetVariables.Backdrop2x2Variant, 0, room:GetCenterPos(), Vector.Zero, nil)
     -- backdrop.DepthOffset = -1000
@@ -153,6 +176,7 @@ function gush:Init()
     for i = 0, playerNum - 1, 1 do
         local player = game:GetPlayer(i)
 
+        player.ControlsEnabled = false
         for _, item in ipairs(gush.startingItems) do
             player:AddCollectible(item, 0, false)
         end
@@ -192,7 +216,9 @@ local function IsPlayerOnFloor(player)
     local gridIndexRight = room:GetClampedGridIndex(player.Position + Vector(MinigameConstants.OFFSET_TO_CHECK_FOR_FLOOR, 0))
 
     return (RoomPlatforms[gridIndexLeft + MinigameConstants.GRID_OFFSET_TO_GET_UNDER] and not RoomPlatforms[gridIndexLeft]) or
-        (RoomPlatforms[gridIndexRight + MinigameConstants.GRID_OFFSET_TO_GET_UNDER] and not RoomPlatforms[gridIndexRight])
+        (RoomPlatforms[gridIndexRight + MinigameConstants.GRID_OFFSET_TO_GET_UNDER] and not RoomPlatforms[gridIndexRight]) or
+        (RoomOneWays[gridIndexLeft + MinigameConstants.GRID_OFFSET_TO_GET_UNDER] and not RoomOneWays[gridIndexLeft]) or
+        (RoomOneWays[gridIndexRight + MinigameConstants.GRID_OFFSET_TO_GET_UNDER] and not RoomOneWays[gridIndexRight])
 end
 
 
@@ -202,7 +228,7 @@ end
 
 
 local function CanPlayerJump(player)
-    return IsPlayerGrounded(player) or player:GetData().CoyoteTime
+    return (IsPlayerGrounded(player) or player:GetData().CoyoteTime) and player.ControlsEnabled
 end
 
 
@@ -340,7 +366,7 @@ local function ManageFakePlayer(player)
 end
 
 
-function gush:PlayerUpdate(player)
+function gush:OnPlayerUpdate(player)
     local gravity
 
     player.Visible = false --Do this here because it sucks
@@ -397,13 +423,39 @@ function gush:PlayerUpdate(player)
 
     ManageFakePlayer(player)
 end
-gush.callbacks[ModCallbacks.MC_POST_PLAYER_UPDATE] = gush.PlayerUpdate
+gush.callbacks[ModCallbacks.MC_POST_PLAYER_UPDATE] = gush.OnPlayerUpdate
+
+
+function gush:OnFrameUpdate()
+    if CurrentMinigameState == MinigameStates.INTRO_SCREEN then
+        MinigameTimers.IntroTimer = MinigameTimers.IntroTimer - 1
+
+        if MinigameTimers.IntroTimer == 0 then
+            CurrentMinigameState = MinigameStates.PLAYING
+
+            local playerNum = game:GetNumPlayers()
+            for i = 0, playerNum - 1, 1 do
+                local player = game:GetPlayer(i)
+                player.ControlsEnabled = true
+            end
+        end
+    end
+end
+gush.callbacks[ModCallbacks.MC_POST_UPDATE] = gush.OnFrameUpdate
+
+
+local function RenderWaveTransition()
+    if CurrentMinigameState ~= MinigameStates.INTRO_SCREEN then return end
+
+    WaveTransitionScreen:SetFrame(0)
+    WaveTransitionScreen:Render(Vector(Isaac.GetScreenWidth() / 2, Isaac.GetScreenHeight() / 2), Vector.Zero, Vector.Zero)
+end
 
 
 function gush:OnRender()
     -- RenderUI()
 
-    -- RenderWaveTransition()
+    RenderWaveTransition()
 
     -- RenderFadeOut()
 

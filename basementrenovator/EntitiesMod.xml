@@ -2,6 +2,9 @@
 	<entity Metadata="1" Group="Grid" ID="960" Image="icons/gush_platform.png" Kind="Arcade Cabinets" Name="Gush Platform" Variant="2114" Subtype="0" NoBlockDoors="1" >
     </entity>
 
+    <entity Metadata="1" Group="Grid" ID="960" Image="icons/gush_one_way.png" Kind="Arcade Cabinets" Name="Gush One Way" Variant="2118" Subtype="0" NoBlockDoors="1" >
+    </entity>
+
     <entity Metadata="1" Group="Grid" ID="960" Image="icons/gush_spike.png" Kind="Arcade Cabinets" Name="Gush Spike" Variant="2115" Subtype="0" NoBlockDoors="1" >
     </entity>
 
