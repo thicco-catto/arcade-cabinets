@@ -36,6 +36,7 @@ local MinigameMusic = Isaac.GetMusicIdByName("jc corpse beat")
 local MinigameEntityVariants = {
     PLATFORM = Isaac.GetEntityVariantByName("platform GUSH"),
     ONE_WAY = Isaac.GetEntityVariantByName("one way GUSH"),
+    COLLAPSING = Isaac.GetEntityVariantByName("collapsing GUSH"),
     SPIKE = Isaac.GetEntityVariantByName("spike GUSH"),
     SPAWN = Isaac.GetEntityVariantByName("spawn GUSH"),
 
@@ -54,6 +55,7 @@ local MinigameConstants = {
     JUMP_BUFFER_FRAMES = 7,
     COYOTE_TIME_FRAMES = 7,
     SKIP_ONE_WAYS_FRAMES = 14,
+    COLLAPSING_PLATFORM_TIMER = 30,
 
     JUMPING_STRENGTH = 13,
     EXTRA_JUMP_FRAMES = 15,
@@ -92,34 +94,33 @@ WaveTransitionScreen:ReplaceSpritesheet(1, "gfx/effects/gush/gush_intro_screen.p
 WaveTransitionScreen:LoadGraphics()
 
 local IsExtraJumpStrength = true
-RoomPlatforms = {}
-RoomOneWays = {}
-RoomSpikes = {}
-RoomSpawn = nil
-RoomExit = nil
+local RoomPlatforms = {}
+local RoomOneWays = {}
+local RoomCollapsings = {}
+local RoomSpikes = {}
+local RoomSpawn = nil
+local RoomExit = nil
+
+local CollapsingPlatforms = {}
+
+
+local function FillGridList(gridList, entityVariant)
+    for _, grid in ipairs(Isaac.FindByType(EntityType.ENTITY_GENERIC_PROP, entityVariant, 0)) do
+        gridList[game:GetRoom():GetClampedGridIndex(grid.Position)] = grid
+    end
+end
 
 
 local function FindGrid()
     RoomPlatforms = {}
     RoomOneWays = {}
+    RoomCollapsings = {}
     RoomSpikes = {}
 
-    local room = game:GetRoom()
-
-    local foundPlatforms = Isaac.FindByType(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.PLATFORM, 0)
-    for _, platform in ipairs(foundPlatforms) do
-        RoomPlatforms[room:GetClampedGridIndex(platform.Position)] = true
-    end
-
-    local foundOneWays = Isaac.FindByType(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.ONE_WAY, 0)
-    for _, oneWay in ipairs(foundOneWays) do
-        RoomOneWays[room:GetClampedGridIndex(oneWay.Position)] = true
-    end
-
-    local foundSpikes = Isaac.FindByType(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.SPIKE, 0)
-    for _, spike in ipairs(foundSpikes) do
-        RoomSpikes[room:GetClampedGridIndex(spike.Position)] = true
-    end
+    FillGridList(RoomPlatforms, MinigameEntityVariants.PLATFORM)
+    FillGridList(RoomOneWays, MinigameEntityVariants.ONE_WAY)
+    FillGridList(RoomCollapsings, MinigameEntityVariants.COLLAPSING)
+    FillGridList(RoomSpikes, MinigameEntityVariants.SPIKE)
 
     RoomSpawn = Isaac.FindByType(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.SPAWN, 0)[1]
 
@@ -148,6 +149,7 @@ function gush:Init()
 
     --Reset variables
     gush.result = nil
+    CollapsingPlatforms = {}
 
     rng:SetSeed(game:GetSeeds():GetStartSeed(), 35)
 
@@ -211,25 +213,41 @@ end
 gush.callbacks[ModCallbacks.MC_INPUT_ACTION] = gush.OnInput
 
 
-local function IsPlayerOnFloor(player)
+local function GetPlatformsPlayerIsStanding(platformTable, player)
     local room = game:GetRoom()
     local gridIndexLeft = room:GetClampedGridIndex(player.Position - Vector(MinigameConstants.OFFSET_TO_CHECK_FOR_FLOOR, 0))
     local gridIndexRight = room:GetClampedGridIndex(player.Position + Vector(MinigameConstants.OFFSET_TO_CHECK_FOR_FLOOR, 0))
+    local standingPlatforms = {}
 
-    if player:GetData().SkipOneWays then
-        return (RoomPlatforms[gridIndexLeft + MinigameConstants.GRID_OFFSET_TO_GET_UNDER] and not RoomPlatforms[gridIndexLeft]) or
-        (RoomPlatforms[gridIndexRight + MinigameConstants.GRID_OFFSET_TO_GET_UNDER] and not RoomPlatforms[gridIndexRight])
-    else
-        return (RoomPlatforms[gridIndexLeft + MinigameConstants.GRID_OFFSET_TO_GET_UNDER] and not RoomPlatforms[gridIndexLeft]) or
-        (RoomPlatforms[gridIndexRight + MinigameConstants.GRID_OFFSET_TO_GET_UNDER] and not RoomPlatforms[gridIndexRight]) or
-        (RoomOneWays[gridIndexLeft + MinigameConstants.GRID_OFFSET_TO_GET_UNDER] and not RoomOneWays[gridIndexLeft]) or
-        (RoomOneWays[gridIndexRight + MinigameConstants.GRID_OFFSET_TO_GET_UNDER] and not RoomOneWays[gridIndexRight])
+    if platformTable[gridIndexLeft + MinigameConstants.GRID_OFFSET_TO_GET_UNDER] and not (RoomPlatforms[gridIndexLeft] or RoomCollapsings[gridIndexLeft])then
+        table.insert(standingPlatforms, platformTable[gridIndexLeft + MinigameConstants.GRID_OFFSET_TO_GET_UNDER])
     end
+
+    if platformTable[gridIndexRight + MinigameConstants.GRID_OFFSET_TO_GET_UNDER] and not (RoomPlatforms[gridIndexRight] or RoomCollapsings[gridIndexRight])then
+        table.insert(standingPlatforms, platformTable[gridIndexRight + MinigameConstants.GRID_OFFSET_TO_GET_UNDER])
+    end
+
+    return standingPlatforms
+end
+
+
+local function IsPlayerOnFloor(player)
+    local isOnPlatform = #GetPlatformsPlayerIsStanding(RoomPlatforms, player) > 0
+    local isOnOneWay = (#GetPlatformsPlayerIsStanding(RoomOneWays, player) > 0) and not player:GetData().SkipOneWays
+    local isOnCollapsing = #GetPlatformsPlayerIsStanding(RoomCollapsings, player) > 0
+
+    for _, collapsing in ipairs(GetPlatformsPlayerIsStanding(RoomCollapsings, player)) do
+        if not collapsing:GetData().CollapseTimer then
+            collapsing:GetData().CollapseTimer = MinigameConstants.COLLAPSING_PLATFORM_TIMER
+            CollapsingPlatforms[game:GetRoom():GetClampedGridIndex(collapsing.Position)] = collapsing
+        end
+    end
+
+    return isOnPlatform or isOnOneWay or isOnCollapsing
 end
 
 
 local function IsPlayerGrounded(player)
-    print(IsPlayerOnFloor(player))
     return math.abs(player.Velocity.Y) < MinigameConstants.JUMPING_SPEED_THRESHOLD and IsPlayerOnFloor(player)
 end
 
@@ -284,10 +302,18 @@ local function MakePlayerHitCeiling(player)
     local playerGridIndex = room:GetClampedGridIndex(player.Position)
     local playerClampedPos = room:GetGridPosition(playerGridIndex)
 
-    if not RoomPlatforms[playerGridIndex - MinigameConstants.GRID_OFFSET_TO_GET_UNDER] and not RoomPlatforms[playerGridIndex] then return end
+    if not RoomPlatforms[playerGridIndex - MinigameConstants.GRID_OFFSET_TO_GET_UNDER] and not RoomPlatforms[playerGridIndex] and 
+    not RoomCollapsings[playerGridIndex - MinigameConstants.GRID_OFFSET_TO_GET_UNDER] and not RoomCollapsings[playerGridIndex] then return end
 
     if playerClampedPos.Y - player.Position.Y >= MinigameConstants.DISTANCE_FROM_PLAYER_TO_FLOOR and
      player.Velocity.Y < 0 then
+        if RoomCollapsings[playerGridIndex - MinigameConstants.GRID_OFFSET_TO_GET_UNDER] and 
+        not RoomCollapsings[playerGridIndex - MinigameConstants.GRID_OFFSET_TO_GET_UNDER]:GetData().CollapseTimer then
+            local collapsing = RoomCollapsings[playerGridIndex - MinigameConstants.GRID_OFFSET_TO_GET_UNDER]
+            collapsing:GetData().CollapseTimer = MinigameConstants.COLLAPSING_PLATFORM_TIMER
+            CollapsingPlatforms[game:GetRoom():GetClampedGridIndex(collapsing.Position)] = collapsing
+        end
+
         player.Position = Vector(player.Position.X, playerClampedPos.Y - MinigameConstants.DISTANCE_FROM_PLAYER_TO_FLOOR)
         player.Velocity = Vector(player.Velocity.X, 0)
 
@@ -312,13 +338,25 @@ local function MakePlayerHitWall(player)
     local playerGridIndex = room:GetClampedGridIndex(player.Position)
     local playerClampedPos = room:GetGridPosition(playerGridIndex)
 
-    if RoomPlatforms[playerGridIndex + 1] and
+    if (RoomPlatforms[playerGridIndex + 1] or RoomCollapsings[playerGridIndex + 1]) and
     player.Position.X - playerClampedPos.X >= MinigameConstants.DISTANCE_FROM_PLAYER_TO_WALL then
+        if RoomCollapsings[playerGridIndex + 1] and not RoomCollapsings[playerGridIndex + 1]:GetData().CollapseTimer then
+            local collapsing = RoomCollapsings[playerGridIndex + 1]
+            collapsing:GetData().CollapseTimer = MinigameConstants.COLLAPSING_PLATFORM_TIMER
+            CollapsingPlatforms[game:GetRoom():GetClampedGridIndex(collapsing.Position)] = collapsing
+        end
+
         player.Position = Vector(playerClampedPos.X + MinigameConstants.DISTANCE_FROM_PLAYER_TO_WALL, player.Position.Y)
     end
 
-    if RoomPlatforms[playerGridIndex - 1] and
+    if (RoomPlatforms[playerGridIndex - 1] or RoomCollapsings[playerGridIndex - 1]) and
     playerClampedPos.X - player.Position.X >= MinigameConstants.DISTANCE_FROM_PLAYER_TO_WALL then
+        if RoomCollapsings[playerGridIndex - 1] and not RoomCollapsings[playerGridIndex - 1]:GetData().CollapseTimer then
+            local collapsing = RoomCollapsings[playerGridIndex - 1]
+            collapsing:GetData().CollapseTimer = MinigameConstants.COLLAPSING_PLATFORM_TIMER
+            CollapsingPlatforms[game:GetRoom():GetClampedGridIndex(collapsing.Position)] = collapsing
+        end
+
         player.Position = Vector(playerClampedPos.X - MinigameConstants.DISTANCE_FROM_PLAYER_TO_WALL, player.Position.Y)
     end
 end
@@ -441,6 +479,21 @@ end
 gush.callbacks[ModCallbacks.MC_POST_PLAYER_UPDATE] = gush.OnPlayerUpdate
 
 
+local function UpdatePlaying()
+    for _, collapsing in pairs(CollapsingPlatforms) do
+        collapsing:GetData().CollapseTimer = collapsing:GetData().CollapseTimer - 1
+
+        if collapsing:GetData().CollapseTimer == 0 then
+            local gridIndex = game:GetRoom():GetClampedGridIndex(collapsing.Position)
+
+            RoomCollapsings[gridIndex] = nil
+            CollapsingPlatforms[gridIndex] = nil
+            collapsing:Remove()
+        end
+    end
+end
+
+
 function gush:OnFrameUpdate()
     if CurrentMinigameState == MinigameStates.INTRO_SCREEN then
         MinigameTimers.IntroTimer = MinigameTimers.IntroTimer - 1
@@ -454,6 +507,8 @@ function gush:OnFrameUpdate()
                 player.ControlsEnabled = true
             end
         end
+    elseif CurrentMinigameState == MinigameStates.PLAYING then
+        UpdatePlaying()
     end
 end
 gush.callbacks[ModCallbacks.MC_POST_UPDATE] = gush.OnFrameUpdate
@@ -474,37 +529,30 @@ function gush:OnRender()
 
     -- RenderFadeOut()
 
-    -- local playerNum = game:GetNumPlayers()
-    -- for i = 0, playerNum - 1, 1 do
-    --     local player = game:GetPlayer(i)
-    --     local pos = Isaac.WorldToScreen(player.Position)
-
-    --     local ground = ", false"
-    --     if player:GetData().IsGrounded then
-    --         ground = ", true"
-    --     end
-
-    --     Isaac.RenderText(player.Velocity.Y .. ground, pos.X, pos.Y, 1, 1, 1, 255)
+    -- Isaac.RenderText("Jump strength: " .. MinigameConstants.JUMPING_STRENGTH, 10, 30, 1, 1, 1, 255)
+    -- Isaac.RenderText("Extra jump frames: " .. MinigameConstants.EXTRA_JUMP_FRAMES, 10, 40, 1, 1, 1, 255)
+    -- if IsExtraJumpStrength then
+    --     Isaac.RenderText("Extra jump strength: " .. MinigameConstants.EXTRA_JUMP_STRENGTH, 10, 50, 1, 1, 1, 255)
+    -- else
+    --     Isaac.RenderText("Extra jump reduced gravity: " .. MinigameConstants.EXTRA_JUMP_REDUCED_GRAVITY, 10, 50, 1, 1, 1, 255)
     -- end
 
-    -- local room = game:GetRoom()
-    -- for i = 18, 419, 1 do
-    --     local gridcollision = room:GetGridCollision(i)
-    --     local pos = Isaac.WorldToScreen(room:GetGridPosition(i))
+    -- Isaac.RenderText("Gravity strength: " .. MinigameConstants.GRAVITY_STRENGTH, 10, 70, 1, 1, 1, 255)
+    -- Isaac.RenderText("Terminal velocity: " .. MinigameConstants.TERMINAL_VELOCITY, 10, 80, 1, 1, 1, 255)
 
-    --     Isaac.RenderText(gridcollision, pos.X, pos.Y, 1, 1, 1, 255)
-    -- end
 
-    Isaac.RenderText("Jump strength: " .. MinigameConstants.JUMPING_STRENGTH, 10, 30, 1, 1, 1, 255)
-    Isaac.RenderText("Extra jump frames: " .. MinigameConstants.EXTRA_JUMP_FRAMES, 10, 40, 1, 1, 1, 255)
-    if IsExtraJumpStrength then
-        Isaac.RenderText("Extra jump strength: " .. MinigameConstants.EXTRA_JUMP_STRENGTH, 10, 50, 1, 1, 1, 255)
-    else
-        Isaac.RenderText("Extra jump reduced gravity: " .. MinigameConstants.EXTRA_JUMP_REDUCED_GRAVITY, 10, 50, 1, 1, 1, 255)
+    for _, collapsing in pairs(RoomCollapsings) do
+        local pos = Isaac.WorldToScreen(collapsing.Position)
+
+        local text = ""
+        if collapsing:GetData().CollapseTimer then
+            text = collapsing:GetData().CollapseTimer
+        else
+            text = "nil"
+        end
+
+        Isaac.RenderText(text, pos.X, pos.Y, 1, 1, 1, 255)
     end
-
-    Isaac.RenderText("Gravity strength: " .. MinigameConstants.GRAVITY_STRENGTH, 10, 70, 1, 1, 1, 255)
-    Isaac.RenderText("Terminal velocity: " .. MinigameConstants.TERMINAL_VELOCITY, 10, 80, 1, 1, 1, 255)
 
 end
 gush.callbacks[ModCallbacks.MC_POST_RENDER] = gush.OnRender
@@ -566,7 +614,11 @@ function gush:OnCMD(command, args)
             print("Changed terminal velocity to " .. MinigameConstants.TERMINAL_VELOCITY)
         end
     elseif command == "floor" then
-        print(RoomPlatforms[tonumber(args)])
+        print(CollapsingPlatforms[tonumber(args)])
+
+        for key, value in pairs(CollapsingPlatforms) do
+            print(key .. " -> " .. value)
+        end
     end
 end
 gush.callbacks[ModCallbacks.MC_EXECUTE_CMD] = gush.OnCMD

@@ -84,6 +84,10 @@
         <gibs amount="0" blood="0" bone="0" eye="0" gut="0" large="0" />
     </entity>
 
+    <entity anm2path="gush_collapsing.anm2" subtype="0" name="collapsing GUSH" variant="2119" id="960" baseHP="0" boss="0" champion="0" collisionDamage="0" collisionMass="0" collisionRadius="0" friction="1" numGridCollisionPoints="0" shadowSize="0" shutdoors="false" stageHP="0" gridCollision="none"> 
+        <gibs amount="0" blood="0" bone="0" eye="0" gut="0" large="0" />
+    </entity>
+
     <entity anm2path="gush_player.anm2" name="player GUSH" id="1000" variant="" subtype="" baseHP="0" boss="0" champion="0" collisionDamage="0" collisionMass="0" collisionRadius="0" friction="1" numGridCollisionPoints="0" shadowSize="0" shutdoors="false" stageHP="0" gridCollision="none"> 
         <gibs amount="0" blood="0" bone="0" eye="0" gut="0" large="0" />
     </entity>
