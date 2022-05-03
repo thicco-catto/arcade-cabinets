@@ -81,7 +81,7 @@ local MinigameEntityVariants = {
 -- Constants
 local MinigameConstants = {
     SATAN_HEAD_SPAWNING_OFFSET = Vector(4.5, 52),
-    PLATFORM_SPAWNING_OFFSET = Vector(0, 200),
+    PLATFORM_SPAWNING_OFFSET = Vector(0, 240),
 
     MAX_INTRO_FRAMES = 40,
     MAX_PLAYER_IFRAMES = 30,
