@@ -93,6 +93,7 @@ WaveTransitionScreen:ReplaceSpritesheet(0, "gfx/effects/gush/gush_intro_screen.p
 WaveTransitionScreen:ReplaceSpritesheet(1, "gfx/effects/gush/gush_intro_screen.png")
 WaveTransitionScreen:LoadGraphics()
 
+--Other variables
 local IsExtraJumpStrength = true
 local RoomPlatforms = {}
 local RoomOneWays = {}
@@ -103,6 +104,8 @@ local RoomExit = nil
 
 local CollapsingPlatforms = {}
 local CollapsingPlatformsToSpawn = {}
+
+local Backdrop = nil
 
 
 local function FillGridList(gridList, entityVariant)
@@ -167,8 +170,11 @@ function gush:Init()
     MinigameTimers.IntroTimer = MinigameConstants.MAX_INTRO_SCREEN_TIMER
 
     --Spawn the backdrop
-    -- local backdrop = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, ArcadeCabinetVariables.Backdrop2x2Variant, 0, room:GetCenterPos(), Vector.Zero, nil)
-    -- backdrop.DepthOffset = -1000
+    Backdrop = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, ArcadeCabinetVariables.Backdrop2x2Variant, 0, room:GetCenterPos(), Vector.Zero, nil)
+    Backdrop:GetSprite():ReplaceSpritesheet(0, "gfx/backdrop/gush_backdrop1.png")
+    Backdrop:GetSprite():LoadGraphics()
+    Backdrop.Visible = false
+    Backdrop.DepthOffset = -500
 
     --Play music
     MusicManager:Play(MinigameMusic, 1)
@@ -627,6 +633,21 @@ function gush:OnCMD(command, args)
 
         for key, value in pairs(CollapsingPlatforms) do
             print(key .. " -> " .. value)
+        end
+    elseif command == "bg" then
+        if #args == 0 then
+            print("Changed visibility of backdrop")
+            Backdrop.Visible = not Backdrop.Visible
+
+            for _, entity in ipairs(Isaac.FindByType(EntityType.ENTITY_GENERIC_PROP, -1, -1)) do
+                if entity.Variant ~= Backdrop.Variant then
+                    entity.Visible = not entity.Visible
+                end
+            end
+        else
+            print("Changed to backdrop " .. args[1])
+            Backdrop:GetSprite():ReplaceSpritesheet(0, "gfx/backdrop/gush_backdrop" .. args[1] .. ".png")
+            Backdrop:GetSprite():LoadGraphics()
         end
     end
 end
