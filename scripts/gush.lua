@@ -68,20 +68,43 @@ local MinigameConstants = {
     DISTANCE_FROM_PLAYER_TO_FLOOR = 10,
     DISTANCE_FROM_PLAYER_TO_WALL = 6,
 
+    MAX_LEVEL = 5,
     ROOM_POOL = {
         --Easy rooms
-        {
-    
+        EASY = {
+            50,
+            51,
+            52,
+            53,
+            54
         },
         
         --Medium rooms
-        {
-    
+        MEDIUM = {
+            55,
+            56,
+            57,
+            58,
+            59,
+            60,
+            61,
+            62,
+            63,
+            64,
+            65,
+            66,
+            67,
+            68,
+            69
         },
     
         --Hard rooms
-        {
-    
+        HARD = {
+            70,
+            71,
+            72,
+            73,
+            74
         }
     },
 
@@ -125,7 +148,9 @@ local CollapsingPlatformsToSpawn = {}
 local Backdrop = nil
 
 local CurrentLevel = 1
-local PlayerHP = 3
+local PlayerHP = 5
+
+local VisitedRooms = {}
 
 
 local function FillGridList(gridList, entityVariant)
@@ -152,7 +177,35 @@ local function FindGrid()
 end
 
 
+local function GoToNextRoom()
+    local RoomPoolToChooseFrom = {}
+
+    if CurrentLevel == 1 then
+        RoomPoolToChooseFrom = MinigameConstants.ROOM_POOL.EASY
+    elseif CurrentLevel == MinigameConstants.MAX_LEVEL then
+        RoomPoolToChooseFrom = MinigameConstants.ROOM_POOL.HARD
+    else
+        RoomPoolToChooseFrom = MinigameConstants.ROOM_POOL.MEDIUM
+    end
+
+    local aux = {}
+    for _, room in ipairs(RoomPoolToChooseFrom) do
+        if not VisitedRooms[room] then
+            table.insert(aux, room)
+        end
+    end
+    RoomPoolToChooseFrom = aux
+
+    local chosenRoom = RoomPoolToChooseFrom[rng:RandomInt(#RoomPoolToChooseFrom) + 1]
+    VisitedRooms[chosenRoom] = true
+    Isaac.ExecuteCommand("goto s.isaacs." .. chosenRoom)
+end
+
+
 local function PrepareForRoom()
+    CollapsingPlatformsToSpawn = {}
+    CollapsingPlatforms = {}
+
     FindGrid()
 
     local playerNum = game:GetNumPlayers()
@@ -176,10 +229,11 @@ function gush:Init()
     PlayerHP = 3
     CurrentLevel = 1
     CollapsingPlatforms = {}
+    VisitedRooms = {}
 
     rng:SetSeed(game:GetSeeds():GetStartSeed(), 35)
 
-    PrepareForRoom()
+    GoToNextRoom()
 
     --Reset timers
     for _, timer in pairs(MinigameTimers) do
@@ -421,7 +475,8 @@ local function CheckIfPlayerIsInPortal(player)
 
     if playerGridIndex == exitGridIndex then
         player:GetData().IsExiting = true
-        Isaac.ExecuteCommand("goto s.isaacs." .. game:GetLevel():GetCurrentRoomDesc().Data.Variant + 1)
+        CurrentLevel = CurrentLevel + 1
+        GoToNextRoom()
     end
 end
 
@@ -593,7 +648,7 @@ function gush:OnRender()
     --     Isaac.RenderText(text, pos.X, pos.Y, 1, 1, 1, 255)
     -- end
 
-    Isaac.RenderText(dump(CollapsingPlatforms), 100, 100, 1, 1, 1, 255)
+    Isaac.RenderText(CurrentLevel, 100, 100, 1, 1, 1, 255)
 
 end
 gush.callbacks[ModCallbacks.MC_POST_RENDER] = gush.OnRender

@@ -26,14 +26,14 @@ ArcadeCabinetVariables.ArcadeCabinetSprite = {
 
 ArcadeCabinetVariables.ArcadeCabinetRooms = {
     [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_BLACKSTONEWIELDER] = "40",
-    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_GUSH] = "50",
-    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_HOLYSMOKES] = "60",
-    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_JUMPINGCOFFING] = "70",
-    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_NIGHTLIGHT] = "80",
-    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_NOSPLASH] = "90",
-    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_THEBLOB] = "100",
-    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_THEGROUNDBELOW] = "110",
-    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_TOOUNDERGROUND] = "120"
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_GUSH] = "160",
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_HOLYSMOKES] = "160",
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_JUMPINGCOFFING] = "170",
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_NIGHTLIGHT] = "180",
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_NOSPLASH] = "190",
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_THEBLOB] = "200",
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_THEGROUNDBELOW] = "210",
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_TOOUNDERGROUND] = "220"
 }
 
 ArcadeCabinetVariables.GameState = {
