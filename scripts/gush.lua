@@ -68,6 +68,23 @@ local MinigameConstants = {
     DISTANCE_FROM_PLAYER_TO_FLOOR = 10,
     DISTANCE_FROM_PLAYER_TO_WALL = 6,
 
+    ROOM_POOL = {
+        --Easy rooms
+        {
+    
+        },
+        
+        --Medium rooms
+        {
+    
+        },
+    
+        --Hard rooms
+        {
+    
+        }
+    },
+
     MAX_INTRO_SCREEN_TIMER = 50,
 }
 
@@ -106,6 +123,9 @@ local CollapsingPlatforms = {}
 local CollapsingPlatformsToSpawn = {}
 
 local Backdrop = nil
+
+local CurrentLevel = 1
+local PlayerHP = 3
 
 
 local function FillGridList(gridList, entityVariant)
@@ -153,6 +173,8 @@ function gush:Init()
 
     --Reset variables
     gush.result = nil
+    PlayerHP = 3
+    CurrentLevel = 1
     CollapsingPlatforms = {}
 
     rng:SetSeed(game:GetSeeds():GetStartSeed(), 35)
@@ -377,6 +399,12 @@ local function CheckIfPlayerHitSpike(player)
             Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.COLLAPSING, 0, position, Vector.Zero, nil)
         end
 
+        for _, collapsing in pairs(RoomCollapsings) do
+            collapsing:GetSprite():Play("Idle", true)
+            collapsing:GetData().CollapseTimer = nil
+        end
+
+        CollapsingPlatforms = {}
         CollapsingPlatformsToSpawn = {}
         RoomCollapsings = {}
         FillGridList(RoomCollapsings, MinigameEntityVariants.COLLAPSING)
@@ -565,6 +593,8 @@ function gush:OnRender()
     --     Isaac.RenderText(text, pos.X, pos.Y, 1, 1, 1, 255)
     -- end
 
+    Isaac.RenderText(dump(CollapsingPlatforms), 100, 100, 1, 1, 1, 255)
+
 end
 gush.callbacks[ModCallbacks.MC_POST_RENDER] = gush.OnRender
 
@@ -649,5 +679,90 @@ function gush:OnCMD(command, args)
 end
 gush.callbacks[ModCallbacks.MC_EXECUTE_CMD] = gush.OnCMD
 
+
+local function shallowCopy(tab)
+    return {table.unpack(tab)}
+  end
+  
+  local function includes(tab, val)
+    for _, v in pairs(tab) do
+      if val == v then return true end
+    end
+    return false
+  end
+  
+  function dump(o, depth, seen)
+    depth = depth or 0
+    seen = seen or {}
+  
+    if depth > 50 then return '' end -- prevent infloops
+  
+    if type(o) == 'userdata' then -- handle custom isaac types
+      if includes(seen, tostring(o)) then return '(circular)' end
+      if not getmetatable(o) then return tostring(o) end
+      local t = getmetatable(o).__type
+  
+      if t == 'Entity' or t == 'EntityBomb' or t == 'EntityEffect' or t == 'EntityFamiliar' or t == 'EntityKnife' or t == 'EntityLaser' or t == 'EntityNPC' or t == 'EntityPickup' or t == 'EntityPlayer' or t == 'EntityProjectile' or t == 'EntityTear' then
+        return t .. ': ' .. (o.Type or '0') .. '.' .. (o.Variant or '0') .. '.' .. (o.SubType or '0')
+      elseif t == 'EntityRef' then
+        return t .. ' -> ' .. dump(o.Ref, depth, seen)
+      elseif t == 'EntityPtr' then
+        return t .. ' -> ' .. dump(o.Entity, depth, seen)
+      elseif t == 'GridEntity' or t == 'GridEntityDoor' or t == 'GridEntityPit' or t == 'GridEntityPoop' or t == 'GridEntityPressurePlate' or t == 'GridEntityRock' or t == 'GridEntitySpikes' or t == 'GridEntityTNT' then
+        return t .. ': ' .. o:GetType() .. '.' .. o:GetVariant() .. '.' .. o.VarData .. ' at ' .. dump(o.Position, depth, seen)
+      elseif t == 'GridEntityDesc' then
+        return t .. ' -> ' .. o.Type .. '.' .. o.Variant .. '.' .. o.VarData
+      elseif t == 'Vector' then
+        return t .. '(' .. o.X .. ', ' .. o.Y .. ')'
+      elseif t == 'Color' or t == "const Color" then
+        return t .. '(' .. o.R .. ', ' .. o.G .. ', ' .. o.B .. ', ' .. o.RO .. ', ' .. o.GO .. ', ' .. o.BO .. ')'
+      elseif t == 'Level' then
+        return t .. ': ' .. o:GetName()
+      elseif t == 'RNG' then
+        return t .. ': ' .. o:GetSeed()
+      elseif t == 'Sprite' then
+        return t .. ': ' .. o:GetFilename() .. ' - ' .. (o:IsPlaying(o:GetAnimation()) and 'playing' or 'stopped at') .. ' ' .. o:GetAnimation() .. ' f' .. o:GetFrame()
+      elseif t == 'TemporaryEffects' then
+        local list = o:GetEffectsList()
+        local tab = {}
+        for i = 0, #list - 1 do
+          table.insert(tab, list:Get(i))
+        end
+        return dump(tab, depth, seen)
+      else
+        local newt = {}
+        for k,v in pairs(getmetatable(o)) do
+          if type(k) ~= 'userdata' and k:sub(1, 2) ~= '__' then newt[k] = v end
+        end
+  
+        return 'userdata ' .. dump(newt, depth, seen)
+      end
+    elseif type(o) == 'table' then -- handle tables
+      if includes(seen, tostring(o)) then return '(circular)' end
+      table.insert(seen, tostring(o))
+      local s = '{\n'
+      local first = true
+      for k,v in pairs(o) do
+        if not first then
+          s = s .. ',\n'
+        end
+        s = s .. string.rep('  ', depth + 1)
+  
+        if type(k) ~= 'number' then
+          table.insert(seen, tostring(v))
+          s = s .. dump(k, depth + 1, shallowCopy(seen)) .. ' = ' .. dump(v, depth + 1, shallowCopy(seen))
+        else
+          s = s .. dump(v, depth + 1, shallowCopy(seen))
+        end
+        first = false
+      end
+      if first then return '{}' end
+      return s .. '\n' .. string.rep('  ', depth) .. '}'
+    elseif type(o) == 'string' then -- anything else resolves pretty easily
+      return '"' .. o .. '"'
+    else
+      return tostring(o)
+    end
+  end
 
 return gush
