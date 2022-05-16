@@ -624,32 +624,6 @@ function gush:OnRender()
     RenderWaveTransition()
 
     -- RenderFadeOut()
-
-    -- Isaac.RenderText("Jump strength: " .. MinigameConstants.JUMPING_STRENGTH, 10, 30, 1, 1, 1, 255)
-    -- Isaac.RenderText("Extra jump frames: " .. MinigameConstants.EXTRA_JUMP_FRAMES, 10, 40, 1, 1, 1, 255)
-    -- if IsExtraJumpStrength then
-    --     Isaac.RenderText("Extra jump strength: " .. MinigameConstants.EXTRA_JUMP_STRENGTH, 10, 50, 1, 1, 1, 255)
-    -- else
-    --     Isaac.RenderText("Extra jump reduced gravity: " .. MinigameConstants.EXTRA_JUMP_REDUCED_GRAVITY, 10, 50, 1, 1, 1, 255)
-    -- end
-
-    -- Isaac.RenderText("Gravity strength: " .. MinigameConstants.GRAVITY_STRENGTH, 10, 70, 1, 1, 1, 255)
-    -- Isaac.RenderText("Terminal velocity: " .. MinigameConstants.TERMINAL_VELOCITY, 10, 80, 1, 1, 1, 255)
-
-
-    -- for _, collapsing in pairs(RoomCollapsings) do
-    --     local pos = Isaac.WorldToScreen(collapsing.Position)
-
-    --     local text = ""
-    --     if collapsing:GetData().CollapseTimer then
-    --         text = collapsing:GetData().CollapseTimer
-    --     end
-
-    --     Isaac.RenderText(text, pos.X, pos.Y, 1, 1, 1, 255)
-    -- end
-
-    Isaac.RenderText(CurrentLevel, 100, 100, 1, 1, 1, 255)
-
 end
 gush.callbacks[ModCallbacks.MC_POST_RENDER] = gush.OnRender
 
