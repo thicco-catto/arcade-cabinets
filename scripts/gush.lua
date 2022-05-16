@@ -467,7 +467,7 @@ end
 
 
 local function CheckIfPlayerIsInPortal(player)
-    if player:GetData().IsExiting then return end
+    if player:GetData().IsExiting or not RoomExit then return end
 
     local room = game:GetRoom()
     local playerGridIndex = room:GetClampedGridIndex(player.Position)
