@@ -39,8 +39,9 @@ local MinigameEntityVariants = {
     COLLAPSING = Isaac.GetEntityVariantByName("collapsing GUSH"),
     SPIKE = Isaac.GetEntityVariantByName("spike GUSH"),
     SPAWN = Isaac.GetEntityVariantByName("spawn GUSH"),
-
     EXIT = Isaac.GetEntityVariantByName("exit GUSH"),
+    BUTTON = Isaac.GetEntityVariantByName("button GUSH"),
+
     PLAYER = Isaac.GetEntityVariantByName("player GUSH"),
 }
 
@@ -67,6 +68,7 @@ local MinigameConstants = {
 
     DISTANCE_FROM_PLAYER_TO_FLOOR = 10,
     DISTANCE_FROM_PLAYER_TO_WALL = 6,
+    DISTANCE_FROM_PLAYER_TO_BUTTON = 2,
 
     MAX_LEVEL = 5,
     ROOM_POOL = {
@@ -144,6 +146,7 @@ local RoomCollapsings = {}
 local RoomSpikes = {}
 local RoomSpawn = nil
 local RoomExit = nil
+local RoomButton = nil
 
 local CollapsingPlatforms = {}
 local CollapsingPlatformsToSpawn = {}
@@ -177,6 +180,8 @@ local function FindGrid()
     RoomSpawn = Isaac.FindByType(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.SPAWN, 0)[1]
 
     RoomExit = Isaac.FindByType(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.EXIT, 0)[1]
+
+    RoomButton = Isaac.FindByType(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.BUTTON, 0)[1]
 end
 
 
@@ -236,7 +241,7 @@ function gush:Init()
     --Reset variables
     gush.result = nil
     PlayerHP = 3
-    CurrentLevel = 1
+    CurrentLevel = 5
     CollapsingPlatforms = {}
     VisitedRooms = {}
 
@@ -490,8 +495,25 @@ local function CheckIfPlayerIsInPortal(player)
 end
 
 
+local function CheckIfPlayerIsPressingButton(player)
+    if not RoomButton or player.Velocity.Y > 0 then return end
+
+    local room = game:GetRoom()
+    local gridIndexLeft = room:GetClampedGridIndex(player.Position - Vector(MinigameConstants.OFFSET_TO_CHECK_FOR_FLOOR, 0))
+    local gridIndexRight = room:GetClampedGridIndex(player.Position + Vector(MinigameConstants.OFFSET_TO_CHECK_FOR_FLOOR, 0))
+    local gridIndexButton = room:GetClampedGridIndex(RoomButton.Position)
+
+    if gridIndexLeft == gridIndexButton or gridIndexRight == gridIndexButton then
+        print("hola")
+        RoomButton:GetSprite():Play("Pressed", true)
+        RoomButton = nil
+    end
+end
+
+
 local function ManageFakePlayer(player)
     local fakePlayer = player:GetData().FakePlayer
+    if not fakePlayer then return end
     local fakePlayerSprite = fakePlayer:GetSprite()
 
     fakePlayer.Position = player.Position + Vector(0, 1)
@@ -575,7 +597,11 @@ function gush:OnPlayerUpdate(player)
 
     CheckIfPlayerHitSpike(player)
 
-    CheckIfPlayerIsInPortal(player)
+    if RoomExit then
+        CheckIfPlayerIsInPortal(player)
+    else
+        CheckIfPlayerIsPressingButton(player)
+    end
 
     ManageFakePlayer(player)
 end
