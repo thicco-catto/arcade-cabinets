@@ -120,9 +120,12 @@ local MinigameTimers = {
 local MinigameStates = {
     INTRO_SCREEN = 0,
     PLAYING = 1,
+    DYING = 2,
+    EXITING = 3,
+    TRANSITION_SCREEN = 4,
 
-    WINNING = 4,
-    LOSING = 5
+    WINNING = 5,
+    LOSING = 6
 }
 local CurrentMinigameState = 0
 
@@ -207,6 +210,12 @@ local function PrepareForRoom()
     CollapsingPlatforms = {}
 
     FindGrid()
+
+    local room = game:GetRoom()
+    local backdrop = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, ArcadeCabinetVariables.Backdrop2x2Variant, 0, room:GetCenterPos(), Vector(0, 0), nil)
+    backdrop:GetSprite():ReplaceSpritesheet(0, "gfx/backdrop/gush_backdrop" .. game:GetLevel():GetCurrentRoomDesc().Data.Variant .. ".png")
+    backdrop:GetSprite():LoadGraphics()
+    backdrop.DepthOffset = -1000
 
     local playerNum = game:GetNumPlayers()
     for i = 0, playerNum - 1, 1 do
