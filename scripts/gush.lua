@@ -496,15 +496,15 @@ end
 
 
 local function CheckIfPlayerIsPressingButton(player)
-    if not RoomButton or player.Velocity.Y > 0 then return end
+    if not RoomButton or player.Velocity.Y < MinigameConstants.JUMPING_SPEED_THRESHOLD then return end
 
     local room = game:GetRoom()
     local gridIndexLeft = room:GetClampedGridIndex(player.Position - Vector(MinigameConstants.OFFSET_TO_CHECK_FOR_FLOOR, 0))
     local gridIndexRight = room:GetClampedGridIndex(player.Position + Vector(MinigameConstants.OFFSET_TO_CHECK_FOR_FLOOR, 0))
     local gridIndexButton = room:GetClampedGridIndex(RoomButton.Position)
 
-    if gridIndexLeft == gridIndexButton or gridIndexRight == gridIndexButton then
-        print("hola")
+    if (gridIndexLeft == gridIndexButton or gridIndexRight == gridIndexButton) and
+    player.Position.Y - RoomButton.Position.Y > MinigameConstants.DISTANCE_FROM_PLAYER_TO_BUTTON then
         RoomButton:GetSprite():Play("Pressed", true)
         RoomButton = nil
     end
