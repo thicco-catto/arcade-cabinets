@@ -109,6 +109,24 @@ local MinigameConstants = {
             74
         }
     },
+    ANIMATED_ROOMS = {
+        [51] = true,
+        [54] = true,
+        [55] = true,
+        [56] = true,
+        [58] = true,
+        [61] = true,
+        [63] = true,
+        [64] = true,
+        [65] = true,
+        [66] = true,
+        [69] = true,
+        [72] = true,
+        [74] = true
+    },
+    ANIMATED_ROOMS_LONG = {
+        [52] = true
+    },
 
     MAX_INTRO_SCREEN_TIMER = 50,
 }
@@ -218,7 +236,15 @@ local function PrepareForRoom()
 
     local room = game:GetRoom()
     local backdrop = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, ArcadeCabinetVariables.Backdrop2x2Variant, 0, room:GetCenterPos(), Vector(0, 0), nil)
-    backdrop:GetSprite():ReplaceSpritesheet(0, "gfx/backdrop/gush_backdrop" .. game:GetLevel():GetCurrentRoomDesc().Data.Variant .. ".png")
+    local backdropVariant = game:GetLevel():GetCurrentRoomDesc().Data.Variant
+
+    if MinigameConstants.ANIMATED_ROOMS[backdropVariant] then
+        backdrop:GetSprite():Load("gfx/backdrop/gush_backdrop_2x2.anm2", false)
+    elseif MinigameConstants.ANIMATED_ROOMS_LONG[backdropVariant] then
+        backdrop:GetSprite():Load("gfx/backdrop/gush_long_backdrop_2x2.anm2", false)
+    end
+
+    backdrop:GetSprite():ReplaceSpritesheet(0, "gfx/backdrop/gush_backdrop" .. backdropVariant .. ".png")
     backdrop:GetSprite():LoadGraphics()
     backdrop.DepthOffset = -1000
 
@@ -241,7 +267,7 @@ function gush:Init()
     --Reset variables
     gush.result = nil
     PlayerHP = 3
-    CurrentLevel = 5
+    CurrentLevel = 1
     CollapsingPlatforms = {}
     VisitedRooms = {}
 
@@ -727,17 +753,12 @@ function gush:OnCMD(command, args)
     elseif command == "bg" then
         if #args == 0 then
             print("Changed visibility of backdrop")
-            Backdrop.Visible = not Backdrop.Visible
 
             for _, entity in ipairs(Isaac.FindByType(EntityType.ENTITY_GENERIC_PROP, -1, -1)) do
-                if entity.Variant ~= Backdrop.Variant and entity.Variant ~= MinigameEntityVariants.COLLAPSING then
+                if entity.Variant ~= ArcadeCabinetVariables.Backdrop2x2Variant and entity.Variant ~= MinigameEntityVariants.COLLAPSING then
                     entity.Visible = not entity.Visible
                 end
             end
-        else
-            print("Changed to backdrop " .. args[1])
-            Backdrop:GetSprite():ReplaceSpritesheet(0, "gfx/backdrop/gush_backdrop" .. args[1] .. ".png")
-            Backdrop:GetSprite():LoadGraphics()
         end
     end
 end
