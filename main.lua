@@ -165,26 +165,28 @@ local function FinishCabinetMinigame()
 
     --Teleport the players back through the door
     local room = game:GetRoom()
+    local openDoor = nil
     for i = 0, 7, 1 do
         local door = room:GetDoor(i)
         if door then
+            openDoor = door
             door:Open()
         end
     end
 
     local extraVelocity = nil
 
-    if ArcadeCabinetVariables.MinigameDoor.Direction == Direction.LEFT then
+    if openDoor.Direction == Direction.LEFT then
         extraVelocity = Vector(-100, 0)
-    elseif ArcadeCabinetVariables.MinigameDoor.Direction == Direction.RIGHT then
+    elseif openDoor.Direction == Direction.RIGHT then
         extraVelocity = Vector(100, 0)
-    elseif ArcadeCabinetVariables.MinigameDoor.Direction == Direction.UP then
+    elseif openDoor.Direction == Direction.UP then
         extraVelocity = Vector(0, -100)
     else
         extraVelocity = Vector(0, 100)
     end
 
-    game:GetPlayer(0).Position = ArcadeCabinetVariables.MinigameDoor.Position
+    game:GetPlayer(0).Position = openDoor.Position
     game:GetPlayer(0):AddVelocity(extraVelocity)
 
     --Restore the options
@@ -475,11 +477,6 @@ function ArcadeCabinetMod:OnPlayerInit(player)
     player:AddCoins(20)
 end
 ArcadeCabinetMod:AddCallback(ModCallbacks.MC_POST_PLAYER_INIT, ArcadeCabinetMod.OnPlayerInit)
-
-function ArcadeCabinetMod:OnPlayerUpdate(player)
-    if ArcadeCabinetVariables.CurrentGameState ~= ArcadeCabinetVariables.GameState.PLAYING then return end
-end
-ArcadeCabinetMod:AddCallback(ModCallbacks.MC_POST_PEFFECT_UPDATE, ArcadeCabinetMod.OnPlayerUpdate)
 
 
 function ArcadeCabinetMod:OnCMD(cmd, _)

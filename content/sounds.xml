@@ -29,6 +29,11 @@
         <sample weight="1" path="black stone wielder/rune popped.wav" />
     </sound>
 
+    <!--Gush-->
+    <sound name="gush jump">
+        <sample weight="1" path="gush/jump.wav" />
+    </sound>
+
     <!--Holy smokes-->
     <sound name="hs tear shoot">
         <sample weight="1" path="holy smokes/tear shoot.wav" />

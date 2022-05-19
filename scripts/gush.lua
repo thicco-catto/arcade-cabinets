@@ -28,6 +28,11 @@ local ReplacementSounds = {
 }
 
 local MinigameSounds = {
+    JUMP = Isaac.GetSoundIdByName("gush jump"),
+    END_EXPLOSION = Isaac.GetSoundIdByName("tug explosion"),
+
+    WIN = Isaac.GetSoundIdByName("arcade cabinet win"),
+    LOSE = Isaac.GetSoundIdByName("arcade cabinet lose")
 }
 
 local MinigameMusic = Isaac.GetMusicIdByName("jc corpse beat")
@@ -42,6 +47,9 @@ local MinigameEntityVariants = {
     EXIT = Isaac.GetEntityVariantByName("exit GUSH"),
     BUTTON = Isaac.GetEntityVariantByName("button GUSH"),
 
+    MACHINE = Isaac.GetEntityVariantByName("machine GUSH"),
+    END_EXPLOSION = Isaac.GetEntityVariantByName("end explosion HS"),
+
     PLAYER = Isaac.GetEntityVariantByName("player GUSH"),
 }
 
@@ -51,7 +59,8 @@ local MinigameConstants = {
     TOP_JUMPING_SPEED_THRESHOLD = 2.5, --Only for visual animation
     HORIZONTAL_SPEED_THRESHOLD = 0.5, --Only for visual animation
     OFFSET_TO_CHECK_FOR_FLOOR = 10,
-    GRID_OFFSET_TO_GET_UNDER = 28,
+    GRID_OFFSET_TO_GET_UNDER_SMALL = 15,
+    GRID_OFFSET_TO_GET_UNDER_BIG = 28,
 
     JUMP_BUFFER_FRAMES = 7,
     COYOTE_TIME_FRAMES = 7,
@@ -80,7 +89,6 @@ local MinigameConstants = {
             53,
             54
         },
-        
         --Medium rooms
         MEDIUM = {
             55,
@@ -99,7 +107,6 @@ local MinigameConstants = {
             68,
             69
         },
-    
         --Hard rooms
         HARD = {
             70,
@@ -121,6 +128,7 @@ local MinigameConstants = {
         [65] = true,
         [66] = true,
         [69] = true,
+        [71] = true,
         [72] = true,
         [74] = true
     },
@@ -128,7 +136,14 @@ local MinigameConstants = {
         [52] = true
     },
 
-    MAX_INTRO_SCREEN_TIMER = 50,
+    MACHINE_ROOM = 75,
+    MACHINE_SPAWN_OFFSET = Vector(160, 30),
+    FRAMES_BETWEEN_END_EXPLOSIONS = 7,
+    MAX_END_EXPLOSIONS = 5,
+    NUM_EXPLOSION_TO_BIG_EXPLOSION = 25,
+    EXPLOSION_NUM_IN_BIG_EXPLOSION = 12,
+
+    MAX_INTRO_SCREEN_TIMER = 45,
 }
 
 --Timers
@@ -143,18 +158,19 @@ local MinigameStates = {
     DYING = 2,
     EXITING = 3,
     TRANSITION_SCREEN = 4,
+    MACHINE_DYING = 5,
 
-    WINNING = 5,
-    LOSING = 6
+    WINNING = 6,
+    LOSING = 7
 }
 local CurrentMinigameState = 0
 
 --UI
-local WaveTransitionScreen = Sprite()
-WaveTransitionScreen:Load("gfx/minigame_transition.anm2", true)
-WaveTransitionScreen:ReplaceSpritesheet(0, "gfx/effects/gush/gush_intro_screen.png")
-WaveTransitionScreen:ReplaceSpritesheet(1, "gfx/effects/gush/gush_intro_screen.png")
-WaveTransitionScreen:LoadGraphics()
+local TransitionScreen = Sprite()
+TransitionScreen:Load("gfx/minigame_transition.anm2", true)
+TransitionScreen:ReplaceSpritesheet(0, "gfx/effects/gush/gush_intro_screen.png")
+TransitionScreen:ReplaceSpritesheet(1, "gfx/effects/gush/gush_intro_screen.png")
+TransitionScreen:LoadGraphics()
 
 --Other variables
 local IsExtraJumpStrength = true
@@ -175,6 +191,7 @@ local CurrentLevel = 1
 local PlayerHP = 5
 
 local VisitedRooms = {}
+local EndExplosionsCounter = 0
 
 
 local function FillGridList(gridList, entityVariant)
@@ -206,7 +223,10 @@ end
 local function GoToNextRoom()
     local RoomPoolToChooseFrom = {}
 
-    if CurrentLevel == 1 then
+    if CurrentLevel == MinigameConstants.MAX_LEVEL + 1 then
+        Isaac.ExecuteCommand("goto s.isaacs." .. MinigameConstants.MACHINE_ROOM)
+        return
+    elseif CurrentLevel == 1 then
         RoomPoolToChooseFrom = MinigameConstants.ROOM_POOL.EASY
     elseif CurrentLevel == MinigameConstants.MAX_LEVEL then
         RoomPoolToChooseFrom = MinigameConstants.ROOM_POOL.HARD
@@ -235,13 +255,22 @@ local function PrepareForRoom()
     FindGrid()
 
     local room = game:GetRoom()
-    local backdrop = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, ArcadeCabinetVariables.Backdrop2x2Variant, 0, room:GetCenterPos(), Vector(0, 0), nil)
     local backdropVariant = game:GetLevel():GetCurrentRoomDesc().Data.Variant
+    local backdrop
 
-    if MinigameConstants.ANIMATED_ROOMS[backdropVariant] then
-        backdrop:GetSprite():Load("gfx/backdrop/gush_backdrop_2x2.anm2", false)
-    elseif MinigameConstants.ANIMATED_ROOMS_LONG[backdropVariant] then
-        backdrop:GetSprite():Load("gfx/backdrop/gush_long_backdrop_2x2.anm2", false)
+    if backdropVariant == MinigameConstants.MACHINE_ROOM then
+        backdrop = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, ArcadeCabinetVariables.Backdrop1x1Variant, 0, room:GetCenterPos(), Vector(0, 0), nil)
+
+        local machine = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.MACHINE, 0, room:GetCenterPos() + MinigameConstants.MACHINE_SPAWN_OFFSET, Vector.Zero, nil)
+        machine.DepthOffset = -200
+    else
+        backdrop = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, ArcadeCabinetVariables.Backdrop2x2Variant, 0, room:GetCenterPos(), Vector(0, 0), nil)
+
+        if MinigameConstants.ANIMATED_ROOMS[backdropVariant] then
+            backdrop:GetSprite():Load("gfx/backdrop/gush_backdrop_2x2.anm2", false)
+        elseif MinigameConstants.ANIMATED_ROOMS_LONG[backdropVariant] then
+            backdrop:GetSprite():Load("gfx/backdrop/gush_long_backdrop_2x2.anm2", false)
+        end
     end
 
     backdrop:GetSprite():ReplaceSpritesheet(0, "gfx/backdrop/gush_backdrop" .. backdropVariant .. ".png")
@@ -260,6 +289,17 @@ local function PrepareForRoom()
 end
 
 
+local function GetGridIndexUnder(room)
+    local shape = room:GetRoomShape()
+
+    if shape == RoomShape.ROOMSHAPE_1x1 then
+        return MinigameConstants.GRID_OFFSET_TO_GET_UNDER_SMALL
+    else
+        return MinigameConstants.GRID_OFFSET_TO_GET_UNDER_BIG
+    end
+end
+
+
 --INIT
 function gush:Init()
     local room = game:GetRoom()
@@ -267,9 +307,10 @@ function gush:Init()
     --Reset variables
     gush.result = nil
     PlayerHP = 3
-    CurrentLevel = 1
+    CurrentLevel = 5
     CollapsingPlatforms = {}
     VisitedRooms = {}
+    EndExplosionsCounter = 0
 
     rng:SetSeed(game:GetSeeds():GetStartSeed(), 35)
 
@@ -281,7 +322,7 @@ function gush:Init()
     end
 
     --Intro stuff
-    WaveTransitionScreen:Play("Idle", true)
+    TransitionScreen:Play("Idle", true)
     CurrentMinigameState = MinigameStates.INTRO_SCREEN
     MinigameTimers.IntroTimer = MinigameConstants.MAX_INTRO_SCREEN_TIMER
 
@@ -354,12 +395,12 @@ local function GetPlatformsPlayerIsStanding(platformTable, player)
     local gridIndexRight = room:GetClampedGridIndex(player.Position + Vector(MinigameConstants.OFFSET_TO_CHECK_FOR_FLOOR, 0))
     local standingPlatforms = {}
 
-    if platformTable[gridIndexLeft + MinigameConstants.GRID_OFFSET_TO_GET_UNDER] and not (RoomPlatforms[gridIndexLeft] or RoomCollapsings[gridIndexLeft])then
-        table.insert(standingPlatforms, gridIndexLeft + MinigameConstants.GRID_OFFSET_TO_GET_UNDER)
+    if platformTable[gridIndexLeft + GetGridIndexUnder(room)] and not (RoomPlatforms[gridIndexLeft] or RoomCollapsings[gridIndexLeft])then
+        table.insert(standingPlatforms, gridIndexLeft + GetGridIndexUnder(room))
     end
 
-    if platformTable[gridIndexRight + MinigameConstants.GRID_OFFSET_TO_GET_UNDER] and not (RoomPlatforms[gridIndexRight] or RoomCollapsings[gridIndexRight])then
-        table.insert(standingPlatforms, gridIndexRight + MinigameConstants.GRID_OFFSET_TO_GET_UNDER)
+    if platformTable[gridIndexRight + GetGridIndexUnder(room)] and not (RoomPlatforms[gridIndexRight] or RoomCollapsings[gridIndexRight])then
+        table.insert(standingPlatforms, gridIndexRight + GetGridIndexUnder(room))
     end
 
     return standingPlatforms
@@ -394,6 +435,7 @@ local function Jump(player)
     player:GetData().ExtraJumpFrames = MinigameConstants.EXTRA_JUMP_FRAMES
 
     player:GetData().FakePlayer:GetSprite():Play("StartJump", true)
+    SFXManager:Play(MinigameSounds.JUMP)
 
     if not IsExtraJumpStrength then
         gravity = MinigameConstants.EXTRA_JUMP_REDUCED_GRAVITY
@@ -434,11 +476,11 @@ local function MakePlayerHitCeiling(player)
     local playerGridIndex = room:GetClampedGridIndex(player.Position)
     local playerClampedPos = room:GetGridPosition(playerGridIndex)
 
-    if not RoomPlatforms[playerGridIndex - MinigameConstants.GRID_OFFSET_TO_GET_UNDER] and not RoomPlatforms[playerGridIndex] and 
-    not RoomCollapsings[playerGridIndex - MinigameConstants.GRID_OFFSET_TO_GET_UNDER] and not RoomCollapsings[playerGridIndex] then return end
+    if not RoomPlatforms[playerGridIndex - GetGridIndexUnder(room)] and not RoomPlatforms[playerGridIndex] and 
+    not RoomCollapsings[playerGridIndex - GetGridIndexUnder(room)] and not RoomCollapsings[playerGridIndex] then return end
 
     if playerClampedPos.Y - player.Position.Y >= MinigameConstants.DISTANCE_FROM_PLAYER_TO_FLOOR and player.Velocity.Y < 0 then
-        TryCollapsePlatform(playerGridIndex - MinigameConstants.GRID_OFFSET_TO_GET_UNDER)
+        TryCollapsePlatform(playerGridIndex - GetGridIndexUnder(room))
 
         player.Position = Vector(player.Position.X, playerClampedPos.Y - MinigameConstants.DISTANCE_FROM_PLAYER_TO_FLOOR)
         player.Velocity = Vector(player.Velocity.X, 0)
@@ -533,6 +575,15 @@ local function CheckIfPlayerIsPressingButton(player)
     player.Position.Y - RoomButton.Position.Y > MinigameConstants.DISTANCE_FROM_PLAYER_TO_BUTTON then
         RoomButton:GetSprite():Play("Pressed", true)
         RoomButton = nil
+
+        CurrentMinigameState = MinigameStates.MACHINE_DYING
+
+        Isaac.FindByType(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.MACHINE)[1]:GetSprite():Play("Dying", true)
+        local playerNum = game:GetNumPlayers()
+        for i = 0, playerNum - 1, 1 do
+            local player = game:GetPlayer(i)
+            player.ControlsEnabled = false
+        end
     end
 end
 
@@ -543,6 +594,11 @@ local function ManageFakePlayer(player)
     local fakePlayerSprite = fakePlayer:GetSprite()
 
     fakePlayer.Position = player.Position + Vector(0, 1)
+
+    if fakePlayerSprite:IsPlaying("Win") and fakePlayerSprite:GetFrame() > 7 then
+        fakePlayerSprite:SetFrame(7)
+        return
+    elseif fakePlayerSprite:IsPlaying("Win") then return end
 
     if player.Velocity.Y < 0 and fakePlayerSprite:IsFinished("StartJump") then
         fakePlayerSprite:Play("JumpLoop", true)
@@ -556,6 +612,14 @@ local function ManageFakePlayer(player)
         elseif player.Velocity.X < 0 and not fakePlayerSprite:IsPlaying("MoveLeft") then
             fakePlayerSprite:Play("MoveLeft", true)
         elseif player.Velocity.X > 0 and not fakePlayerSprite:IsPlaying("MoveRight") then
+            fakePlayerSprite:Play("MoveRight", true)
+        end
+    end
+
+    if CurrentMinigameState == MinigameStates.MACHINE_DYING then
+        if fakePlayerSprite:GetAnimation() == "Idle" then
+            --Bit of a hack, but coz the player is still,
+            --they'll try to play the idle animation no stop so no need for setFrame
             fakePlayerSprite:Play("MoveRight", true)
         end
     end
@@ -651,6 +715,62 @@ local function UpdatePlaying()
 end
 
 
+local function SpawnExplosion()
+    local spawningPos = Isaac.FindByType(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.MACHINE)[1].Position
+    spawningPos = spawningPos + Vector(rng:RandomInt(100) - 50, rng:RandomInt(100) - 50)
+
+    local explosion = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.END_EXPLOSION, 0, spawningPos, Vector.Zero, nil)
+    explosion:GetSprite():Play("Idle", true)
+
+    game:ShakeScreen(4)
+    SFXManager:Play(MinigameSounds.END_EXPLOSION)
+
+    return explosion
+end
+
+
+local function RemoveEndExplosions()
+    for _, explosion in ipairs(Isaac.FindByType(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.END_EXPLOSION, 0)) do
+        if explosion:GetSprite():IsFinished("Idle") then
+            if CurrentMinigameState == MinigameStates.WINNING and explosion:GetData().IsLastExplosion then
+                SFXManager:Play(MinigameSounds.WIN)
+                TransitionScreen:Play("Appear", true)
+
+                local playerNum = game:GetNumPlayers()
+                for i = 0, playerNum - 1, 1 do
+                    local player = game:GetPlayer(i)
+                    player:GetData().FakePlayer:GetSprite():Play("Win", true)
+                end
+            end
+
+            explosion:Remove()
+        end
+    end
+end
+
+
+local function SpawnEndExplosions()
+    if #Isaac.FindByType(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.END_EXPLOSION, 0) >= MinigameConstants.MAX_END_EXPLOSIONS or
+    game:GetFrameCount() % MinigameConstants.FRAMES_BETWEEN_END_EXPLOSIONS ~= 0 and not (rng:RandomFloat() <= 0.01) then return end
+
+    if EndExplosionsCounter >= MinigameConstants.NUM_EXPLOSION_TO_BIG_EXPLOSION then
+        for i = 1, MinigameConstants.EXPLOSION_NUM_IN_BIG_EXPLOSION, 1 do
+            local explosion = SpawnExplosion()
+            if i == MinigameConstants.EXPLOSION_NUM_IN_BIG_EXPLOSION then
+                explosion:GetData().IsLastExplosion = true
+            end
+
+            CurrentMinigameState = MinigameStates.WINNING
+            local machine = Isaac.FindByType(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.MACHINE)[1]
+            machine:GetSprite():Play("Destroyed", true)
+        end
+    else
+        SpawnExplosion()
+        EndExplosionsCounter = EndExplosionsCounter + 1
+    end
+end
+
+
 function gush:OnFrameUpdate()
     if CurrentMinigameState == MinigameStates.INTRO_SCREEN then
         MinigameTimers.IntroTimer = MinigameTimers.IntroTimer - 1
@@ -666,6 +786,11 @@ function gush:OnFrameUpdate()
         end
     elseif CurrentMinigameState == MinigameStates.PLAYING then
         UpdatePlaying()
+    elseif CurrentMinigameState == MinigameStates.MACHINE_DYING then
+        RemoveEndExplosions()
+        SpawnEndExplosions()
+    elseif CurrentMinigameState == MinigameStates.WINNING then
+        RemoveEndExplosions()
     end
 end
 gush.callbacks[ModCallbacks.MC_POST_UPDATE] = gush.OnFrameUpdate
@@ -674,8 +799,29 @@ gush.callbacks[ModCallbacks.MC_POST_UPDATE] = gush.OnFrameUpdate
 local function RenderWaveTransition()
     if CurrentMinigameState ~= MinigameStates.INTRO_SCREEN then return end
 
-    WaveTransitionScreen:SetFrame(0)
-    WaveTransitionScreen:Render(Vector(Isaac.GetScreenWidth() / 2, Isaac.GetScreenHeight() / 2), Vector.Zero, Vector.Zero)
+    TransitionScreen:SetFrame(0)
+    TransitionScreen:Render(Vector(Isaac.GetScreenWidth() / 2, Isaac.GetScreenHeight() / 2), Vector.Zero, Vector.Zero)
+end
+
+
+local function RenderFadeOut()
+    if CurrentMinigameState ~= MinigameStates.LOSING and CurrentMinigameState ~= MinigameStates.WINNING then return end
+    if not Isaac.GetPlayer(0):GetData().FakePlayer:GetSprite():IsPlaying("Win") then return end
+
+    if TransitionScreen:IsFinished("Appear") then
+        if CurrentMinigameState == MinigameStates.WINNING then
+            gush.result = ArcadeCabinetVariables.MinigameResult.WIN
+        else
+            gush.result = ArcadeCabinetVariables.MinigameResult.LOSE
+        end
+    end
+
+    if SFXManager:IsPlaying(MinigameSounds.WIN) then
+        TransitionScreen:SetFrame(0)
+    end
+
+    TransitionScreen:Render(Vector(Isaac.GetScreenWidth() / 2, Isaac.GetScreenHeight() / 2), Vector.Zero, Vector.Zero)
+    TransitionScreen:Update()
 end
 
 
@@ -684,7 +830,7 @@ function gush:OnRender()
 
     RenderWaveTransition()
 
-    -- RenderFadeOut()
+    RenderFadeOut()
 end
 gush.callbacks[ModCallbacks.MC_POST_RENDER] = gush.OnRender
 
@@ -755,7 +901,8 @@ function gush:OnCMD(command, args)
             print("Changed visibility of backdrop")
 
             for _, entity in ipairs(Isaac.FindByType(EntityType.ENTITY_GENERIC_PROP, -1, -1)) do
-                if entity.Variant ~= ArcadeCabinetVariables.Backdrop2x2Variant and entity.Variant ~= MinigameEntityVariants.COLLAPSING then
+                if entity.Variant ~= ArcadeCabinetVariables.Backdrop2x2Variant and entity.Variant ~= MinigameEntityVariants.COLLAPSING and 
+                entity.Variant ~= MinigameEntityVariants.BUTTON and entity.Variant ~= MinigameEntityVariants.EXIT then
                     entity.Visible = not entity.Visible
                 end
             end
