@@ -29,6 +29,7 @@ local ReplacementSounds = {
 
 local MinigameSounds = {
     JUMP = Isaac.GetSoundIdByName("gush jump"),
+    TRANSITION = Isaac.GetSoundIdByName("gush transition"),
     END_EXPLOSION = Isaac.GetSoundIdByName("gush explosion"),
 
     WIN = Isaac.GetSoundIdByName("arcade cabinet win"),
@@ -121,6 +122,7 @@ local MinigameConstants = {
         [54] = true,
         [55] = true,
         [56] = true,
+        [57] = true,
         [58] = true,
         [61] = true,
         [63] = true,
@@ -144,11 +146,13 @@ local MinigameConstants = {
     EXPLOSION_NUM_IN_BIG_EXPLOSION = 12,
 
     MAX_INTRO_SCREEN_TIMER = 45,
+    MAX_TRANSITION_SCREEN_TIMER = 45,
 }
 
 --Timers
 local MinigameTimers = {
-    IntroTimer = 0
+    IntroTimer = 0,
+    TransitionScreenTimer = 0
 }
 
 --States
@@ -220,11 +224,27 @@ local function FindGrid()
 end
 
 
+local function StartTransitionScreen()
+    SFXManager:Play(MinigameSounds.TRANSITION)
+    CurrentMinigameState = MinigameStates.TRANSITION_SCREEN
+    MinigameTimers.TransitionScreenTimer = MinigameConstants.MAX_TRANSITION_SCREEN_TIMER
+    TransitionScreen:ReplaceSpritesheet(0, "gfx/effects/gush/gush_transition" .. CurrentLevel .. ".png")
+    TransitionScreen:LoadGraphics()
+    local playerNum = game:GetNumPlayers()
+    for i = 0, playerNum - 1, 1 do
+        local player = game:GetPlayer(i)
+        player.ControlsEnabled = false
+    end
+end
+
+
 local function GoToNextRoom()
     local RoomPoolToChooseFrom = {}
 
     if CurrentLevel == MinigameConstants.MAX_LEVEL + 1 then
         Isaac.ExecuteCommand("goto s.isaacs." .. MinigameConstants.MACHINE_ROOM)
+        SFXManager:Stop(SoundEffect.SOUND_DOOR_HEAVY_CLOSE)
+        SFXManager:Stop(SoundEffect.SOUND_DOOR_HEAVY_OPEN)
         return
     elseif CurrentLevel == 1 then
         RoomPoolToChooseFrom = MinigameConstants.ROOM_POOL.EASY
@@ -245,6 +265,8 @@ local function GoToNextRoom()
     local chosenRoom = RoomPoolToChooseFrom[rng:RandomInt(#RoomPoolToChooseFrom) + 1]
     VisitedRooms[chosenRoom] = true
     Isaac.ExecuteCommand("goto s.isaacs." .. chosenRoom)
+    SFXManager:Stop(SoundEffect.SOUND_DOOR_HEAVY_CLOSE)
+    SFXManager:Stop(SoundEffect.SOUND_DOOR_HEAVY_OPEN)
 end
 
 
@@ -307,7 +329,7 @@ function gush:Init()
     --Reset variables
     gush.result = nil
     PlayerHP = 3
-    CurrentLevel = 5
+    CurrentLevel = 1
     CollapsingPlatforms = {}
     VisitedRooms = {}
     EndExplosionsCounter = 0
@@ -322,6 +344,8 @@ function gush:Init()
     end
 
     --Intro stuff
+    TransitionScreen:ReplaceSpritesheet(0, "gfx/effects/gush/gush_intro_screen.png")
+    TransitionScreen:LoadGraphics()
     TransitionScreen:Play("Idle", true)
     CurrentMinigameState = MinigameStates.INTRO_SCREEN
     MinigameTimers.IntroTimer = MinigameConstants.MAX_INTRO_SCREEN_TIMER
@@ -558,6 +582,7 @@ local function CheckIfPlayerIsInPortal(player)
     if playerGridIndex == exitGridIndex then
         player:GetData().IsExiting = true
         CurrentLevel = CurrentLevel + 1
+        StartTransitionScreen()
         GoToNextRoom()
     end
 end
@@ -776,6 +801,13 @@ function gush:OnFrameUpdate()
         MinigameTimers.IntroTimer = MinigameTimers.IntroTimer - 1
 
         if MinigameTimers.IntroTimer == 0 then
+            StartTransitionScreen()
+        end
+
+    elseif CurrentMinigameState == MinigameStates.TRANSITION_SCREEN then
+        MinigameTimers.TransitionScreenTimer = MinigameTimers.TransitionScreenTimer - 1
+        print(MinigameTimers.TransitionScreenTimer)
+        if MinigameTimers.TransitionScreenTimer == 0 then
             CurrentMinigameState = MinigameStates.PLAYING
 
             local playerNum = game:GetNumPlayers()
@@ -797,7 +829,7 @@ gush.callbacks[ModCallbacks.MC_POST_UPDATE] = gush.OnFrameUpdate
 
 
 local function RenderWaveTransition()
-    if CurrentMinigameState ~= MinigameStates.INTRO_SCREEN then return end
+    if CurrentMinigameState ~= MinigameStates.INTRO_SCREEN and CurrentMinigameState ~= MinigameStates.TRANSITION_SCREEN then return end
 
     TransitionScreen:SetFrame(0)
     TransitionScreen:Render(Vector(Isaac.GetScreenWidth() / 2, Isaac.GetScreenHeight() / 2), Vector.Zero, Vector.Zero)
@@ -836,9 +868,19 @@ gush.callbacks[ModCallbacks.MC_POST_RENDER] = gush.OnRender
 
 
 function gush:OnNewRoom()
+    SFXManager:Stop(SoundEffect.SOUND_DOOR_HEAVY_CLOSE)
+    SFXManager:Stop(SoundEffect.SOUND_DOOR_HEAVY_OPEN)
     PrepareForRoom()
 end
 gush.callbacks[ModCallbacks.MC_POST_NEW_ROOM] = gush.OnNewRoom
+
+
+function gush:OnEffectUpdate(effect)
+    if effect.Variant == EffectVariant.TINY_FLY then
+        effect:Remove()
+    end
+end
+gush.callbacks[ModCallbacks.MC_POST_EFFECT_UPDATE] = gush.OnEffectUpdate
 
 
 local function mysplit (inputstr, sep)
