@@ -34,6 +34,14 @@
         <sample weight="1" path="gush/jump.wav" />
     </sound>
 
+    <sound name="gush transition">
+        <sample weight="1" path="gush/transition.wav" />
+    </sound>
+
+    <sound name="gush explosion">
+        <sample weight="1" path="gush/explosion.wav" />
+    </sound>
+
     <!--Holy smokes-->
     <sound name="hs tear shoot">
         <sample weight="1" path="holy smokes/tear shoot.wav" />

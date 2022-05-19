@@ -29,7 +29,7 @@ local ReplacementSounds = {
 
 local MinigameSounds = {
     JUMP = Isaac.GetSoundIdByName("gush jump"),
-    END_EXPLOSION = Isaac.GetSoundIdByName("tug explosion"),
+    END_EXPLOSION = Isaac.GetSoundIdByName("gush explosion"),
 
     WIN = Isaac.GetSoundIdByName("arcade cabinet win"),
     LOSE = Isaac.GetSoundIdByName("arcade cabinet lose")
