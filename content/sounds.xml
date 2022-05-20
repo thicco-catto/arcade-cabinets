@@ -42,6 +42,10 @@
         <sample weight="1" path="gush/wall hit.wav" />
     </sound>
 
+    <sound name="gush saw vroom">
+        <sample weight="1" path="gush/vroom.wav" />
+    </sound>
+
     <sound name="gush explosion">
         <sample weight="1" path="gush/explosion.wav" />
     </sound>

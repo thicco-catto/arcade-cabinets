@@ -31,6 +31,7 @@ local MinigameSounds = {
     JUMP = Isaac.GetSoundIdByName("gush jump"),
     TRANSITION = Isaac.GetSoundIdByName("gush transition"),
     SAW_WALL_HIT = Isaac.GetSoundIdByName("gush saw wall hit"),
+    SAW_VROOM = Isaac.GetSoundIdByName("gush saw vroom"),
     END_EXPLOSION = Isaac.GetSoundIdByName("gush explosion"),
 
     WIN = Isaac.GetSoundIdByName("arcade cabinet win"),
@@ -744,7 +745,7 @@ end
 gush.callbacks[ModCallbacks.MC_POST_PLAYER_UPDATE] = gush.OnPlayerUpdate
 
 
-local function UpdatePlaying()
+local function ManageCollapsings()
     for _, collapsing in pairs(CollapsingPlatforms) do
         collapsing:GetData().CollapseTimer = collapsing:GetData().CollapseTimer - 1
         collapsing:GetSprite():SetFrame(math.ceil((collapsing:GetData().CollapseTimer / MinigameConstants.COLLAPSING_PLATFORM_TIMER) * 4))
@@ -757,6 +758,37 @@ local function UpdatePlaying()
             table.insert(CollapsingPlatformsToSpawn, gridIndex)
             collapsing:Remove()
         end
+    end
+end
+
+
+local function IsPositionOnScreen(pos)
+    return pos.X > 0 and pos.X < Isaac.GetScreenWidth() and
+    pos.Y > 0 and pos.Y < Isaac.GetScreenHeight()
+end
+
+
+local function PlayVroomSound()
+    if SFXManager:IsPlaying(MinigameSounds.SAW_VROOM) then return end
+
+    local SawOnScreen = false
+
+    for _, saw in ipairs(Isaac.FindByType(EntityType.ENTITY_DEATHS_HEAD)) do
+        local sawScreenPos = Isaac.WorldToScreen(saw.Position)
+        if IsPositionOnScreen(sawScreenPos) then
+            SawOnScreen = true
+        end
+    end
+
+    for _, saw in ipairs(Isaac.FindByType(EntityType.ENTITY_SPIKEBALL)) do
+        local sawScreenPos = Isaac.WorldToScreen(saw.Position)
+        if IsPositionOnScreen(sawScreenPos) then
+            SawOnScreen = true
+        end
+    end
+
+    if SawOnScreen then
+        SFXManager:Play(MinigameSounds.SAW_VROOM)
     end
 end
 
@@ -838,7 +870,8 @@ function gush:OnFrameUpdate()
             end
         end
     elseif CurrentMinigameState == MinigameStates.PLAYING then
-        UpdatePlaying()
+        ManageCollapsings()
+        PlayVroomSound()
     elseif CurrentMinigameState == MinigameStates.MACHINE_DYING then
         RemoveEndExplosions()
         SpawnEndExplosions()
