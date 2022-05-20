@@ -919,12 +919,22 @@ end
 gush.callbacks[ModCallbacks.MC_POST_LASER_INIT] = gush.OnLaserInit
 
 
-function gush:OnEffectUpdate(effect)
-    if effect.Variant == EffectVariant.TINY_FLY then
+function gush:OnEffect(effect)
+    if effect.Variant == EffectVariant.TINY_FLY or effect.Variant == EffectVariant.LASER_IMPACT then
         effect:Remove()
     end
 end
-gush.callbacks[ModCallbacks.MC_POST_EFFECT_UPDATE] = gush.OnEffectUpdate
+gush.callbacks[ModCallbacks.MC_POST_EFFECT_INIT] = gush.OnEffect
+gush.callbacks[ModCallbacks.MC_POST_EFFECT_UPDATE] = gush.OnEffect
+
+
+function gush:OnEffectSpawn(entityType, entityVariant, _, _, _, _, seed)
+    if entityType == EntityType.ENTITY_EFFECT and 
+    (entityVariant == EffectVariant.TINY_FLY or entityVariant == EffectVariant.LASER_IMPACT) then
+        return {EntityType.ENTITY_EFFECT, EffectVariant.BLOOD_SPLAT, 0, seed}
+    end
+end
+gush.callbacks[ModCallbacks.MC_PRE_ENTITY_SPAWN] = gush.OnEffectSpawn
 
 
 local function mysplit (inputstr, sep)
