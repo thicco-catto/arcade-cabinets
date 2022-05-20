@@ -30,6 +30,7 @@ local ReplacementSounds = {
 local MinigameSounds = {
     JUMP = Isaac.GetSoundIdByName("gush jump"),
     TRANSITION = Isaac.GetSoundIdByName("gush transition"),
+    SAW_WALL_HIT = Isaac.GetSoundIdByName("gush saw wall hit"),
     END_EXPLOSION = Isaac.GetSoundIdByName("gush explosion"),
 
     WIN = Isaac.GetSoundIdByName("arcade cabinet win"),
@@ -137,6 +138,8 @@ local MinigameConstants = {
     ANIMATED_ROOMS_LONG = {
         [52] = true
     },
+
+    SAW_VELOCITY_ANGLE_THRESHOLD_TO_HIT = 5,
 
     MACHINE_ROOM = 75,
     MACHINE_SPAWN_OFFSET = Vector(160, 30),
@@ -559,6 +562,8 @@ local function KillPlayers()
         end
     end
 
+    local room = game:GetRoom()
+
     for _, gridIndex in ipairs(CollapsingPlatformsToSpawn) do
         local position = room:GetGridPosition(gridIndex)
         Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.COLLAPSING, 0, position, Vector.Zero, nil)
@@ -896,9 +901,28 @@ function gush:OnNPCInit(npc)
 
     if npc.Type == EntityType.ENTITY_BRIMSTONE_HEAD then
         npc:GetSprite():Load("gfx/gush_brimstone_head.anm2", true)
+    elseif npc.Type == EntityType.ENTITY_SPIKEBALL or npc.Type == EntityType.ENTITY_DEATHS_HEAD then
+        npc:GetSprite():Load("gfx/gush_saw.anm2", true)
+    elseif npc.Type == EntityType.ENTITY_NERVE_ENDING then
+        npc.Visible = false
     end
 end
 gush.callbacks[ModCallbacks.MC_POST_NPC_INIT] = gush.OnNPCInit
+
+
+function gush:OnNPCUpdate(npc)
+    if npc.Type ~= EntityType.ENTITY_SPIKEBALL and npc.Type ~= EntityType.ENTITY_DEATHS_HEAD then return end
+
+    local data = npc:GetData()
+    local currentVelocityAngle = npc.Velocity:GetAngleDegrees()
+
+    if data.LastVelocityAngle and math.abs(currentVelocityAngle - data.LastVelocityAngle) >= MinigameConstants.SAW_VELOCITY_ANGLE_THRESHOLD_TO_HIT then
+        SFXManager:Play(MinigameSounds.SAW_WALL_HIT)
+    end
+
+    data.LastVelocityAngle = currentVelocityAngle
+end
+gush.callbacks[ModCallbacks.MC_NPC_UPDATE] = gush.OnNPCUpdate
 
 
 function gush:OnEntityDamage(tookDamage, _, _, _)
@@ -917,6 +941,14 @@ function gush:OnLaserInit(laser)
     laser:GetSprite():LoadGraphics()
 end
 gush.callbacks[ModCallbacks.MC_POST_LASER_INIT] = gush.OnLaserInit
+
+
+function gush:OnLaserUpdate(laser)
+    if laser.SpriteScale.X < 1 then
+        laser:Remove()
+    end
+end
+gush.callbacks[ModCallbacks.MC_POST_LASER_UPDATE] = gush.OnLaserUpdate
 
 
 function gush:OnEffect(effect)
