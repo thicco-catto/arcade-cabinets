@@ -342,7 +342,7 @@ function gush:Init()
 
     --Reset variables
     gush.result = nil
-    PlayerHP = 3
+    PlayerHP = 4
     CurrentLevel = 1
     CollapsingPlatforms = {}
     VisitedRooms = {}
@@ -385,14 +385,6 @@ function gush:Init()
         for _, item in ipairs(gush.startingItems) do
             player:AddCollectible(item, 0, false)
         end
-
-        --Set spritesheet
-        -- local playerSprite = player:GetSprite()
-        -- playerSprite:Load("gfx/isaac52.anm2", true)
-        -- playerSprite:ReplaceSpritesheet(1, "gfx/characters/isaac_jc.png")
-        -- playerSprite:ReplaceSpritesheet(4, "gfx/characters/isaac_jc.png")
-        -- playerSprite:ReplaceSpritesheet(12, "gfx/characters/isaac_jc.png")
-        -- playerSprite:LoadGraphics()
 
         player:GetData().IsGrounded = false
         player:GetData().ExtraJumpFrames = 0
@@ -564,7 +556,6 @@ end
 local function KillPlayers(player)
     if CurrentMinigameState ~= MinigameStates.PLAYING then return end
 
-    SFXManager:Play(MinigameSounds.PLAYER_DEATH)
     player:GetData().FakePlayer:GetSprite():Play("Die", true)
 
     local playerNum = game:GetNumPlayers()
@@ -576,7 +567,15 @@ local function KillPlayers(player)
     end
 
     PlayerHP = PlayerHP - 1
-    CurrentMinigameState = MinigameStates.DYING
+
+    if PlayerHP == 0 then
+        CurrentMinigameState = MinigameStates.LOSING
+        SFXManager:Play(MinigameSounds.LOSE)
+        TransitionScreen:Play("Appear")
+    else
+        SFXManager:Play(MinigameSounds.PLAYER_DEATH)
+        CurrentMinigameState = MinigameStates.DYING
+    end
 end
 
 
@@ -679,7 +678,12 @@ local function ManageFakePlayer(player)
     elseif fakePlayerSprite:IsPlaying("Win") then return end
 
     if fakePlayerSprite:IsFinished("Die") then
-        RespawnPlayers()
+        if PlayerHP == 0 then
+            fakePlayerSprite:Play("Die", true)
+            return
+        else
+            RespawnPlayers()
+        end
     elseif fakePlayerSprite:IsPlaying("Die") then return end
 
     if player.Velocity.Y < 0 and fakePlayerSprite:IsFinished("StartJump") then
@@ -713,7 +717,8 @@ function gush:OnPlayerUpdate(player)
 
     player.Visible = false --Do this here because it sucks
 
-    if CurrentMinigameState == MinigameStates.DYING then
+    if CurrentMinigameState == MinigameStates.DYING or CurrentMinigameState == MinigameStates.LOSING then
+        --Keep the players floating and still while they are dying
         ManageFakePlayer(player)
         return
     end
@@ -911,9 +916,11 @@ function gush:OnFrameUpdate()
                 if i == 0 then player:UseActiveItem(CollectibleType.COLLECTIBLE_D7, false, false, true, false) end
             end
         end
-    elseif CurrentMinigameState == MinigameStates.PLAYING or CurrentMinigameState == MinigameStates.DYING then
+    elseif CurrentMinigameState == MinigameStates.PLAYING then
         ManageCollapsings()
         PlayVroomSound()
+    elseif CurrentMinigameState == MinigameStates.DYING or CurrentMinigameState == MinigameStates.LOSING then
+        ManageCollapsings()
     elseif CurrentMinigameState == MinigameStates.MACHINE_DYING then
         RemoveEndExplosions()
         SpawnEndExplosions()
@@ -929,7 +936,7 @@ local function RenderUI()
 
     HealthUI:Play("Idle", true)
 
-    if CurrentMinigameState == MinigameStates.DYING then
+    if CurrentMinigameState == MinigameStates.DYING or CurrentMinigameState == MinigameStates.LOSING then
         HealthUI:PlayOverlay("Break", true)
         HealthUI:SetFrame(PlayerHP)
     else
@@ -951,9 +958,15 @@ end
 
 local function RenderFadeOut()
     if CurrentMinigameState ~= MinigameStates.LOSING and CurrentMinigameState ~= MinigameStates.WINNING then return end
-    if not Isaac.GetPlayer(0):GetData().FakePlayer:GetSprite():IsPlaying("Win") then return end
+    if not Isaac.GetPlayer(0):GetData().FakePlayer:GetSprite():IsPlaying("Win") and CurrentMinigameState ~= MinigameStates.LOSING then return end
 
     if TransitionScreen:IsFinished("Appear") then
+        local playerNum = game:GetNumPlayers()
+        for i = 0, playerNum - 1, 1 do
+            local player = game:GetPlayer(i)
+            player:ClearEntityFlags(EntityFlag.FLAG_NO_PHYSICS_KNOCKBACK)
+        end
+
         if CurrentMinigameState == MinigameStates.WINNING then
             gush.result = ArcadeCabinetVariables.MinigameResult.WIN
         else
