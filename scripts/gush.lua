@@ -911,6 +911,14 @@ end
 gush.callbacks[ModCallbacks.MC_ENTITY_TAKE_DMG] = gush.OnEntityDamage
 
 
+function gush:OnLaserInit(laser)
+    laser:GetSprite():ReplaceSpritesheet(0, "gfx/effects/gush/gush_laser.png")
+    laser:GetSprite():ReplaceSpritesheet(1, "gfx/effects/gush/gush_laser.png")
+    laser:GetSprite():LoadGraphics()
+end
+gush.callbacks[ModCallbacks.MC_POST_LASER_INIT] = gush.OnLaserInit
+
+
 function gush:OnEffectUpdate(effect)
     if effect.Variant == EffectVariant.TINY_FLY then
         effect:Remove()
