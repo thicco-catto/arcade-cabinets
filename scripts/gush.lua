@@ -29,9 +29,15 @@ local ReplacementSounds = {
 
 local MinigameSounds = {
     JUMP = Isaac.GetSoundIdByName("gush jump"),
+    PLAYER_DEATH = Isaac.GetSoundIdByName("gush player death"),
+
     TRANSITION = Isaac.GetSoundIdByName("gush transition"),
+
+    COLLAPSE_PLATFORM = Isaac.GetSoundIdByName("hs open crack"),
+
     SAW_WALL_HIT = Isaac.GetSoundIdByName("gush saw wall hit"),
     SAW_VROOM = Isaac.GetSoundIdByName("gush saw vroom"),
+    FIRE_LASER = Isaac.GetSoundIdByName("hs open crack"),
     END_EXPLOSION = Isaac.GetSoundIdByName("gush explosion"),
     BIG_EXPLOSION = Isaac.GetSoundIdByName("gush big explosion"),
 
@@ -180,6 +186,9 @@ TransitionScreen:Load("gfx/minigame_transition.anm2", true)
 TransitionScreen:ReplaceSpritesheet(0, "gfx/effects/gush/gush_intro_screen.png")
 TransitionScreen:ReplaceSpritesheet(1, "gfx/effects/gush/gush_intro_screen.png")
 TransitionScreen:LoadGraphics()
+
+local HealthUI = Sprite()
+HealthUI:Load("gfx/gush_ui.anm2", true)
 
 --Other variables
 local IsExtraJumpStrength = true
@@ -334,7 +343,7 @@ function gush:Init()
     --Reset variables
     gush.result = nil
     PlayerHP = 3
-    CurrentLevel = 5
+    CurrentLevel = 1
     CollapsingPlatforms = {}
     VisitedRooms = {}
     EndExplosionsCounter = 0
@@ -415,6 +424,7 @@ local function TryCollapsePlatform(gridIndex)
     CollapsingPlatforms[game:GetRoom():GetClampedGridIndex(collapsing.Position)] = collapsing
     collapsing:GetSprite():Play("Collapse", true)
     collapsing:GetSprite():SetFrame(4)
+    SFXManager:Play(MinigameSounds.COLLAPSE_PLATFORM)
 end
 
 
@@ -551,13 +561,34 @@ local function MakePlayerHitWall(player)
 end
 
 
-local function KillPlayers()
+local function KillPlayers(player)
+    if CurrentMinigameState ~= MinigameStates.PLAYING then return end
+
+    SFXManager:Play(MinigameSounds.PLAYER_DEATH)
+    player:GetData().FakePlayer:GetSprite():Play("Die", true)
+
+    local playerNum = game:GetNumPlayers()
+    for i = 0, playerNum - 1, 1 do
+        local player = game:GetPlayer(i)
+        player.Velocity = Vector.Zero
+        player.ControlsEnabled = false
+        player:AddEntityFlags(EntityFlag.FLAG_NO_PHYSICS_KNOCKBACK)
+    end
+
+    PlayerHP = PlayerHP - 1
+    CurrentMinigameState = MinigameStates.DYING
+end
+
+
+local function RespawnPlayers()
     local playerNum = game:GetNumPlayers()
     for i = 0, playerNum - 1, 1 do
         local player = game:GetPlayer(i)
         player.Position = RoomSpawn.Position
         player.Velocity = Vector.Zero
         player:GetData().ExtraJumpFrames = 0
+        player.ControlsEnabled = true
+        player:ClearEntityFlags(EntityFlag.FLAG_NO_PHYSICS_KNOCKBACK)
 
         if i == 0 then
             player:UseActiveItem(CollectibleType.COLLECTIBLE_D7, false, false, true, false)
@@ -580,8 +611,7 @@ local function KillPlayers()
     CollapsingPlatformsToSpawn = {}
     RoomCollapsings = {}
     FillGridList(RoomCollapsings, MinigameEntityVariants.COLLAPSING)
-
-    PlayerHP = PlayerHP - 1
+    CurrentMinigameState = MinigameStates.PLAYING
 end
 
 
@@ -590,7 +620,7 @@ local function CheckIfPlayerHitSpike(player)
     local playerGridIndex = room:GetClampedGridIndex(player.Position)
 
     if RoomSpikes[playerGridIndex] then
-        KillPlayers()
+        KillPlayers(player)
     end
 end
 
@@ -648,6 +678,10 @@ local function ManageFakePlayer(player)
         return
     elseif fakePlayerSprite:IsPlaying("Win") then return end
 
+    if fakePlayerSprite:IsFinished("Die") then
+        RespawnPlayers()
+    elseif fakePlayerSprite:IsPlaying("Die") then return end
+
     if player.Velocity.Y < 0 and fakePlayerSprite:IsFinished("StartJump") then
         fakePlayerSprite:Play("JumpLoop", true)
     elseif math.abs(player.Velocity.Y) < MinigameConstants.TOP_JUMPING_SPEED_THRESHOLD and not IsPlayerOnFloor(player) then
@@ -678,6 +712,11 @@ function gush:OnPlayerUpdate(player)
     local gravity
 
     player.Visible = false --Do this here because it sucks
+
+    if CurrentMinigameState == MinigameStates.DYING then
+        ManageFakePlayer(player)
+        return
+    end
 
     if player:GetData().WasGrounded and not IsPlayerGrounded(player) and player.Velocity.Y >= 0 then
         player:GetData().CoyoteTime = MinigameConstants.COYOTE_TIME_FRAMES
@@ -869,9 +908,10 @@ function gush:OnFrameUpdate()
             for i = 0, playerNum - 1, 1 do
                 local player = game:GetPlayer(i)
                 player.ControlsEnabled = true
+                if i == 0 then player:UseActiveItem(CollectibleType.COLLECTIBLE_D7, false, false, true, false) end
             end
         end
-    elseif CurrentMinigameState == MinigameStates.PLAYING then
+    elseif CurrentMinigameState == MinigameStates.PLAYING or CurrentMinigameState == MinigameStates.DYING then
         ManageCollapsings()
         PlayVroomSound()
     elseif CurrentMinigameState == MinigameStates.MACHINE_DYING then
@@ -882,6 +922,23 @@ function gush:OnFrameUpdate()
     end
 end
 gush.callbacks[ModCallbacks.MC_POST_UPDATE] = gush.OnFrameUpdate
+
+
+local function RenderUI()
+    if CurrentMinigameState == MinigameStates.INTRO_SCREEN or CurrentMinigameState == MinigameStates.TRANSITION_SCREEN then return end
+
+    HealthUI:Play("Idle", true)
+
+    if CurrentMinigameState == MinigameStates.DYING then
+        HealthUI:PlayOverlay("Break", true)
+        HealthUI:SetFrame(PlayerHP)
+    else
+        HealthUI:RemoveOverlay()
+        HealthUI:SetFrame(PlayerHP - 1)
+    end
+
+    HealthUI:Render(Vector(Isaac.GetScreenWidth()/2, 13), Vector.Zero, Vector.Zero)
+end
 
 
 local function RenderWaveTransition()
@@ -914,7 +971,7 @@ end
 
 
 function gush:OnRender()
-    -- RenderUI()
+    RenderUI()
 
     RenderWaveTransition()
 
@@ -962,8 +1019,7 @@ gush.callbacks[ModCallbacks.MC_NPC_UPDATE] = gush.OnNPCUpdate
 
 function gush:OnEntityDamage(tookDamage, _, _, _)
     if tookDamage:ToPlayer() then
-        KillPlayers()
-
+        KillPlayers(tookDamage:ToPlayer())
         return false
     end
 end
@@ -974,6 +1030,11 @@ function gush:OnLaserInit(laser)
     laser:GetSprite():ReplaceSpritesheet(0, "gfx/effects/gush/gush_laser.png")
     laser:GetSprite():ReplaceSpritesheet(1, "gfx/effects/gush/gush_laser.png")
     laser:GetSprite():LoadGraphics()
+
+    SFXManager:Play(MinigameSounds.FIRE_LASER)
+
+    SFXManager:Stop(SoundEffect.SOUND_BLOOD_LASER)
+    SFXManager:Stop(SoundEffect.SOUND_BLOOD_LASER_LARGE)
 end
 gush.callbacks[ModCallbacks.MC_POST_LASER_INIT] = gush.OnLaserInit
 
@@ -982,6 +1043,9 @@ function gush:OnLaserUpdate(laser)
     if laser.SpriteScale.X < 1 then
         laser:Remove()
     end
+
+    SFXManager:Stop(SoundEffect.SOUND_BLOOD_LASER)
+    SFXManager:Stop(SoundEffect.SOUND_BLOOD_LASER_LARGE)
 end
 gush.callbacks[ModCallbacks.MC_POST_LASER_UPDATE] = gush.OnLaserUpdate
 

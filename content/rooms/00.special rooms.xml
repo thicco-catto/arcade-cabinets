@@ -6169,9 +6169,6 @@
 		<spawn x="19" y="2">
 			<entity type="960" variant="2115" subtype="0" weight="1.0"/>
 		</spawn>
-		<spawn x="22" y="2">
-			<entity type="960" variant="2115" subtype="0" weight="1.0"/>
-		</spawn>
 		<spawn x="24" y="2">
 			<entity type="960" variant="2115" subtype="0" weight="1.0"/>
 		</spawn>
