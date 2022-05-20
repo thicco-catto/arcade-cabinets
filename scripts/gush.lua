@@ -546,28 +546,44 @@ local function MakePlayerHitWall(player)
 end
 
 
+local function KillPlayers()
+    local playerNum = game:GetNumPlayers()
+    for i = 0, playerNum - 1, 1 do
+        local player = game:GetPlayer(i)
+        player.Position = RoomSpawn.Position
+        player.Velocity = Vector.Zero
+        player:GetData().ExtraJumpFrames = 0
+
+        if i == 0 then
+            player:UseActiveItem(CollectibleType.COLLECTIBLE_D7, false, false, true, false)
+        end
+    end
+
+    for _, gridIndex in ipairs(CollapsingPlatformsToSpawn) do
+        local position = room:GetGridPosition(gridIndex)
+        Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.COLLAPSING, 0, position, Vector.Zero, nil)
+    end
+
+    for _, collapsing in pairs(RoomCollapsings) do
+        collapsing:GetSprite():Play("Idle", true)
+        collapsing:GetData().CollapseTimer = nil
+    end
+
+    CollapsingPlatforms = {}
+    CollapsingPlatformsToSpawn = {}
+    RoomCollapsings = {}
+    FillGridList(RoomCollapsings, MinigameEntityVariants.COLLAPSING)
+
+    PlayerHP = PlayerHP - 1
+end
+
+
 local function CheckIfPlayerHitSpike(player)
     local room = game:GetRoom()
     local playerGridIndex = room:GetClampedGridIndex(player.Position)
 
     if RoomSpikes[playerGridIndex] then
-        player.Position = RoomSpawn.Position
-        player.Velocity = Vector.Zero
-
-        for _, gridIndex in ipairs(CollapsingPlatformsToSpawn) do
-            local position = room:GetGridPosition(gridIndex)
-            Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.COLLAPSING, 0, position, Vector.Zero, nil)
-        end
-
-        for _, collapsing in pairs(RoomCollapsings) do
-            collapsing:GetSprite():Play("Idle", true)
-            collapsing:GetData().CollapseTimer = nil
-        end
-
-        CollapsingPlatforms = {}
-        CollapsingPlatformsToSpawn = {}
-        RoomCollapsings = {}
-        FillGridList(RoomCollapsings, MinigameEntityVariants.COLLAPSING)
+        KillPlayers()
     end
 end
 
@@ -806,7 +822,7 @@ function gush:OnFrameUpdate()
 
     elseif CurrentMinigameState == MinigameStates.TRANSITION_SCREEN then
         MinigameTimers.TransitionScreenTimer = MinigameTimers.TransitionScreenTimer - 1
-        print(MinigameTimers.TransitionScreenTimer)
+
         if MinigameTimers.TransitionScreenTimer == 0 then
             CurrentMinigameState = MinigameStates.PLAYING
 
@@ -873,6 +889,26 @@ function gush:OnNewRoom()
     PrepareForRoom()
 end
 gush.callbacks[ModCallbacks.MC_POST_NEW_ROOM] = gush.OnNewRoom
+
+
+function gush:OnNPCInit(npc)
+    npc:ClearEntityFlags(EntityFlag.FLAG_APPEAR)
+
+    if npc.Type == EntityType.ENTITY_BRIMSTONE_HEAD then
+        npc:GetSprite():Load("gfx/gush_brimstone_head.anm2", true)
+    end
+end
+gush.callbacks[ModCallbacks.MC_POST_NPC_INIT] = gush.OnNPCInit
+
+
+function gush:OnEntityDamage(tookDamage, _, _, _)
+    if tookDamage:ToPlayer() then
+        KillPlayers()
+
+        return false
+    end
+end
+gush.callbacks[ModCallbacks.MC_ENTITY_TAKE_DMG] = gush.OnEntityDamage
 
 
 function gush:OnEffectUpdate(effect)
