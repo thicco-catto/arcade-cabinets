@@ -50,6 +50,10 @@
         <sample weight="1" path="gush/explosion.wav" />
     </sound>
 
+    <sound name="gush big explosion">
+        <sample weight="1" path="gush/big explosion.wav" />
+    </sound>
+
     <!--Holy smokes-->
     <sound name="hs tear shoot">
         <sample weight="1" path="holy smokes/tear shoot.wav" />

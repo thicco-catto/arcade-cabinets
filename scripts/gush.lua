@@ -33,6 +33,7 @@ local MinigameSounds = {
     SAW_WALL_HIT = Isaac.GetSoundIdByName("gush saw wall hit"),
     SAW_VROOM = Isaac.GetSoundIdByName("gush saw vroom"),
     END_EXPLOSION = Isaac.GetSoundIdByName("gush explosion"),
+    BIG_EXPLOSION = Isaac.GetSoundIdByName("gush big explosion"),
 
     WIN = Isaac.GetSoundIdByName("arcade cabinet win"),
     LOSE = Isaac.GetSoundIdByName("arcade cabinet lose")
@@ -333,7 +334,7 @@ function gush:Init()
     --Reset variables
     gush.result = nil
     PlayerHP = 3
-    CurrentLevel = 1
+    CurrentLevel = 5
     CollapsingPlatforms = {}
     VisitedRooms = {}
     EndExplosionsCounter = 0
@@ -842,6 +843,7 @@ local function SpawnEndExplosions()
             local machine = Isaac.FindByType(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.MACHINE)[1]
             machine:GetSprite():Play("Destroyed", true)
         end
+        SFXManager:Play(MinigameSounds.BIG_EXPLOSION)
     else
         SpawnExplosion()
         EndExplosionsCounter = EndExplosionsCounter + 1
