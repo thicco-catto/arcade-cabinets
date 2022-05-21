@@ -167,7 +167,7 @@ local MinigameTimers = {
 }
 
 --States
-local MinigameStates = {
+local MinigameState = {
     INTRO_SCREEN = 0,
     PLAYING = 1,
     DYING = 2,
@@ -241,7 +241,7 @@ end
 
 
 local function StartTransitionScreen()
-    CurrentMinigameState = MinigameStates.TRANSITION_SCREEN
+    CurrentMinigameState = MinigameState.TRANSITION_SCREEN
     MinigameTimers.TransitionScreenTimer = MinigameConstants.MAX_TRANSITION_SCREEN_TIMER
     TransitionScreen:ReplaceSpritesheet(0, "gfx/effects/gush/gush_transition" .. CurrentLevel .. ".png")
     TransitionScreen:LoadGraphics()
@@ -362,7 +362,7 @@ function gush:Init()
     TransitionScreen:ReplaceSpritesheet(0, "gfx/effects/gush/gush_intro_screen.png")
     TransitionScreen:LoadGraphics()
     TransitionScreen:Play("Idle", true)
-    CurrentMinigameState = MinigameStates.INTRO_SCREEN
+    CurrentMinigameState = MinigameState.INTRO_SCREEN
     MinigameTimers.IntroTimer = MinigameConstants.MAX_INTRO_SCREEN_TIMER
 
     --Spawn the backdrop
@@ -555,7 +555,7 @@ end
 
 
 local function KillPlayers(player)
-    if CurrentMinigameState ~= MinigameStates.PLAYING then return end
+    if CurrentMinigameState ~= MinigameState.PLAYING then return end
 
     player:GetData().FakePlayer:GetSprite():Play("Die", true)
 
@@ -570,12 +570,12 @@ local function KillPlayers(player)
     PlayerHP = PlayerHP - 1
 
     if PlayerHP == 0 then
-        CurrentMinigameState = MinigameStates.LOSING
+        CurrentMinigameState = MinigameState.LOSING
         SFXManager:Play(MinigameSounds.LOSE)
         TransitionScreen:Play("Appear")
     else
         SFXManager:Play(MinigameSounds.PLAYER_DEATH)
-        CurrentMinigameState = MinigameStates.DYING
+        CurrentMinigameState = MinigameState.DYING
     end
 end
 
@@ -611,7 +611,7 @@ local function RespawnPlayers()
     CollapsingPlatformsToSpawn = {}
     RoomCollapsings = {}
     FillGridList(RoomCollapsings, MinigameEntityVariants.COLLAPSING)
-    CurrentMinigameState = MinigameStates.PLAYING
+    CurrentMinigameState = MinigameState.PLAYING
 end
 
 
@@ -626,7 +626,7 @@ end
 
 
 local function CheckIfPlayerIsInDoor(player)
-    if CurrentMinigameState ~= MinigameStates.PLAYING or not RoomExit then return end
+    if CurrentMinigameState ~= MinigameState.PLAYING or not RoomExit then return end
 
     local room = game:GetRoom()
     local playerGridIndex = room:GetClampedGridIndex(player.Position)
@@ -664,7 +664,7 @@ local function CheckIfPlayerIsPressingButton(player)
         RoomButton:GetSprite():Play("Pressed", true)
         RoomButton = nil
 
-        CurrentMinigameState = MinigameStates.MACHINE_DYING
+        CurrentMinigameState = MinigameState.MACHINE_DYING
 
         Isaac.FindByType(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.MACHINE)[1]:GetSprite():Play("Dying", true)
         local playerNum = game:GetNumPlayers()
@@ -713,7 +713,7 @@ local function ManageFakePlayer(player)
         end
     end
 
-    if CurrentMinigameState == MinigameStates.MACHINE_DYING then
+    if CurrentMinigameState == MinigameState.MACHINE_DYING then
         if fakePlayerSprite:GetAnimation() == "Idle" then
             --Bit of a hack, but coz the player is still,
             --they'll try to play the idle animation no stop so no need for setFrame
@@ -735,7 +735,7 @@ function gush:OnPlayerUpdate(player)
         CheckIfPlayerIsPressingButton(player)
     end
 
-    if CurrentMinigameState == MinigameStates.DYING or CurrentMinigameState == MinigameStates.LOSING then
+    if CurrentMinigameState == MinigameState.DYING or CurrentMinigameState == MinigameState.LOSING then
         --Keep the players floating and still while they are dying
         ManageFakePlayer(player)
         return
@@ -867,7 +867,7 @@ end
 local function RemoveEndExplosions()
     for _, explosion in ipairs(Isaac.FindByType(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.END_EXPLOSION, 0)) do
         if explosion:GetSprite():IsFinished("Idle") then
-            if CurrentMinigameState == MinigameStates.WINNING and explosion:GetData().IsLastExplosion then
+            if CurrentMinigameState == MinigameState.WINNING and explosion:GetData().IsLastExplosion then
                 SFXManager:Play(MinigameSounds.WIN)
                 TransitionScreen:Play("Appear", true)
 
@@ -895,7 +895,7 @@ local function SpawnEndExplosions()
                 explosion:GetData().IsLastExplosion = true
             end
 
-            CurrentMinigameState = MinigameStates.WINNING
+            CurrentMinigameState = MinigameState.WINNING
             local machine = Isaac.FindByType(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.MACHINE)[1]
             machine:GetSprite():Play("Destroyed", true)
         end
@@ -908,7 +908,7 @@ end
 
 
 function gush:OnFrameUpdate()
-    if CurrentMinigameState == MinigameStates.INTRO_SCREEN then
+    if CurrentMinigameState == MinigameState.INTRO_SCREEN then
         MinigameTimers.IntroTimer = MinigameTimers.IntroTimer - 1
 
         if MinigameTimers.IntroTimer == 0 then
@@ -916,11 +916,11 @@ function gush:OnFrameUpdate()
             StartTransitionScreen()
         end
 
-    elseif CurrentMinigameState == MinigameStates.TRANSITION_SCREEN then
+    elseif CurrentMinigameState == MinigameState.TRANSITION_SCREEN then
         MinigameTimers.TransitionScreenTimer = MinigameTimers.TransitionScreenTimer - 1
 
         if MinigameTimers.TransitionScreenTimer == 0 then
-            CurrentMinigameState = MinigameStates.PLAYING
+            CurrentMinigameState = MinigameState.PLAYING
 
             local playerNum = game:GetNumPlayers()
             for i = 0, playerNum - 1, 1 do
@@ -929,15 +929,15 @@ function gush:OnFrameUpdate()
                 if i == 0 then player:UseActiveItem(CollectibleType.COLLECTIBLE_D7, false, false, true, false) end
             end
         end
-    elseif CurrentMinigameState == MinigameStates.PLAYING then
+    elseif CurrentMinigameState == MinigameState.PLAYING then
         ManageCollapsings()
         PlayVroomSound()
-    elseif CurrentMinigameState == MinigameStates.DYING or CurrentMinigameState == MinigameStates.LOSING then
+    elseif CurrentMinigameState == MinigameState.DYING or CurrentMinigameState == MinigameState.LOSING then
         ManageCollapsings()
-    elseif CurrentMinigameState == MinigameStates.MACHINE_DYING then
+    elseif CurrentMinigameState == MinigameState.MACHINE_DYING then
         RemoveEndExplosions()
         SpawnEndExplosions()
-    elseif CurrentMinigameState == MinigameStates.WINNING then
+    elseif CurrentMinigameState == MinigameState.WINNING then
         RemoveEndExplosions()
     end
 end
@@ -945,11 +945,11 @@ gush.callbacks[ModCallbacks.MC_POST_UPDATE] = gush.OnFrameUpdate
 
 
 local function RenderUI()
-    if CurrentMinigameState == MinigameStates.INTRO_SCREEN or CurrentMinigameState == MinigameStates.TRANSITION_SCREEN then return end
+    if CurrentMinigameState == MinigameState.INTRO_SCREEN or CurrentMinigameState == MinigameState.TRANSITION_SCREEN then return end
 
     HealthUI:Play("Idle", true)
 
-    if CurrentMinigameState == MinigameStates.DYING or CurrentMinigameState == MinigameStates.LOSING then
+    if CurrentMinigameState == MinigameState.DYING or CurrentMinigameState == MinigameState.LOSING then
         HealthUI:PlayOverlay("Break", true)
         HealthUI:SetFrame(PlayerHP)
     else
@@ -962,7 +962,7 @@ end
 
 
 local function RenderWaveTransition()
-    if CurrentMinigameState ~= MinigameStates.INTRO_SCREEN and CurrentMinigameState ~= MinigameStates.TRANSITION_SCREEN then return end
+    if CurrentMinigameState ~= MinigameState.INTRO_SCREEN and CurrentMinigameState ~= MinigameState.TRANSITION_SCREEN then return end
 
     TransitionScreen:SetFrame(0)
     TransitionScreen:Render(Vector(Isaac.GetScreenWidth() / 2, Isaac.GetScreenHeight() / 2), Vector.Zero, Vector.Zero)
@@ -970,8 +970,8 @@ end
 
 
 local function RenderFadeOut()
-    if CurrentMinigameState ~= MinigameStates.LOSING and CurrentMinigameState ~= MinigameStates.WINNING then return end
-    if not Isaac.GetPlayer(0):GetData().FakePlayer:GetSprite():IsPlaying("Win") and CurrentMinigameState ~= MinigameStates.LOSING then return end
+    if CurrentMinigameState ~= MinigameState.LOSING and CurrentMinigameState ~= MinigameState.WINNING then return end
+    if not Isaac.GetPlayer(0):GetData().FakePlayer:GetSprite():IsPlaying("Win") and CurrentMinigameState ~= MinigameState.LOSING then return end
 
     if TransitionScreen:IsFinished("Appear") then
         local playerNum = game:GetNumPlayers()
@@ -980,7 +980,7 @@ local function RenderFadeOut()
             player:ClearEntityFlags(EntityFlag.FLAG_NO_PHYSICS_KNOCKBACK)
         end
 
-        if CurrentMinigameState == MinigameStates.WINNING then
+        if CurrentMinigameState == MinigameState.WINNING then
             gush.result = ArcadeCabinetVariables.MinigameResult.WIN
         else
             gush.result = ArcadeCabinetVariables.MinigameResult.LOSE
