@@ -233,13 +233,14 @@ local function FindGrid()
     RoomSpawn = Isaac.FindByType(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.SPAWN, 0)[1]
 
     RoomExit = Isaac.FindByType(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.EXIT, 0)[1]
+    RoomExit.DepthOffset = -200
+    RoomExit:GetSprite():Play("Closed", true)
 
     RoomButton = Isaac.FindByType(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.BUTTON, 0)[1]
 end
 
 
 local function StartTransitionScreen()
-    SFXManager:Play(MinigameSounds.TRANSITION)
     CurrentMinigameState = MinigameStates.TRANSITION_SCREEN
     MinigameTimers.TransitionScreenTimer = MinigameConstants.MAX_TRANSITION_SCREEN_TIMER
     TransitionScreen:ReplaceSpritesheet(0, "gfx/effects/gush/gush_transition" .. CurrentLevel .. ".png")
@@ -624,19 +625,29 @@ local function CheckIfPlayerHitSpike(player)
 end
 
 
-local function CheckIfPlayerIsInPortal(player)
-    if player:GetData().IsExiting or not RoomExit then return end
+local function CheckIfPlayerIsInDoor(player)
+    if CurrentMinigameState ~= MinigameStates.PLAYING or not RoomExit then return end
 
     local room = game:GetRoom()
     local playerGridIndex = room:GetClampedGridIndex(player.Position)
     local exitGridIndex = room:GetClampedGridIndex(RoomExit.Position)
 
-    if playerGridIndex == exitGridIndex then
-        player:GetData().IsExiting = true
-        CurrentLevel = CurrentLevel + 1
-        StartTransitionScreen()
-        GoToNextRoom()
+    if playerGridIndex ~= exitGridIndex and playerGridIndex ~= exitGridIndex - 1 then return end
+
+    if Input.IsActionTriggered(ButtonAction.ACTION_UP, player.ControllerIndex) or
+    Input.IsActionTriggered(ButtonAction.ACTION_ITEM, player.ControllerIndex) then
+        if RoomExit:GetSprite():IsPlaying("Idle") then
+            CurrentLevel = CurrentLevel + 1
+            RoomExit:GetSprite():Play("Open", true)
+            SFXManager:Play(MinigameSounds.TRANSITION)
+            game:ShakeScreen(10)
+        elseif RoomExit:GetSprite():IsFinished("Open") then
+            StartTransitionScreen()
+            GoToNextRoom()
+        end
     end
+
+    return true
 end
 
 
@@ -714,8 +725,15 @@ end
 
 function gush:OnPlayerUpdate(player)
     local gravity
+    local isInDoor
 
     player.Visible = false --Do this here because it sucks
+
+    if RoomExit then
+        isInDoor = CheckIfPlayerIsInDoor(player)
+    else
+        CheckIfPlayerIsPressingButton(player)
+    end
 
     if CurrentMinigameState == MinigameStates.DYING or CurrentMinigameState == MinigameStates.LOSING then
         --Keep the players floating and still while they are dying
@@ -730,7 +748,7 @@ function gush:OnPlayerUpdate(player)
     end
     player:GetData().WasGrounded = IsPlayerGrounded(player)
 
-    if Input.IsActionTriggered(ButtonAction.ACTION_ITEM, player.ControllerIndex) or player:GetData().JumpBuffer then
+    if (Input.IsActionTriggered(ButtonAction.ACTION_ITEM, player.ControllerIndex) or player:GetData().JumpBuffer) and not isInDoor then
         if CanPlayerJump(player) then
             Jump(player)
         elseif Input.IsActionTriggered(ButtonAction.ACTION_ITEM, player.ControllerIndex) then
@@ -778,12 +796,6 @@ function gush:OnPlayerUpdate(player)
     MakePlayerHitWall(player)
 
     CheckIfPlayerHitSpike(player)
-
-    if RoomExit then
-        CheckIfPlayerIsInPortal(player)
-    else
-        CheckIfPlayerIsPressingButton(player)
-    end
 
     ManageFakePlayer(player)
 end
@@ -900,6 +912,7 @@ function gush:OnFrameUpdate()
         MinigameTimers.IntroTimer = MinigameTimers.IntroTimer - 1
 
         if MinigameTimers.IntroTimer == 0 then
+            SFXManager:Play(MinigameSounds.TRANSITION)
             StartTransitionScreen()
         end
 

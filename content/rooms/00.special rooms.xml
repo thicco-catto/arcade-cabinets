@@ -5778,11 +5778,17 @@
 		<spawn x="10" y="9">
 			<entity type="960" variant="2114" subtype="0" weight="1.0"/>
 		</spawn>
+		<spawn x="11" y="9">
+			<entity type="960" variant="2115" subtype="0" weight="1.0"/>
+		</spawn>
 		<spawn x="12" y="9">
 			<entity type="960" variant="2114" subtype="0" weight="1.0"/>
 		</spawn>
 		<spawn x="13" y="9">
 			<entity type="960" variant="2114" subtype="0" weight="1.0"/>
+		</spawn>
+		<spawn x="14" y="9">
+			<entity type="960" variant="2115" subtype="0" weight="1.0"/>
 		</spawn>
 		<spawn x="15" y="9">
 			<entity type="960" variant="2114" subtype="0" weight="1.0"/>
@@ -7073,7 +7079,7 @@
 		<spawn x="25" y="8">
 			<entity type="960" variant="2114" subtype="0" weight="1.0"/>
 		</spawn>
-		<spawn x="0" y="9">
+		<spawn x="1" y="9">
 			<entity type="960" variant="2117" subtype="0" weight="1.0"/>
 		</spawn>
 		<spawn x="3" y="9">
@@ -10355,7 +10361,7 @@
 		<spawn x="0" y="12">
 			<entity type="960" variant="2114" subtype="0" weight="1.0"/>
 		</spawn>
-		<spawn x="1" y="12">
+		<spawn x="2" y="12">
 			<entity type="960" variant="2117" subtype="0" weight="1.0"/>
 		</spawn>
 		<spawn x="6" y="12">
@@ -12896,9 +12902,6 @@
 		<door exists="False" x="26" y="3"/>
 		<door exists="False" x="26" y="10"/>
 		<spawn x="0" y="0">
-			<entity type="960" variant="2114" subtype="0" weight="1.0"/>
-		</spawn>
-		<spawn x="1" y="0">
 			<entity type="960" variant="2114" subtype="0" weight="1.0"/>
 		</spawn>
 		<spawn x="5" y="0">
