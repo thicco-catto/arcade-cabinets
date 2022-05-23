@@ -233,8 +233,10 @@ local function FindGrid()
     RoomSpawn = Isaac.FindByType(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.SPAWN, 0)[1]
 
     RoomExit = Isaac.FindByType(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.EXIT, 0)[1]
-    RoomExit.DepthOffset = -200
-    RoomExit:GetSprite():Play("Closed", true)
+    if RoomExit then
+        RoomExit.DepthOffset = -200
+        RoomExit:GetSprite():Play("Closed", true)
+    end
 
     RoomButton = Isaac.FindByType(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.BUTTON, 0)[1]
 end

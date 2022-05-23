@@ -37,7 +37,11 @@ local MinigameEntityVariants = {
 
 -- Constants
 local MinigameConstants = {
-    BG_SCROLLING_SPEED = 10
+    BG_SCROLLING_SPEED = 10,
+    BG_SPAWNING_OFFSET = 420,
+    BG_TO_SPAWN_THRESHOLD = 560,
+
+    NUM_BG_TO_CHANGE_TO_BRICK = 10,
 }
 
 -- Timers
@@ -60,6 +64,7 @@ TransitionScreen:LoadGraphics()
 
 -- Other variables
 local PlayerHP = 0
+local spawnedBgNum = 0
 
 -- INIT MINIGAME
 function the_ground_below:Init()
@@ -77,6 +82,8 @@ function the_ground_below:Init()
     local bg2 = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.BACKGROUND, 0, bg.Position + Vector(0,440), Vector.Zero, nil)
     bg2.DepthOffset = -1000
     bg.Child = bg2
+
+    spawnedBgNum = 2
 
     -- Prepare players
     local playerNum = game:GetNumPlayers()
@@ -98,19 +105,60 @@ function the_ground_below:Init()
 end
 
 
+local function ChangeBgSprite(bg)
+    --Default is rocks mid, so nil for that
+    local newSprite = nil
+
+    if spawnedBgNum == MinigameConstants.NUM_BG_TO_CHANGE_TO_BRICK then
+        newSprite = "gfx/grid/tgb_rocks_end.png"
+    elseif spawnedBgNum == MinigameConstants.NUM_BG_TO_CHANGE_TO_BRICK + 1 then
+        newSprite = "gfx/grid/tgb_pitch_black.png"
+    elseif spawnedBgNum == MinigameConstants.NUM_BG_TO_CHANGE_TO_BRICK + 2 then
+        newSprite = "gfx/grid/tgb_bricks_start.png"
+    elseif spawnedBgNum > MinigameConstants.NUM_BG_TO_CHANGE_TO_BRICK + 2 then
+        newSprite = "gfx/grid/tgb_bricks_mid.png"
+    end
+
+    if not newSprite then return end
+
+    bg:GetSprite():ReplaceSpritesheet(0, newSprite)
+    bg:GetSprite():LoadGraphics()
+end
+
+
+local function SpawnNextBg(currentBg)
+    local bg = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.BACKGROUND, 0, currentBg.Child.Position + Vector(0, MinigameConstants.BG_SPAWNING_OFFSET), Vector.Zero, nil)
+    bg.DepthOffset = -1000
+    currentBg.Child.Child = bg
+    spawnedBgNum = spawnedBgNum + 1
+
+    ChangeBgSprite(bg)
+end
+
+
 function the_ground_below:OnEffectUpdate(effect)
     if effect.Variant ~= MinigameEntityVariants.BACKGROUND then return end
 
     effect.Velocity = Vector(0, -MinigameConstants.BG_SCROLLING_SPEED)
 
-    if effect.Position.Y < (game:GetRoom():GetCenterPos() - Vector(0, 120 + 440)).Y then
-        local bg = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.BACKGROUND, 0, effect.Child.Position + Vector(0,420), Vector.Zero, nil)
-        bg.DepthOffset = -1000
-        effect.Child.Child = bg
+    if effect.Position.Y < (game:GetRoom():GetCenterPos() - Vector(0, MinigameConstants.BG_TO_SPAWN_THRESHOLD)).Y then
+        SpawnNextBg(effect)
         effect:Remove()
     end
 end
 the_ground_below.callbacks[ModCallbacks.MC_POST_EFFECT_UPDATE] = the_ground_below.OnEffectUpdate
+
+
+function the_ground_below:OnRender()
+    -- RenderUI()
+
+    -- RenderWaveTransition()
+
+    -- RenderFadeOut()
+
+    Isaac.RenderText(spawnedBgNum, 50, 50, 1, 1, 1, 255)
+end
+the_ground_below.callbacks[ModCallbacks.MC_POST_RENDER] = the_ground_below.OnRender
 
 
 function the_ground_below:OnCMD(command, args)
