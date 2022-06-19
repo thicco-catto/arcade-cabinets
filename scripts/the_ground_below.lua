@@ -32,7 +32,9 @@ local MinigameEntityTypes = {
 }
 
 local MinigameEntityVariants = {
-    BACKGROUND = Isaac.GetEntityVariantByName("background TGB")
+    BACKGROUND = Isaac.GetEntityVariantByName("background TGB"),
+
+    KEEPER = Isaac.GetEntityVariantByName("keeper TGB")
 }
 
 -- Constants
@@ -42,6 +44,10 @@ local MinigameConstants = {
     BG_TO_SPAWN_THRESHOLD = 560,
 
     NUM_BG_TO_CHANGE_TO_BRICK = 10,
+
+    --Hanging keepers attack
+    KEEPER_SPAWNING_POS = Vector(800, 500),
+    KEEPER_TARGET_POS = Vector(590, 420)
 }
 
 -- Timers
@@ -51,9 +57,20 @@ local MinigameTimers = {
 -- States
 local CurrentMinigameState = 0
 local MinigameState = {
+    INTRO = 1,
+    FALLING = 2,
+    ATTACK = 3,
 
     LOSING = 5,
     WINNING = 6,
+}
+
+local CurrentAttack = 0
+local MinigameAttack = {
+    HORFS = 1,
+    HANGING_KEEPERS = 2,
+    FLIES = 3,
+    DUKE_OF_FLIES = 4
 }
 
 -- UI
@@ -101,7 +118,20 @@ function the_ground_below:Init()
         playerSprite:ReplaceSpritesheet(4, "gfx/characters/isaac_hs.png")
         playerSprite:ReplaceSpritesheet(12, "gfx/characters/isaac_hs.png")
         playerSprite:LoadGraphics()
+
+        player.Position = Vector(player.Position.X, 300)
     end
+end
+
+
+local function StartHangingKeeperAttack()
+    local targetVelocity = (MinigameConstants.KEEPER_TARGET_POS - MinigameConstants.KEEPER_SPAWNING_POS):Normalized() * 4
+    Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.KEEPER, 0, MinigameConstants.KEEPER_SPAWNING_POS, targetVelocity, nil)
+
+    local spawningPos2 = Vector(game:GetRoom():GetCenterPos().X - (MinigameConstants.KEEPER_SPAWNING_POS.X - game:GetRoom():GetCenterPos().X), MinigameConstants.KEEPER_SPAWNING_POS.Y)
+    local targetPos2 = Vector(game:GetRoom():GetCenterPos().X - (MinigameConstants.KEEPER_TARGET_POS.X - game:GetRoom():GetCenterPos().X), MinigameConstants.KEEPER_TARGET_POS.Y)
+    targetVelocity = (targetPos2 - spawningPos2):Normalized() * 4
+    Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.KEEPER, 0, spawningPos2, targetVelocity, nil)
 end
 
 
@@ -136,9 +166,7 @@ local function SpawnNextBg(currentBg)
 end
 
 
-function the_ground_below:OnEffectUpdate(effect)
-    if effect.Variant ~= MinigameEntityVariants.BACKGROUND then return end
-
+local function UpdateBackground(effect)
     effect.Velocity = Vector(0, -MinigameConstants.BG_SCROLLING_SPEED)
 
     if effect.Position.Y < (game:GetRoom():GetCenterPos() - Vector(0, MinigameConstants.BG_TO_SPAWN_THRESHOLD)).Y then
@@ -146,7 +174,66 @@ function the_ground_below:OnEffectUpdate(effect)
         effect:Remove()
     end
 end
+
+
+local function UpdateKeeper(effect)
+    if effect.Velocity:Length() < 0.1 and effect:IsFrame(40, 0) then
+        effect:GetSprite():Play("Shoot", true)
+    end
+
+    if effect:GetSprite():IsEventTriggered("Shoot") then
+        local dummy = Isaac.Spawn(997, 10, 0, effect.Position + Vector(0, 0.1), Vector.Zero, nil)
+        local spawningPos = dummy.Position + Vector(0, 25)
+        local spawningSpeed = (game:GetPlayer(0).Position - spawningPos):Normalized() * 10
+        local params = ProjectileParams()
+        params.BulletFlags = ProjectileFlags.NO_WALL_COLLIDE
+        params.Spread = 1
+        dummy:ToNPC():FireProjectiles(spawningPos, spawningSpeed, 2, params)
+        dummy:Remove()
+    end
+
+    if effect:GetSprite():IsFinished("Shoot") then
+        effect:GetSprite():Play("Idle")
+    end
+
+    if effect.Position.Y < MinigameConstants.KEEPER_TARGET_POS.Y then
+        effect.Velocity = Vector.Zero
+    end
+end
+
+
+function the_ground_below:OnEffectUpdate(effect)
+    if effect.Variant == MinigameEntityVariants.BACKGROUND then 
+        UpdateBackground(effect)
+    elseif effect.Variant == MinigameEntityVariants.KEEPER then
+        UpdateKeeper(effect)
+    end
+end
 the_ground_below.callbacks[ModCallbacks.MC_POST_EFFECT_UPDATE] = the_ground_below.OnEffectUpdate
+
+
+function the_ground_below:OnProjectileInit(projectile)
+    projectile:GetSprite():Load("gfx/hs_satan_projectile.anm2", true)
+    projectile:GetSprite():Play("Idle", true)
+end
+the_ground_below.callbacks[ModCallbacks.MC_POST_PROJECTILE_INIT] = the_ground_below.OnProjectileInit
+
+
+function the_ground_below:OnProjectileUpdate(projectile)
+    if projectile.Color.A < 1 then
+        projectile:SetColor(Color(1, 1, 1, 1, 0, 0, 0), 300, -1, false, false)
+    end
+
+    projectile.FallingSpeed = 0
+    projectile.FallingAccel = -0.1
+
+    local screenPos = Isaac.WorldToScreen(projectile.Position)
+    if (screenPos.X < 0 or screenPos.X > Isaac.GetScreenWidth()) and
+    (screenPos.Y < 0 or screenPos.Y > Isaac.GetScreenHeight()) then
+        projectile:Remove()
+    end
+end
+the_ground_below.callbacks[ModCallbacks.MC_POST_PROJECTILE_UPDATE] = the_ground_below.OnProjectileUpdate
 
 
 function the_ground_below:OnRender()
@@ -160,11 +247,32 @@ function the_ground_below:OnRender()
 end
 the_ground_below.callbacks[ModCallbacks.MC_POST_RENDER] = the_ground_below.OnRender
 
+function the_ground_below:OnInput(_, inputHook, buttonAction)
+    if buttonAction == ButtonAction.ACTION_UP or buttonAction == ButtonAction.ACTION_DOWN or
+     buttonAction == ButtonAction.ACTION_SHOOTLEFT or buttonAction == ButtonAction.ACTION_SHOOTRIGHT or
+     buttonAction == ButtonAction.ACTION_SHOOTUP or buttonAction == ButtonAction.ACTION_SHOOTDOWN then
+        if inputHook > InputHook.IS_ACTION_TRIGGERED then
+            return 0
+        else
+            return false
+        end
+    end
+end
+the_ground_below.callbacks[ModCallbacks.MC_INPUT_ACTION] = the_ground_below.OnInput
+
 
 function the_ground_below:OnCMD(command, args)
     if command == "vel" then
         print("bg velocity changed")
         MinigameConstants.BG_SCROLLING_SPEED = tonumber(args)
+    elseif command == "att" then
+        print("Attack set to " .. args)
+		CurrentAttack = tonumber(args)
+        CurrentMinigameState = MinigameState.ATTACK
+
+        if CurrentAttack == MinigameAttack.HANGING_KEEPERS then
+            StartHangingKeeperAttack()
+        end
     end
 
 end
