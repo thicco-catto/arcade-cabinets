@@ -47,7 +47,9 @@ local MinigameConstants = {
 
     --Hanging keepers attack
     KEEPER_SPAWNING_POS = Vector(800, 500),
-    KEEPER_TARGET_POS = Vector(590, 420)
+    KEEPER_TARGET_POS = Vector(550, 400),
+    KEEPER_VELOCITY = 4,
+    NUM_KEEPER_SHOTS = 10,
 }
 
 -- Timers
@@ -75,7 +77,7 @@ local MinigameAttack = {
 
 -- UI
 local TransitionScreen = Sprite()
-TransitionScreen:Load("gfx/minigame_transition.anm2")
+TransitionScreen:Load("gfx/minigame_transition.anm2", true)
 TransitionScreen:ReplaceSpritesheet(0, "gfx/effects/holy smokes/hs_vs_screen.png")
 TransitionScreen:LoadGraphics()
 
@@ -125,13 +127,17 @@ end
 
 
 local function StartHangingKeeperAttack()
-    local targetVelocity = (MinigameConstants.KEEPER_TARGET_POS - MinigameConstants.KEEPER_SPAWNING_POS):Normalized() * 4
-    Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.KEEPER, 0, MinigameConstants.KEEPER_SPAWNING_POS, targetVelocity, nil)
+    local targetVelocity = (MinigameConstants.KEEPER_TARGET_POS - MinigameConstants.KEEPER_SPAWNING_POS):Normalized() * MinigameConstants.KEEPER_VELOCITY
+    local rightKeeper = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.KEEPER, 0, MinigameConstants.KEEPER_SPAWNING_POS, targetVelocity, nil)
+    rightKeeper:GetData().KeeperShotsFired = 0
+    rightKeeper:GetData().SpawningPos = MinigameConstants.KEEPER_SPAWNING_POS
 
     local spawningPos2 = Vector(game:GetRoom():GetCenterPos().X - (MinigameConstants.KEEPER_SPAWNING_POS.X - game:GetRoom():GetCenterPos().X), MinigameConstants.KEEPER_SPAWNING_POS.Y)
     local targetPos2 = Vector(game:GetRoom():GetCenterPos().X - (MinigameConstants.KEEPER_TARGET_POS.X - game:GetRoom():GetCenterPos().X), MinigameConstants.KEEPER_TARGET_POS.Y)
-    targetVelocity = (targetPos2 - spawningPos2):Normalized() * 4
-    Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.KEEPER, 0, spawningPos2, targetVelocity, nil)
+    targetVelocity = (targetPos2 - spawningPos2):Normalized() * MinigameConstants.KEEPER_VELOCITY
+    local leftKeeper = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.KEEPER, 0, spawningPos2, targetVelocity, nil)
+    leftKeeper:GetData().KeeperShotsFired = 0
+    leftKeeper:GetData().SpawningPos = spawningPos2
 end
 
 
@@ -178,7 +184,13 @@ end
 
 local function UpdateKeeper(effect)
     if effect.Velocity:Length() < 0.1 and effect:IsFrame(40, 0) then
-        effect:GetSprite():Play("Shoot", true)
+        effect:GetData().KeeperShotsFired = effect:GetData().KeeperShotsFired + 1
+
+        if effect:GetData().KeeperShotsFired == MinigameConstants.NUM_KEEPER_SHOTS then
+            effect.Velocity = (effect:GetData().SpawningPos - effect.Position):Normalized() * MinigameConstants.KEEPER_VELOCITY
+        else
+            effect:GetSprite():Play("Shoot", true)
+        end
     end
 
     if effect:GetSprite():IsEventTriggered("Shoot") then
@@ -196,8 +208,12 @@ local function UpdateKeeper(effect)
         effect:GetSprite():Play("Idle")
     end
 
-    if effect.Position.Y < MinigameConstants.KEEPER_TARGET_POS.Y then
+    if effect.Position.Y < MinigameConstants.KEEPER_TARGET_POS.Y and effect:GetData().KeeperShotsFired == 0 then
         effect.Velocity = Vector.Zero
+    end
+
+    if effect.Position.Y > effect:GetData().SpawningPos.Y then
+        effect:Remove()
     end
 end
 
