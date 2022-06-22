@@ -158,13 +158,13 @@ local SatanAttack = {
 
 -- UI
 local PlayerHealthUI = Sprite()
-PlayerHealthUI:Load("gfx/hs_health_ui.anm2")
+PlayerHealthUI:Load("gfx/hs_health_ui.anm2", true)
 local PlayerPowerUI = Sprite()
-PlayerPowerUI:Load("gfx/hs_power_ui.anm2")
+PlayerPowerUI:Load("gfx/hs_power_ui.anm2", true)
 local BossHealthUI = Sprite()
-BossHealthUI:Load("gfx/hs_boss_health_ui.anm2")
+BossHealthUI:Load("gfx/hs_boss_health_ui.anm2", true)
 local TransitionScreen = Sprite()
-TransitionScreen:Load("gfx/minigame_transition.anm2")
+TransitionScreen:Load("gfx/minigame_transition.anm2", true)
 TransitionScreen:ReplaceSpritesheet(0, "gfx/effects/holy smokes/hs_vs_screen.png")
 TransitionScreen:LoadGraphics()
 

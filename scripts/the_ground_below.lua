@@ -121,7 +121,7 @@ function the_ground_below:Init()
         playerSprite:ReplaceSpritesheet(12, "gfx/characters/isaac_hs.png")
         playerSprite:LoadGraphics()
 
-        player.Position = Vector(player.Position.X, 300)
+        player.Position = Vector(player.Position.X, 230)
     end
 end
 
