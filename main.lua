@@ -322,7 +322,7 @@ ArcadeCabinetMod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, ArcadeCabinetMod.OnA
 
 function ArcadeCabinetMod:OnCabinetUse(player, entity)
 
-    local player = player:ToPlayer()
+    player = player:ToPlayer()
 
     if not CanUseMachine(player, entity) then return end
 
@@ -407,19 +407,61 @@ end
 ArcadeCabinetMod:AddCallback(ModCallbacks.MC_GET_SHADER_PARAMS, ArcadeCabinetMod.GetShaderParams)
 
 
+local function SpawnMachine(variant, pos)
+    local machine = Isaac.Spawn(6, variant, 0, pos, Vector.Zero, nil)
+    local item = GetRoomItem(ItemPoolType.POOL_CRANE_GAME)
+    local itemSprite = Isaac.GetItemConfig():GetCollectible(item).GfxFileName
+
+    machine:GetSprite():ReplaceSpritesheet(2, itemSprite)
+    machine:GetSprite():LoadGraphics()
+end
+
+
+function GetRoomItem(defaultPool, AllowActives, MinQuality)
+    local pool = game:GetItemPool()
+	defaultPool = defaultPool or ItemPoolType.POOL_GOLDEN_CHEST
+	MinQuality = MinQuality or 0
+	if AllowActives == nil then
+    	AllowActives = true
+  	end
+
+  	local room = game:GetRoom()
+  	local itemType = pool:GetPoolForRoom(room:GetType(), room:GetAwardSeed())
+  	itemType = itemType > - 1 and itemType or defaultPool
+  	local collectible = pool:GetCollectible(itemType, false)
+
+  	if (not AllowActives or MinQuality > 0) then
+    	local itemConfig = config:GetCollectible(collectible)
+    	local active = (AllowActives == true) and true or itemConfig.Type == ItemType.ITEM_PASSIVE
+    	local quality = true
+    	if REPENTANCE then
+      		quality = MinQuality == 0 and true or itemConfig.Quality >= MinQuality
+    	end
+    	while (not quality or not active) do
+      		collectible = pool:GetCollectible(itemType, false)
+      		itemConfig = config:GetCollectible(collectible)
+      		active = (AllowActives == true) and true or itemConfig.Type == ItemType.ITEM_PASSIVE
+      		quality = MinQuality == 0 and true or itemConfig.Quality >= MinQuality
+    	end
+  	end
+
+  	return collectible
+end
+
+
 function ArcadeCabinetMod:OnFrameUpdate()
     if game:GetFrameCount() == 1 and ArcadeCabinetVariables.CurrentGameState == ArcadeCabinetVariables.GameState.NOT_PLAYING then
-		Isaac.Spawn(6, ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_BLACKSTONEWIELDER, 0, Vector(100, 150), Vector.Zero, nil)
-        Isaac.Spawn(6, ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_GUSH, 0, Vector(170, 150), Vector.Zero, nil)
-        Isaac.Spawn(6, ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_HOLYSMOKES, 0, Vector(240, 150), Vector.Zero, nil)
+        SpawnMachine(ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_BLACKSTONEWIELDER, Vector(100, 150))
+        SpawnMachine(ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_GUSH, Vector(170, 150))
+        SpawnMachine(ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_HOLYSMOKES, Vector(240, 150))
 
-        Isaac.Spawn(6, ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_JUMPINGCOFFING, 0, Vector(400, 150), Vector.Zero, nil)
-        Isaac.Spawn(6, ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_NIGHTLIGHT, 0, Vector(470, 150), Vector.Zero, nil)
-        Isaac.Spawn(6, ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_NOSPLASH, 0, Vector(540, 150), Vector.Zero, nil)
+        SpawnMachine(ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_JUMPINGCOFFING, Vector(400, 150))
+        SpawnMachine(ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_NIGHTLIGHT, Vector(470, 150))
+        SpawnMachine(ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_NOSPLASH, Vector(540, 150))
 
-        Isaac.Spawn(6, ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_THEBLOB, 0, Vector(100, 250), Vector.Zero, nil)
-        Isaac.Spawn(6, ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_THEGROUNDBELOW, 0, Vector(320, 250), Vector.Zero, nil)
-        Isaac.Spawn(6, ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_TOOUNDERGROUND, 0, Vector(540, 250), Vector.Zero, nil)
+        SpawnMachine(ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_THEBLOB, Vector(100, 250))
+        SpawnMachine(ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_THEGROUNDBELOW, Vector(320, 250))
+        SpawnMachine(ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_TOOUNDERGROUND, Vector(540, 250))
     end
 
     CheckCollectedItems()
@@ -497,28 +539,6 @@ function ArcadeCabinetMod:OnCMD(cmd, _)
     end
 end
 ArcadeCabinetMod:AddCallback(ModCallbacks.MC_EXECUTE_CMD, ArcadeCabinetMod.OnCMD)
-
-
-function ArcadeCabinetMod:OnNewRoomGush()
-    local platforms = Isaac.FindByType(960, 2114, 0)
-
-    if #platforms > 0 and ArcadeCabinetVariables.CurrentGameState == ArcadeCabinetVariables.GameState.NOT_PLAYING then
-        ArcadeCabinetVariables.CurrentGameState = ArcadeCabinetVariables.GameState.PLAYING
-        ArcadeCabinetVariables.CurrentScript = ArcadeCabinetVariables.ArcadeCabinetScripts[ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_GUSH]
-        ArcadeCabinetVariables.CurrentMinigame = ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_GUSH
-
-        ArcadeCabinetVariables.CurrentScript:Init()
-
-        for callback, funct in pairs(ArcadeCabinetVariables.CurrentScript.callbacks) do
-            ArcadeCabinetMod:AddCallback(callback, funct)
-        end
-
-        for _, entity in ipairs(Isaac.FindByType(EntityType.ENTITY_SLOT, -1, -1)) do
-            entity:Remove()
-        end
-    end
-end
-ArcadeCabinetMod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, ArcadeCabinetMod.OnNewRoomGush)
 
 
 -- function ArcadeCabinetMod:CheckForCabinet()
