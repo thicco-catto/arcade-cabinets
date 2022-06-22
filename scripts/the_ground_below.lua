@@ -21,6 +21,8 @@ the_ground_below.startingItems = {}
 
 -- Sounds
 local MinigameSounds = {
+    PLAYER_HIT = Isaac.GetSoundIdByName("bsw player hit"),
+
     WIN = Isaac.GetSoundIdByName("arcade cabinet win"),
     LOSE = Isaac.GetSoundIdByName("arcade cabinet lose")
 }
@@ -55,7 +57,8 @@ local MinigameConstants = {
 
     --Random flies attack
     FLY_VELOCITY = 4.5,
-    FLY_Y_SPAWN = 500
+    FLY_Y_SPAWN = 500,
+    FLY_HITBOX_RADIUS = 30,
 }
 
 -- Timers
@@ -242,11 +245,29 @@ local function UpdateKeeper(effect)
 end
 
 
+local function UpdateFly(effect)
+    if effect.Position.Y < 0 then
+        effect:Remove()
+    end
+
+    local playerNum = game:GetNumPlayers()
+    for i = 0, playerNum - 1, 1 do
+        local player = game:GetPlayer(i)
+
+        if player.Position:Distance(effect.Position) < MinigameConstants.FLY_HITBOX_RADIUS then
+            SFXManager:Play(MinigameSounds.PLAYER_HIT)
+        end
+    end
+end
+
+
 function the_ground_below:OnEffectUpdate(effect)
     if effect.Variant == MinigameEntityVariants.BACKGROUND then 
         UpdateBackground(effect)
     elseif effect.Variant == MinigameEntityVariants.KEEPER then
         UpdateKeeper(effect)
+    elseif effect.Variant == MinigameEntityVariants.FLY then
+        UpdateFly(effect)
     end
 end
 the_ground_below.callbacks[ModCallbacks.MC_POST_EFFECT_UPDATE] = the_ground_below.OnEffectUpdate
@@ -283,7 +304,7 @@ function the_ground_below:OnRender()
 
     -- RenderFadeOut()
 
-    Isaac.RenderText(spawnedBgNum, 50, 50, 1, 1, 1, 255)
+    --Isaac.RenderText(spawnedBgNum, 50, 50, 1, 1, 1, 255)
 end
 the_ground_below.callbacks[ModCallbacks.MC_POST_RENDER] = the_ground_below.OnRender
 
