@@ -33,8 +33,10 @@ local MinigameEntityTypes = {
 
 local MinigameEntityVariants = {
     BACKGROUND = Isaac.GetEntityVariantByName("background TGB"),
+    PLAYER = Isaac.GetEntityVariantByName("player TGB"),
 
-    KEEPER = Isaac.GetEntityVariantByName("keeper TGB")
+    KEEPER = Isaac.GetEntityVariantByName("keeper TGB"),
+    FLY = Isaac.GetEntityVariantByName("fly TGB"),
 }
 
 -- Constants
@@ -49,7 +51,11 @@ local MinigameConstants = {
     KEEPER_SPAWNING_POS = Vector(800, 500),
     KEEPER_TARGET_POS = Vector(550, 400),
     KEEPER_VELOCITY = 4,
-    NUM_KEEPER_SHOTS = 10,
+    NUM_KEEPER_SHOTS = 6,
+
+    --Random flies attack
+    FLY_VELOCITY = 4.5,
+    FLY_Y_SPAWN = 500
 }
 
 -- Timers
@@ -122,6 +128,9 @@ function the_ground_below:Init()
         playerSprite:LoadGraphics()
 
         player.Position = Vector(player.Position.X, 230)
+
+        player.Visible = false
+        player:GetData().FakePlayer = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.PLAYER, 0, player.Position + Vector(0, 1), Vector.Zero, nil)
     end
 end
 
@@ -138,6 +147,21 @@ local function StartHangingKeeperAttack()
     local leftKeeper = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.KEEPER, 0, spawningPos2, targetVelocity, nil)
     leftKeeper:GetData().KeeperShotsFired = 0
     leftKeeper:GetData().SpawningPos = spawningPos2
+end
+
+
+local function StartRandomFlyAttack()
+    local room = game:GetRoom()
+
+    local freeGridLocation = 47 + rng:RandomInt(10)
+
+    for i = 46, 58, 1 do
+        if i ~= freeGridLocation then
+            local randomOffset = RandomVector() * Vector(2, 3.2)
+            local spawningPos = Vector(room:GetGridPosition(i).X, MinigameConstants.FLY_Y_SPAWN) + randomOffset
+            Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.FLY, 0, spawningPos, Vector(0, -MinigameConstants.FLY_VELOCITY), nil)
+        end
+    end
 end
 
 
@@ -263,6 +287,13 @@ function the_ground_below:OnRender()
 end
 the_ground_below.callbacks[ModCallbacks.MC_POST_RENDER] = the_ground_below.OnRender
 
+
+function the_ground_below:OnPlayerUpdate(player)
+    player:GetData().FakePlayer.Position = player.Position + Vector(0, 1)
+end
+the_ground_below.callbacks[ModCallbacks.MC_POST_PLAYER_UPDATE] = the_ground_below.OnPlayerUpdate
+
+
 function the_ground_below:OnInput(_, inputHook, buttonAction)
     if buttonAction == ButtonAction.ACTION_UP or buttonAction == ButtonAction.ACTION_DOWN or
      buttonAction == ButtonAction.ACTION_SHOOTLEFT or buttonAction == ButtonAction.ACTION_SHOOTRIGHT or
@@ -288,6 +319,8 @@ function the_ground_below:OnCMD(command, args)
 
         if CurrentAttack == MinigameAttack.HANGING_KEEPERS then
             StartHangingKeeperAttack()
+        elseif CurrentAttack == MinigameAttack.FLIES then
+            StartRandomFlyAttack()
         end
     end
 
