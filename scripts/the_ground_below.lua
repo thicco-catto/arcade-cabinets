@@ -37,6 +37,7 @@ local MinigameEntityVariants = {
     BACKGROUND = Isaac.GetEntityVariantByName("background TGB"),
     PLAYER = Isaac.GetEntityVariantByName("player TGB"),
 
+    HORF = Isaac.GetEntityVariantByName("horf TGB"),
     KEEPER = Isaac.GetEntityVariantByName("keeper TGB"),
     FLY = Isaac.GetEntityVariantByName("fly TGB"),
 }
@@ -48,6 +49,13 @@ local MinigameConstants = {
     BG_TO_SPAWN_THRESHOLD = 560,
 
     NUM_BG_TO_CHANGE_TO_BRICK = 10,
+
+    --Horfs attack
+    HORF_SPAWNING_POS = Vector(550, 540),
+    HORF_TARGET_Y = -20,
+    HORF_VELOCITY = 2,
+    HORF_SHOT_COOLDOWN = 30,
+    HORF_SAFE_DISTANCE = 40,
 
     --Hanging keepers attack
     KEEPER_SPAWNING_POS = Vector(800, 500),
@@ -138,6 +146,21 @@ function the_ground_below:Init()
 end
 
 
+local function IsPositionOnScreen(pos)
+    pos = Isaac.WorldToScreen(pos)
+    return pos.X > 0 and pos.X < Isaac.GetScreenWidth() and
+    pos.Y > 0 and pos.Y < Isaac.GetScreenHeight()
+end
+
+
+local function StartHorfAttack()
+    Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.HORF, 0, MinigameConstants.HORF_SPAWNING_POS, Vector(0, -MinigameConstants.HORF_VELOCITY), nil)
+
+    local spawningPos2 = Vector(game:GetRoom():GetCenterPos().X - (MinigameConstants.HORF_SPAWNING_POS.X - game:GetRoom():GetCenterPos().X), MinigameConstants.HORF_SPAWNING_POS.Y)
+    Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.HORF, 0, spawningPos2, Vector(0, -MinigameConstants.HORF_VELOCITY), nil)
+end
+
+
 local function StartHangingKeeperAttack()
     local targetVelocity = (MinigameConstants.KEEPER_TARGET_POS - MinigameConstants.KEEPER_SPAWNING_POS):Normalized() * MinigameConstants.KEEPER_VELOCITY
     local rightKeeper = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.KEEPER, 0, MinigameConstants.KEEPER_SPAWNING_POS, targetVelocity, nil)
@@ -146,8 +169,8 @@ local function StartHangingKeeperAttack()
 
     local spawningPos2 = Vector(game:GetRoom():GetCenterPos().X - (MinigameConstants.KEEPER_SPAWNING_POS.X - game:GetRoom():GetCenterPos().X), MinigameConstants.KEEPER_SPAWNING_POS.Y)
     local targetPos2 = Vector(game:GetRoom():GetCenterPos().X - (MinigameConstants.KEEPER_TARGET_POS.X - game:GetRoom():GetCenterPos().X), MinigameConstants.KEEPER_TARGET_POS.Y)
-    targetVelocity = (targetPos2 - spawningPos2):Normalized() * MinigameConstants.KEEPER_VELOCITY
-    local leftKeeper = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.KEEPER, 0, spawningPos2, targetVelocity, nil)
+    local targetVelocity2 = (targetPos2 - spawningPos2):Normalized() * MinigameConstants.KEEPER_VELOCITY
+    local leftKeeper = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.KEEPER, 0, spawningPos2, targetVelocity2, nil)
     leftKeeper:GetData().KeeperShotsFired = 0
     leftKeeper:GetData().SpawningPos = spawningPos2
 end
@@ -209,6 +232,34 @@ local function UpdateBackground(effect)
 end
 
 
+local function UpdateHorf(effect)
+    if effect:IsFrame(MinigameConstants.HORF_SHOT_COOLDOWN, 0) and
+    math.abs(effect.Position.Y - Isaac.GetPlayer(0).Position.Y) > MinigameConstants.HORF_SAFE_DISTANCE and
+    IsPositionOnScreen(effect.Position) then
+        effect:GetSprite():Play("Shoot", true)
+    end
+
+    if effect:GetSprite():IsEventTriggered("Shoot") then
+        local dummy = Isaac.Spawn(997, 10, 0, effect.Position + Vector(0, 0.1), Vector.Zero, nil)
+        local spawningPos = dummy.Position + Vector(0, 25)
+        local spawningSpeed = (game:GetPlayer(0).Position - spawningPos):Normalized() * 10
+        local params = ProjectileParams()
+        params.BulletFlags = ProjectileFlags.NO_WALL_COLLIDE
+        params.Spread = 1
+        dummy:ToNPC():FireProjectiles(spawningPos, spawningSpeed, 0, params)
+        dummy:Remove()
+    end
+
+    if effect:GetSprite():IsFinished("Shoot") then
+        effect:GetSprite():Play("Idle")
+    end
+
+    if effect.Position.Y < MinigameConstants.HORF_TARGET_Y then
+        effect:Remove()
+    end
+end
+
+
 local function UpdateKeeper(effect)
     if effect.Velocity:Length() < 0.1 and effect:IsFrame(40, 0) then
         effect:GetData().KeeperShotsFired = effect:GetData().KeeperShotsFired + 1
@@ -262,8 +313,10 @@ end
 
 
 function the_ground_below:OnEffectUpdate(effect)
-    if effect.Variant == MinigameEntityVariants.BACKGROUND then 
+    if effect.Variant == MinigameEntityVariants.BACKGROUND then
         UpdateBackground(effect)
+    elseif effect.Variant == MinigameEntityVariants.HORF then
+        UpdateHorf(effect)
     elseif effect.Variant == MinigameEntityVariants.KEEPER then
         UpdateKeeper(effect)
     elseif effect.Variant == MinigameEntityVariants.FLY then
@@ -288,9 +341,7 @@ function the_ground_below:OnProjectileUpdate(projectile)
     projectile.FallingSpeed = 0
     projectile.FallingAccel = -0.1
 
-    local screenPos = Isaac.WorldToScreen(projectile.Position)
-    if (screenPos.X < 0 or screenPos.X > Isaac.GetScreenWidth()) and
-    (screenPos.Y < 0 or screenPos.Y > Isaac.GetScreenHeight()) then
+    if not IsPositionOnScreen(projectile.Position) then
         projectile:Remove()
     end
 end
@@ -305,6 +356,13 @@ function the_ground_below:OnRender()
     -- RenderFadeOut()
 
     --Isaac.RenderText(spawnedBgNum, 50, 50, 1, 1, 1, 255)
+
+    for _, eff in ipairs(Isaac.FindByType(EntityType.ENTITY_EFFECT, MinigameEntityVariants.HORF)) do
+        local pos = Isaac.WorldToScreen(eff.Position)
+        local str = "false"
+        if IsPositionOnScreen(eff.Position) then str = "true" end
+        Isaac.RenderText(str, pos.X, 100, 1, 1, 1, 255)
+    end
 end
 the_ground_below.callbacks[ModCallbacks.MC_POST_RENDER] = the_ground_below.OnRender
 
@@ -338,7 +396,9 @@ function the_ground_below:OnCMD(command, args)
 		CurrentAttack = tonumber(args)
         CurrentMinigameState = MinigameState.ATTACK
 
-        if CurrentAttack == MinigameAttack.HANGING_KEEPERS then
+        if CurrentAttack == MinigameAttack.HORFS then
+            StartHorfAttack()
+        elseif CurrentAttack == MinigameAttack.HANGING_KEEPERS then
             StartHangingKeeperAttack()
         elseif CurrentAttack == MinigameAttack.FLIES then
             StartRandomFlyAttack()
