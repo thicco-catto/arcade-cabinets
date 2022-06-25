@@ -1,5 +1,5 @@
 <AnimatedActor>
-	<Info CreatedBy="Unknown" CreatedOn="23/05/2022 21:44:40" Version="15" Fps="30"/>
+	<Info CreatedBy="Unknown" CreatedOn="25/06/2022 16:33:44" Version="16" Fps="30"/>
 	<Content>
 		<Spritesheets>
 			<Spritesheet Path="enemies\tgb_duke.png" Id="0"/>
@@ -9,18 +9,17 @@
 		</Layers>
 		<Nulls/>
 		<Events>
-			<Event Name="Prize" Id="0"/>
-			<Event Name="Explosion" Id="1"/>
+			<Event Name="SpawnFlies" Id="0"/>
 		</Events>
 	</Content>
 	<Animations DefaultAnimation="Idle">
-		<Animation Name="Idle" FrameNum="12" Loop="true">
+		<Animation Name="Idle" FrameNum="15" Loop="true">
 			<RootAnimation>
 				<Frame XPosition="0" YPosition="0" XScale="100" YScale="100" Delay="1" Visible="true" RedTint="255" GreenTint="255" BlueTint="255" AlphaTint="255" RedOffset="0" GreenOffset="0" BlueOffset="0" Rotation="0" Interpolated="false"/>
 			</RootAnimation>
 			<LayerAnimations>
 				<LayerAnimation LayerId="0" Visible="true">
-					<Frame XPosition="0" YPosition="0" XPivot="26" YPivot="23" XCrop="0" YCrop="0" Width="52" Height="46" XScale="100" YScale="100" Delay="6" Visible="true" RedTint="255" GreenTint="255" BlueTint="255" AlphaTint="255" RedOffset="0" GreenOffset="0" BlueOffset="0" Rotation="0" Interpolated="false"/>
+					<Frame XPosition="0" YPosition="0" XPivot="26" YPivot="23" XCrop="0" YCrop="0" Width="52" Height="46" XScale="100" YScale="100" Delay="9" Visible="true" RedTint="255" GreenTint="255" BlueTint="255" AlphaTint="255" RedOffset="0" GreenOffset="0" BlueOffset="0" Rotation="0" Interpolated="false"/>
 					<Frame XPosition="0" YPosition="0" XPivot="26" YPivot="23" XCrop="52" YCrop="0" Width="52" Height="46" XScale="100" YScale="100" Delay="6" Visible="true" RedTint="255" GreenTint="255" BlueTint="255" AlphaTint="255" RedOffset="0" GreenOffset="0" BlueOffset="0" Rotation="0" Interpolated="false"/>
 				</LayerAnimation>
 			</LayerAnimations>
@@ -40,7 +39,9 @@
 				</LayerAnimation>
 			</LayerAnimations>
 			<NullAnimations/>
-			<Triggers/>
+			<Triggers>
+				<Trigger EventId="0" AtFrame="12"/>
+			</Triggers>
 		</Animation>
 	</Animations>
 </AnimatedActor>

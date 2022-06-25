@@ -40,6 +40,7 @@ local MinigameEntityVariants = {
     HORF = Isaac.GetEntityVariantByName("horf TGB"),
     KEEPER = Isaac.GetEntityVariantByName("keeper TGB"),
     FLY = Isaac.GetEntityVariantByName("fly TGB"),
+    DUKE = Isaac.GetEntityVariantByName("duke TGB")
 }
 
 -- Constants
@@ -48,7 +49,23 @@ local MinigameConstants = {
     BG_SPAWNING_OFFSET = 420,
     BG_TO_SPAWN_THRESHOLD = 560,
 
-    NUM_BG_TO_CHANGE_TO_BRICK = 10,
+    --Wave system
+    MAX_FALLING_TIMER_FRAMES = 30,
+    NUM_WAVES_PER_CHAPTER = {
+        3,
+        3,
+        3
+    },
+    HORF_CHANCE_PER_CHAPTER = {
+        33,
+        33,
+        100
+    },
+    KEEPER_CHANCE_PER_CHAPTER = {
+        0,
+        25,
+        50
+    },
 
     --Horfs attack
     HORF_SPAWNING_POS = Vector(550, 540),
@@ -56,6 +73,7 @@ local MinigameConstants = {
     HORF_VELOCITY = 2,
     HORF_SHOT_COOLDOWN = 30,
     HORF_SAFE_DISTANCE = 40,
+    HORF_HITBOX_RADIUS = 30,
 
     --Hanging keepers attack
     KEEPER_SPAWNING_POS = Vector(800, 500),
@@ -67,10 +85,23 @@ local MinigameConstants = {
     FLY_VELOCITY = 4.5,
     FLY_Y_SPAWN = 500,
     FLY_HITBOX_RADIUS = 30,
+    NUM_FLY_LINES = 5,
+    MAX_FLY_LINE_TIMER_FRAMES = 50,
+
+    --Duke of flies attack
+    DUKE_SPAWNING_POS = Vector(550, 540),
+    DUKE_TARGET_POS = Vector(610, 400),
+    DUKE_DESPAWN = Vector(700, 350),
+    DUKE_VELOCITY = 3,
+    DUKE_NUM_FLY_ROUNDS = 3,
+    DUKE_FLY_SPAWN_OFFSET = 10,
+    DUKE_FLY_VELOCITY = 7,
 }
 
 -- Timers
 local MinigameTimers = {
+    FallingTimer = 0,
+    FlyLineToSpawnTimer = 0,
 }
 
 -- States
@@ -79,6 +110,7 @@ local MinigameState = {
     INTRO = 1,
     FALLING = 2,
     ATTACK = 3,
+    BG_TRANSITION = 4,
 
     LOSING = 5,
     WINNING = 6,
@@ -100,11 +132,23 @@ TransitionScreen:LoadGraphics()
 
 -- Other variables
 local PlayerHP = 0
+
+local CurrentWave = 0
+local CurrentChapter = 0
+
+local FlyLineNum = 0
+
 local spawnedBgNum = 0
+local currentBgType = "rocks"
+local nextBgChange = -10
 
 -- INIT MINIGAME
 function the_ground_below:Init()
     -- Reset variables
+    MinigameTimers.FallingTimer = MinigameConstants.MAX_FALLING_TIMER_FRAMES
+    CurrentMinigameState = MinigameState.FALLING
+    CurrentWave = 1
+    CurrentChapter = 1
     the_ground_below.result = nil
 
     rng:SetSeed(game:GetSeeds():GetStartSeed(), 35)
@@ -146,6 +190,23 @@ function the_ground_below:Init()
 end
 
 
+local function FinishAttack()
+    MinigameTimers.FallingTimer = MinigameConstants.MAX_FALLING_TIMER_FRAMES
+
+    if CurrentAttack == MinigameAttack.DUKE_OF_FLIES then
+        nextBgChange = spawnedBgNum + 1
+
+        if currentBgType == "rocks" then
+            currentBgType = "bricks"
+        else
+            currentBgType = "rocks"
+        end
+    end
+
+    CurrentMinigameState = MinigameState.FALLING
+end
+
+
 local function IsPositionOnScreen(pos)
     pos = Isaac.WorldToScreen(pos)
     return pos.X > 0 and pos.X < Isaac.GetScreenWidth() and
@@ -176,7 +237,7 @@ local function StartHangingKeeperAttack()
 end
 
 
-local function StartRandomFlyAttack()
+local function SpawnLineFlies()
     local room = game:GetRoom()
 
     local freeGridLocation = 47 + rng:RandomInt(10)
@@ -185,24 +246,49 @@ local function StartRandomFlyAttack()
         if i ~= freeGridLocation then
             local randomOffset = RandomVector() * Vector(2, 3.2)
             local spawningPos = Vector(room:GetGridPosition(i).X, MinigameConstants.FLY_Y_SPAWN) + randomOffset
-            Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.FLY, 0, spawningPos, Vector(0, -MinigameConstants.FLY_VELOCITY), nil)
+            local fly = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.FLY, 0, spawningPos, Vector(0, -MinigameConstants.FLY_VELOCITY), nil)
+            fly:GetData().LineNum = FlyLineNum
         end
     end
+end
+
+
+local function StartRandomFlyAttack()
+    FlyLineNum = 1
+    MinigameTimers.FlyLineToSpawnTimer = MinigameConstants.MAX_FLY_LINE_TIMER_FRAMES
+    SpawnLineFlies()
+end
+
+
+local function StartDukeAttack()
+    local dukeVelocity = (MinigameConstants.DUKE_TARGET_POS - MinigameConstants.DUKE_SPAWNING_POS):Normalized() * MinigameConstants.DUKE_VELOCITY
+    local duke = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.DUKE, 0, MinigameConstants.DUKE_SPAWNING_POS, dukeVelocity, nil)
+    duke:GetData().NumFlyLinesSpawned = 0
 end
 
 
 local function ChangeBgSprite(bg)
     --Default is rocks mid, so nil for that
     local newSprite = nil
+    local bgTypeForThis = currentBgType
 
-    if spawnedBgNum == MinigameConstants.NUM_BG_TO_CHANGE_TO_BRICK then
-        newSprite = "gfx/grid/tgb_rocks_end.png"
-    elseif spawnedBgNum == MinigameConstants.NUM_BG_TO_CHANGE_TO_BRICK + 1 then
+    --Flip bg type if the change is yet to happen
+    if spawnedBgNum <= nextBgChange then
+        if currentBgType == "rocks" then
+            bgTypeForThis = "bricks"
+        else
+            bgTypeForThis = "rocks"
+        end
+    end
+
+    if spawnedBgNum == nextBgChange then
+        newSprite = "gfx/grid/tgb_" .. bgTypeForThis .. "_end.png"
+    elseif spawnedBgNum == nextBgChange + 1 then
         newSprite = "gfx/grid/tgb_pitch_black.png"
-    elseif spawnedBgNum == MinigameConstants.NUM_BG_TO_CHANGE_TO_BRICK + 2 then
-        newSprite = "gfx/grid/tgb_bricks_start.png"
-    elseif spawnedBgNum > MinigameConstants.NUM_BG_TO_CHANGE_TO_BRICK + 2 then
-        newSprite = "gfx/grid/tgb_bricks_mid.png"
+    elseif spawnedBgNum == nextBgChange + 2 then
+        newSprite = "gfx/grid/tgb_" .. bgTypeForThis .. "_start.png"
+    elseif spawnedBgNum < nextBgChange or spawnedBgNum > nextBgChange + 2 then
+        newSprite = "gfx/grid/tgb_" .. bgTypeForThis .. "_mid.png"
     end
 
     if not newSprite then return end
@@ -254,7 +340,18 @@ local function UpdateHorf(effect)
         effect:GetSprite():Play("Idle")
     end
 
+    local playerNum = game:GetNumPlayers()
+    for i = 0, playerNum - 1, 1 do
+        local player = game:GetPlayer(i)
+
+        if player.Position:Distance(effect.Position) < MinigameConstants.HORF_HITBOX_RADIUS then
+            SFXManager:Play(MinigameSounds.PLAYER_HIT)
+        end
+    end
+
     if effect.Position.Y < MinigameConstants.HORF_TARGET_Y then
+        FinishAttack()
+
         effect:Remove()
     end
 end
@@ -291,13 +388,32 @@ local function UpdateKeeper(effect)
     end
 
     if effect.Position.Y > effect:GetData().SpawningPos.Y then
+        FinishAttack()
         effect:Remove()
     end
 end
 
 
 local function UpdateFly(effect)
+    if effect:GetData().TargetPosition then
+        if effect.Position.X <= effect:GetData().TargetPosition then
+            effect.Velocity = Vector.Zero
+
+            if effect:GetData().IsLastFly then
+                for _, fly in ipairs(Isaac.FindByType(EntityType.ENTITY_EFFECT, MinigameEntityVariants.FLY)) do
+                    fly.Velocity = Vector(0, -1) * MinigameConstants.FLY_VELOCITY
+                end
+            end
+
+            effect:GetData().TargetPosition = nil
+        end
+    end
+
     if effect.Position.Y < 0 then
+        if effect:GetData().LineNum and effect:GetData().LineNum == MinigameConstants.NUM_FLY_LINES then
+            FinishAttack()
+        end
+
         effect:Remove()
     end
 
@@ -312,6 +428,51 @@ local function UpdateFly(effect)
 end
 
 
+local function UpdateDuke(effect)
+    if effect:IsFrame(100, 0) and effect.Velocity:Length() < 0.1 then
+        if effect:GetData().NumFlyLinesSpawned == MinigameConstants.DUKE_NUM_FLY_ROUNDS then
+            effect.Velocity = (MinigameConstants.DUKE_DESPAWN - effect.Position):Normalized() * MinigameConstants.DUKE_VELOCITY
+        else
+            effect:GetData().NumFlyLinesSpawned = effect:GetData().NumFlyLinesSpawned + 1
+            effect:GetSprite():Play("Shoot", true)
+        end
+    end
+
+    if effect:GetSprite():IsEventTriggered("SpawnFlies") then
+        local room = game:GetRoom()
+
+        local freeGridLocation = 47 + rng:RandomInt(10)
+
+        for i = 46, 58, 1 do
+            if i ~= freeGridLocation then
+                local randomOffset = RandomVector() * Vector(2, 3.2)
+                local spawningPos = effect.Position + Vector(0, MinigameConstants.DUKE_FLY_SPAWN_OFFSET) + randomOffset
+                local fly = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.FLY, 0, spawningPos, Vector(-1, 0) * MinigameConstants.DUKE_FLY_VELOCITY, nil)
+
+                fly:GetData().TargetPosition = room:GetGridPosition(i).X
+
+                if i == 46 then
+                    fly:GetData().IsLastFly = true
+                end
+            end
+        end
+    end
+
+    if effect:GetSprite():IsFinished("Shoot") then
+        effect:GetSprite():Play("Idle", true)
+    end
+
+    if effect.Position.Y < MinigameConstants.DUKE_TARGET_POS.Y and effect:GetData().NumFlyLinesSpawned == 0 then
+        effect.Velocity = Vector.Zero
+    end
+
+    if effect.Position.X > MinigameConstants.DUKE_DESPAWN.X then
+        FinishAttack()
+        effect:Remove()
+    end
+end
+
+
 function the_ground_below:OnEffectUpdate(effect)
     if effect.Variant == MinigameEntityVariants.BACKGROUND then
         UpdateBackground(effect)
@@ -321,6 +482,8 @@ function the_ground_below:OnEffectUpdate(effect)
         UpdateKeeper(effect)
     elseif effect.Variant == MinigameEntityVariants.FLY then
         UpdateFly(effect)
+    elseif effect.Variant == MinigameEntityVariants.DUKE then
+        UpdateDuke(effect)
     end
 end
 the_ground_below.callbacks[ModCallbacks.MC_POST_EFFECT_UPDATE] = the_ground_below.OnEffectUpdate
@@ -348,6 +511,64 @@ end
 the_ground_below.callbacks[ModCallbacks.MC_POST_PROJECTILE_UPDATE] = the_ground_below.OnProjectileUpdate
 
 
+local function UpdateFalling()
+    MinigameTimers.FallingTimer = MinigameTimers.FallingTimer - 1
+
+    if MinigameTimers.FallingTimer == 0 then
+        CurrentMinigameState = MinigameState.ATTACK
+
+        if CurrentWave > MinigameConstants.NUM_WAVES_PER_CHAPTER[CurrentChapter] then
+            CurrentChapter = CurrentChapter + 1
+            CurrentWave = 1
+            CurrentAttack = MinigameAttack.DUKE_OF_FLIES
+            StartDukeAttack()
+        else
+            print("Chance for horf: " .. MinigameConstants.HORF_CHANCE_PER_CHAPTER[CurrentChapter])
+            print("Chance for keeper: " .. MinigameConstants.KEEPER_CHANCE_PER_CHAPTER[CurrentChapter])
+            if (CurrentChapter > 1 or CurrentWave > 1) and
+            rng:RandomInt(100) < MinigameConstants.HORF_CHANCE_PER_CHAPTER[CurrentChapter] then
+                if rng:RandomInt(100) < MinigameConstants.KEEPER_CHANCE_PER_CHAPTER[CurrentChapter] then
+                    CurrentAttack = MinigameAttack.HANGING_KEEPERS
+                    StartHangingKeeperAttack()
+                else
+                    CurrentAttack = MinigameAttack.HORFS
+                    StartHorfAttack()
+                end
+            else
+                CurrentAttack = MinigameAttack.FLIES
+                StartRandomFlyAttack()
+            end
+            CurrentWave = CurrentWave + 1
+        end
+    end
+end
+
+
+local function UpdateFlyAttack()
+    if FlyLineNum >= MinigameConstants.NUM_FLY_LINES then return end
+
+    MinigameTimers.FlyLineToSpawnTimer = MinigameTimers.FlyLineToSpawnTimer - 1
+
+    if MinigameTimers.FlyLineToSpawnTimer == 0 then
+        MinigameTimers.FlyLineToSpawnTimer = MinigameConstants.MAX_FLY_LINE_TIMER_FRAMES
+        FlyLineNum = FlyLineNum + 1
+        SpawnLineFlies()
+    end
+end
+
+
+function the_ground_below:OnUpdate()
+    if CurrentMinigameState == MinigameState.FALLING then
+        UpdateFalling()
+    elseif CurrentMinigameState == MinigameState.ATTACK then
+        if CurrentAttack == MinigameAttack.FLIES then
+            UpdateFlyAttack()
+        end
+    end
+end
+the_ground_below.callbacks[ModCallbacks.MC_POST_UPDATE] = the_ground_below.OnUpdate
+
+
 function the_ground_below:OnRender()
     -- RenderUI()
 
@@ -355,14 +576,11 @@ function the_ground_below:OnRender()
 
     -- RenderFadeOut()
 
-    --Isaac.RenderText(spawnedBgNum, 50, 50, 1, 1, 1, 255)
+    Isaac.RenderText(CurrentMinigameState, 50, 20, 1, 1, 1, 255)
+    Isaac.RenderText("Wave: " .. CurrentWave, 50, 30, 1, 1, 1, 255)
+    Isaac.RenderText("Chapter: " .. CurrentChapter, 50, 40, 1, 1, 1, 255)
 
-    for _, eff in ipairs(Isaac.FindByType(EntityType.ENTITY_EFFECT, MinigameEntityVariants.HORF)) do
-        local pos = Isaac.WorldToScreen(eff.Position)
-        local str = "false"
-        if IsPositionOnScreen(eff.Position) then str = "true" end
-        Isaac.RenderText(str, pos.X, 100, 1, 1, 1, 255)
-    end
+    Isaac.RenderText("Next wave: " .. MinigameTimers.FallingTimer, 50, 50, 1, 1, 1, 255)
 end
 the_ground_below.callbacks[ModCallbacks.MC_POST_RENDER] = the_ground_below.OnRender
 
@@ -402,6 +620,8 @@ function the_ground_below:OnCMD(command, args)
             StartHangingKeeperAttack()
         elseif CurrentAttack == MinigameAttack.FLIES then
             StartRandomFlyAttack()
+        elseif CurrentAttack == MinigameAttack.DUKE_OF_FLIES then
+            StartDukeAttack()
         end
     end
 
