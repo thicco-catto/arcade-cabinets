@@ -523,8 +523,6 @@ local function UpdateFalling()
             CurrentAttack = MinigameAttack.DUKE_OF_FLIES
             StartDukeAttack()
         else
-            print("Chance for horf: " .. MinigameConstants.HORF_CHANCE_PER_CHAPTER[CurrentChapter])
-            print("Chance for keeper: " .. MinigameConstants.KEEPER_CHANCE_PER_CHAPTER[CurrentChapter])
             if (CurrentChapter > 1 or CurrentWave > 1) and
             rng:RandomInt(100) < MinigameConstants.HORF_CHANCE_PER_CHAPTER[CurrentChapter] then
                 if rng:RandomInt(100) < MinigameConstants.KEEPER_CHANCE_PER_CHAPTER[CurrentChapter] then
