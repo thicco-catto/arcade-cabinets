@@ -49,6 +49,9 @@ local MinigameEntityVariants = {
 
 -- Constants
 local MinigameConstants = {
+    MAX_INTRO_TIMER_FRAMES = 50,
+
+    --BG system
     BG_SCROLLING_SPEED = 10,
     BG_SPAWNING_OFFSET = 420,
     BG_TO_SPAWN_THRESHOLD = 560,
@@ -104,6 +107,7 @@ local MinigameConstants = {
 
 -- Timers
 local MinigameTimers = {
+    IntroScreenTimer = 0,
     FallingTimer = 0,
     FlyLineToSpawnTimer = 0,
 }
@@ -131,7 +135,8 @@ local MinigameAttack = {
 -- UI
 local TransitionScreen = Sprite()
 TransitionScreen:Load("gfx/minigame_transition.anm2", true)
-TransitionScreen:ReplaceSpritesheet(0, "gfx/effects/holy smokes/hs_vs_screen.png")
+TransitionScreen:ReplaceSpritesheet(0, "gfx/effects/the ground below/tgb_intro.png")
+TransitionScreen:ReplaceSpritesheet(1, "gfx/effects/the ground below/tgb_intro.png")
 TransitionScreen:LoadGraphics()
 
 -- Other variables
@@ -150,24 +155,15 @@ local nextBgChange = -10
 function the_ground_below:Init()
     -- Reset variables
     MinigameTimers.FallingTimer = MinigameConstants.MAX_FALLING_TIMER_FRAMES
-    CurrentMinigameState = MinigameState.FALLING
+    MinigameTimers.IntroScreenTimer = MinigameConstants.MAX_INTRO_TIMER_FRAMES
+    CurrentMinigameState = MinigameState.INTRO
     CurrentWave = 1
     CurrentChapter = 1
     the_ground_below.result = nil
 
     rng:SetSeed(game:GetSeeds():GetStartSeed(), 35)
 
-    -- Backdrop
-    local bg = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.BACKGROUND, 0, game:GetRoom():GetCenterPos() - Vector(0, 120), Vector.Zero, nil)
-    bg.DepthOffset = -1000
-    bg:GetSprite():ReplaceSpritesheet(0, "gfx/grid/tgb_rocks_start.png")
-    bg:GetSprite():LoadGraphics()
-
-    local bg2 = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.BACKGROUND, 0, bg.Position + Vector(0,440), Vector.Zero, nil)
-    bg2.DepthOffset = -1000
-    bg.Child = bg2
-
-    spawnedBgNum = 2
+    SFXManager:Play(MinigameSounds.INTRO)
 
     -- Prepare players
     local playerNum = game:GetNumPlayers()
@@ -525,6 +521,27 @@ end
 the_ground_below.callbacks[ModCallbacks.MC_POST_PROJECTILE_UPDATE] = the_ground_below.OnProjectileUpdate
 
 
+local function UpdateIntro()
+    MinigameTimers.IntroScreenTimer = MinigameTimers.IntroScreenTimer - 1
+
+    if MinigameTimers.IntroScreenTimer == 0 then
+        CurrentMinigameState = MinigameState.FALLING
+
+        -- Backdrop
+        local bg = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.BACKGROUND, 0, game:GetRoom():GetCenterPos() - Vector(0, 120), Vector.Zero, nil)
+        bg.DepthOffset = -1000
+        bg:GetSprite():ReplaceSpritesheet(0, "gfx/grid/tgb_rocks_start.png")
+        bg:GetSprite():LoadGraphics()
+
+        local bg2 = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.BACKGROUND, 0, bg.Position + Vector(0,440), Vector.Zero, nil)
+        bg2.DepthOffset = -1000
+        bg.Child = bg2
+
+        spawnedBgNum = 2
+    end
+end
+
+
 local function UpdateFalling()
     MinigameTimers.FallingTimer = MinigameTimers.FallingTimer - 1
 
@@ -570,7 +587,9 @@ end
 
 
 function the_ground_below:OnUpdate()
-    if CurrentMinigameState == MinigameState.FALLING then
+    if CurrentMinigameState == MinigameState.INTRO then
+        UpdateIntro()
+    elseif CurrentMinigameState == MinigameState.FALLING then
         UpdateFalling()
     elseif CurrentMinigameState == MinigameState.ATTACK then
         if CurrentAttack == MinigameAttack.FLIES then
@@ -581,10 +600,18 @@ end
 the_ground_below.callbacks[ModCallbacks.MC_POST_UPDATE] = the_ground_below.OnUpdate
 
 
+local function RenderTransition()
+    if CurrentMinigameState ~= MinigameState.INTRO then return end
+
+    TransitionScreen:Play("Idle", true)
+    TransitionScreen:Render(Vector(Isaac.GetScreenWidth() / 2, Isaac.GetScreenHeight() / 2), Vector.Zero, Vector.Zero)
+end
+
+
 function the_ground_below:OnRender()
     -- RenderUI()
 
-    -- RenderWaveTransition()
+    RenderTransition()
 
     -- RenderFadeOut()
 
