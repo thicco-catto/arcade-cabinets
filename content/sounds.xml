@@ -166,6 +166,23 @@
         <sample weight="1" path="night light/spooky transition.wav"/>
     </sound>
 
+    <!--The ground below-->
+    <sound name="tgb intro">
+        <sample weight="1" path="the ground below/intro.wav"/>
+    </sound>
+
+    <sound name="tgb buzz">
+        <sample weight="1" path="the ground below/buzz.wav"/>
+    </sound>
+
+    <sound name="tgb cough">
+        <sample weight="1" path="the ground below/cough.wav"/>
+    </sound>
+
+    <sound name="tgb shoot">
+        <sample weight="1" path="the ground below/shoot.wav"/>
+    </sound>
+
     <!--Too underground-->
     <sound name="tug intro">
         <sample weight="1" path="too underground/intro.wav"/>

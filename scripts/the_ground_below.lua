@@ -21,7 +21,11 @@ the_ground_below.startingItems = {}
 
 -- Sounds
 local MinigameSounds = {
+    INTRO = Isaac.GetSoundIdByName("tgb intro"),
     PLAYER_HIT = Isaac.GetSoundIdByName("bsw player hit"),
+    BUZZ = Isaac.GetSoundIdByName("tgb buzz"),
+    COUGH = Isaac.GetSoundIdByName("tgb cough"),
+    SHOOT = Isaac.GetSoundIdByName("tgb shoot"),
 
     WIN = Isaac.GetSoundIdByName("arcade cabinet win"),
     LOSE = Isaac.GetSoundIdByName("arcade cabinet lose")
@@ -334,6 +338,8 @@ local function UpdateHorf(effect)
         params.Spread = 1
         dummy:ToNPC():FireProjectiles(spawningPos, spawningSpeed, 0, params)
         dummy:Remove()
+
+        SFXManager:Play(MinigameSounds.SHOOT)
     end
 
     if effect:GetSprite():IsFinished("Shoot") then
@@ -377,6 +383,8 @@ local function UpdateKeeper(effect)
         params.Spread = 1
         dummy:ToNPC():FireProjectiles(spawningPos, spawningSpeed, 2, params)
         dummy:Remove()
+
+        SFXManager:Play(MinigameSounds.SHOOT)
     end
 
     if effect:GetSprite():IsFinished("Shoot") then
@@ -395,6 +403,10 @@ end
 
 
 local function UpdateFly(effect)
+    if not SFXManager:IsPlaying(MinigameSounds.BUZZ) then
+        SFXManager:Play(MinigameSounds.BUZZ)
+    end
+
     if effect:GetData().TargetPosition then
         if effect.Position.X <= effect:GetData().TargetPosition then
             effect.Velocity = Vector.Zero
@@ -456,6 +468,8 @@ local function UpdateDuke(effect)
                 end
             end
         end
+
+        SFXManager:Play(MinigameSounds.COUGH)
     end
 
     if effect:GetSprite():IsFinished("Shoot") then
