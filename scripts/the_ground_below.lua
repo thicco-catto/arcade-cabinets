@@ -26,6 +26,7 @@ local MinigameSounds = {
     BUZZ = Isaac.GetSoundIdByName("tgb buzz"),
     COUGH = Isaac.GetSoundIdByName("tgb cough"),
     SHOOT = Isaac.GetSoundIdByName("tgb shoot"),
+    SPLAT = Isaac.GetSoundIdByName("tgb splat"),
 
     WIN = Isaac.GetSoundIdByName("arcade cabinet win"),
     LOSE = Isaac.GetSoundIdByName("arcade cabinet lose")
@@ -102,12 +103,20 @@ local MinigameConstants = {
     --Duke of flies attack
     DUKE_SPAWNING_POS = Vector(550, 540),
     DUKE_TARGET_POS = Vector(610, 400),
-    DUKE_DESPAWN = Vector(700, 350),
+    DUKE_DESPAWN = Vector(900, 200),
     DUKE_VELOCITY = 3,
-    DUKE_SPAWN_FLY_COOLDOWN = 110,
+    DUKE_SPAWN_FLY_COOLDOWN = 80,
     DUKE_NUM_FLY_ROUNDS = 3,
     DUKE_FLY_SPAWN_OFFSET = 10,
     DUKE_FLY_VELOCITY = 7,
+
+    --Ending cutscene
+    PLAYER_FALL_VELOCITY = 10,
+    PLAYER_Y_DESPAWN = 600,
+    CUTSCENE_PLAYER_Y_SPAWN = 0,
+    CUTSCENE_PLAYER_Y_SPLAT = 320,
+    FLOOR_Y_SPAWN = 280,
+    MAX_SPLAT_FRAMES = 30,
 }
 
 -- Timers
@@ -124,7 +133,7 @@ local MinigameState = {
     INTRO = 1,
     FALLING = 2,
     ATTACK = 3,
-    BG_TRANSITION = 4,
+    SPLATTING = 4,
 
     LOSING = 5,
     WINNING = 6,
@@ -205,6 +214,23 @@ local function FinishAttack()
     MinigameTimers.FallingTimer = MinigameConstants.MAX_FALLING_TIMER_FRAMES
 
     if CurrentAttack == MinigameAttack.DUKE_OF_FLIES then
+        if CurrentChapter > #MinigameConstants.NUM_WAVES_PER_CHAPTER then
+            for _, bg in ipairs(Isaac.FindByType(EntityType.ENTITY_EFFECT, MinigameEntityVariants.BACKGROUND)) do
+                bg.Velocity = Vector.Zero
+            end
+
+            local playerNum = game:GetNumPlayers()
+            for i = 0, playerNum - 1, 1 do
+                local player = game:GetPlayer(i)
+                player:GetData().FakePlayer.Velocity = Vector(0, MinigameConstants.PLAYER_FALL_VELOCITY)
+                player.Velocity = Vector.Zero
+                player.ControlsEnabled = false
+            end
+
+            CurrentMinigameState = MinigameState.SPLATTING
+            return
+        end
+
         nextBgChange = spawnedBgNum + 1
 
         if currentBgType == "rocks" then
@@ -351,6 +377,8 @@ end
 
 
 local function UpdateBackground(effect)
+    if CurrentMinigameState == MinigameState.SPLATTING or CurrentMinigameState == MinigameState.WINNING then return end
+
     effect.Velocity = Vector(0, -MinigameConstants.BG_SCROLLING_SPEED)
 
     if effect.Position.Y < (game:GetRoom():GetCenterPos() - Vector(0, MinigameConstants.BG_TO_SPAWN_THRESHOLD)).Y then
@@ -526,6 +554,24 @@ local function UpdateDuke(effect)
 end
 
 
+local function UpdateCutscenePlayer(effect)
+    if effect.Position.Y > MinigameConstants.CUTSCENE_PLAYER_Y_SPLAT and not effect:GetData().SplatFrame then
+        SFXManager:Play(MinigameSounds.SPLAT)
+        effect.Velocity = Vector.Zero
+        effect:GetSprite():Play("Splat", true)
+        effect:GetData().SplatFrame = game:GetFrameCount()
+    elseif effect:GetData().SplatFrame then
+        if game:GetFrameCount() - effect:GetData().SplatFrame == MinigameConstants.MAX_SPLAT_FRAMES then
+            effect:GetSprite():Play("Happy", true)
+
+            SFXManager:Play(MinigameSounds.WIN)
+            TransitionScreen:Play("Appear", true)
+            CurrentMinigameState = MinigameState.WINNING
+        end
+    end
+end
+
+
 function the_ground_below:OnEffectUpdate(effect)
     if effect.Variant == MinigameEntityVariants.BACKGROUND then
         UpdateBackground(effect)
@@ -537,6 +583,8 @@ function the_ground_below:OnEffectUpdate(effect)
         UpdateFly(effect)
     elseif effect.Variant == MinigameEntityVariants.DUKE then
         UpdateDuke(effect)
+    elseif effect.Variant == MinigameEntityVariants.PLAYER and effect:GetData().IsCutscenePlayer then
+        UpdateCutscenePlayer(effect)
     elseif effect.Variant == EffectVariant.BULLET_POOF then
         --Remove this there because otherwise it doesnt stop the sound lmao
         effect:Remove()
@@ -702,6 +750,35 @@ the_ground_below.callbacks[ModCallbacks.MC_POST_RENDER] = the_ground_below.OnRen
 
 
 function the_ground_below:OnPlayerUpdate(player)
+    if not player:GetData().FakePlayer then return end
+
+    if CurrentMinigameState == MinigameState.SPLATTING then
+
+        if player:GetData().FakePlayer.Position.Y > MinigameConstants.PLAYER_Y_DESPAWN then
+
+            local playerNum = game:GetNumPlayers()
+            for i = 0, playerNum - 1, 1 do
+                local player = game:GetPlayer(i)
+                player:GetData().FakePlayer:Remove()
+                player:GetData().FakePlayer = nil
+            end
+
+            local cutscenePlayer = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.PLAYER, 0, Vector(game:GetRoom():GetCenterPos().X, MinigameConstants.CUTSCENE_PLAYER_Y_SPAWN), Vector(0, MinigameConstants.PLAYER_FALL_VELOCITY), nil)
+            cutscenePlayer:GetData().IsCutscenePlayer = true
+
+            for _, bg in ipairs(Isaac.FindByType(EntityType.ENTITY_EFFECT, MinigameEntityVariants.BACKGROUND)) do
+                bg:Remove()
+            end
+
+            local floor = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.BACKGROUND, 0, Vector(game:GetRoom():GetCenterPos().X, MinigameConstants.FLOOR_Y_SPAWN), Vector.Zero, nil)
+            floor:GetSprite():ReplaceSpritesheet(0, "gfx/grid/tgb_floor.png")
+            floor:GetSprite():LoadGraphics()
+            floor.DepthOffset = -500
+        end
+
+        return
+    end
+
     player:GetData().FakePlayer.Position = player.Position + Vector(0, 1)
 
     if player:GetData().FakePlayer:GetSprite():IsFinished("Hurt") then

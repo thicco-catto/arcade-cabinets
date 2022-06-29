@@ -183,6 +183,10 @@
         <sample weight="1" path="the ground below/shoot.wav"/>
     </sound>
 
+    <sound name="tgb splat">
+        <sample weight="1" path="the ground below/splat.wav"/>
+    </sound>
+
     <!--Too underground-->
     <sound name="tug intro">
         <sample weight="1" path="too underground/intro.wav"/>
