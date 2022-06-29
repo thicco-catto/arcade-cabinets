@@ -107,7 +107,7 @@ HeartsUI:Load("gfx/bsw_hearts_ui.anm2", true)
 local RuneUse = Sprite()
 RuneUse:Load("gfx/bsw_rune_use.anm2", true)
 local TransitionScreen = Sprite()
-TransitionScreen:Load("gfx/minigame_transition.anm2")
+TransitionScreen:Load("gfx/minigame_transition.anm2", true)
 
 --Other variables
 local PlayerHP = 3

@@ -112,11 +112,11 @@ local CurrentMinigameState = MinigameStates.WAVE_TRANSITION_SCREEN
 
 --UI
 local WaveTransitionScreen = Sprite()
-WaveTransitionScreen:Load("gfx/minigame_transition.anm2")
+WaveTransitionScreen:Load("gfx/minigame_transition.anm2", true)
 local HeartsUI = Sprite()
 HeartsUI:Load("gfx/jc_hearts_ui.anm2", true)
 local ChargeBarUI = Sprite()
-ChargeBarUI:Load("gfx/jc_charge_bar.anm2")
+ChargeBarUI:Load("gfx/jc_charge_bar.anm2", true)
 ChargeBarUI.FlipX = true
 
 --Other variables
