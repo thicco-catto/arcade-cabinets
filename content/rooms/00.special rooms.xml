@@ -15211,9 +15211,9 @@
 	</room>
 	<room variant="190" name="no splash" type="18" subtype="0" shape="1" width="13" height="7" difficulty="0" weight="1.0">
 		<door exists="True" x="-1" y="3"/>
-		<door exists="True" x="6" y="-1"/>
-		<door exists="True" x="6" y="7"/>
-		<door exists="True" x="13" y="3"/>
+		<door exists="False" x="6" y="-1"/>
+		<door exists="False" x="6" y="7"/>
+		<door exists="False" x="13" y="3"/>
 	</room>
 	<room variant="200" name="the blob" type="18" subtype="0" shape="1" width="13" height="7" difficulty="0" weight="1.0">
 		<door exists="True" x="-1" y="3"/>
