@@ -52,7 +52,7 @@ local MinigameConstants = {
     HEARTS_UI_RENDER_POS = Vector(70, 40),
 
     MAX_INTRO_TIMER_FRAMES = 50,
-    MAX_I_FRAMES = 30,
+    MAX_I_FRAMES = 20,
 
     --BG system
     BG_SCROLLING_SPEED = 10,
@@ -529,6 +529,12 @@ function the_ground_below:OnEffectUpdate(effect)
         UpdateFly(effect)
     elseif effect.Variant == MinigameEntityVariants.DUKE then
         UpdateDuke(effect)
+    elseif effect.Variant == EffectVariant.BULLET_POOF then
+        --Remove this there because otherwise it doesnt stop the sound lmao
+        effect:Remove()
+        SFXManager:Stop(SoundEffect.SOUND_TEARIMPACTS)
+    elseif effect.Variant == EffectVariant.TINY_FLY then
+        effect:Remove()
     end
 end
 the_ground_below.callbacks[ModCallbacks.MC_POST_EFFECT_UPDATE] = the_ground_below.OnEffectUpdate
@@ -699,6 +705,16 @@ function the_ground_below:OnPlayerUpdate(player)
     end
 end
 the_ground_below.callbacks[ModCallbacks.MC_POST_PLAYER_UPDATE] = the_ground_below.OnPlayerUpdate
+
+
+function the_ground_below:OnEffectInit(effect)
+    if effect.Variant == EffectVariant.BULLET_POOF then
+        SFXManager:Stop(SoundEffect.SOUND_TEARIMPACTS)
+        SFXManager:Stop(SoundEffect.SOUND_SPLATTER)
+        effect.Visible = false
+    end
+end
+the_ground_below.callbacks[ModCallbacks.MC_POST_EFFECT_INIT] = the_ground_below.OnEffectInit
 
 
 function the_ground_below:OnEntityDamage(tookDamage)
