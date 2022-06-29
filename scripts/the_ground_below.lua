@@ -227,6 +227,12 @@ local function DealDamage(player)
     MinigameTimers.IFramesTimer = MinigameConstants.MAX_I_FRAMES
 
     PlayerHP = PlayerHP - 1
+
+    if PlayerHP == 0 then
+        CurrentMinigameState = MinigameState.LOSING
+        SFXManager:Play(MinigameSounds.LOSE)
+        TransitionScreen:Play("Appear", true)
+    end
 end
 
 
@@ -651,18 +657,32 @@ local function RenderTransition()
 end
 
 
+local function RenderFadeOut()
+    if CurrentMinigameState ~= MinigameState.LOSING and CurrentMinigameState ~= MinigameState.WINNING then return end
+
+    if TransitionScreen:IsFinished("Appear") then
+        if CurrentMinigameState == MinigameState.WINNING then
+            the_ground_below.result = ArcadeCabinetVariables.MinigameResult.WIN
+        else
+            the_ground_below.result = ArcadeCabinetVariables.MinigameResult.LOSE
+        end
+    end
+
+    if SFXManager:IsPlaying(MinigameSounds.WIN) then
+        TransitionScreen:SetFrame(0)
+    end
+
+    TransitionScreen:Render(Vector(Isaac.GetScreenWidth() / 2, Isaac.GetScreenHeight() / 2), Vector.Zero, Vector.Zero)
+    TransitionScreen:Update()
+end
+
+
 function the_ground_below:OnRender()
     RenderUI()
 
     RenderTransition()
 
-    -- RenderFadeOut()
-
-    -- for _, effect in ipairs(Isaac.FindByType(EntityType.ENTITY_EFFECT, MinigameEntityVariants.HORF)) do
-    --     local pos = Isaac.WorldToScreen(effect.Position)
-
-    --     Isaac.RenderText(game:GetFrameCount() - effect:GetData().SpawningFrame % MinigameConstants.HORF_SHOT_COOLDOWN, pos.X, pos.Y, 1, 1, 1, 255)
-    -- end
+    RenderFadeOut()
 end
 the_ground_below.callbacks[ModCallbacks.MC_POST_RENDER] = the_ground_below.OnRender
 
@@ -672,6 +692,10 @@ function the_ground_below:OnPlayerUpdate(player)
 
     if player:GetData().FakePlayer:GetSprite():IsFinished("Hurt") then
         player:GetData().FakePlayer:GetSprite():Play("Idle", true)
+    end
+
+    if CurrentMinigameState == MinigameState.LOSING then
+        player:GetData().FakePlayer:GetSprite():SetFrame(2)
     end
 end
 the_ground_below.callbacks[ModCallbacks.MC_POST_PLAYER_UPDATE] = the_ground_below.OnPlayerUpdate
