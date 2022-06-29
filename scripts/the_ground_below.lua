@@ -232,6 +232,14 @@ local function DealDamage(player)
         CurrentMinigameState = MinigameState.LOSING
         SFXManager:Play(MinigameSounds.LOSE)
         TransitionScreen:Play("Appear", true)
+
+        local playerNum = game:GetNumPlayers()
+        for i = 0, playerNum - 1, 1 do
+            local player = game:GetPlayer(i)
+
+            player.Velocity = Vector.Zero
+            player.ControlsEnabled = false
+        end
     end
 end
 
