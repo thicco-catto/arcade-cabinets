@@ -179,6 +179,8 @@ function the_ground_below:Init()
     CurrentMinigameState = MinigameState.INTRO
     CurrentWave = 1
     CurrentChapter = 1
+    spawnedBgNum = 0
+    nextBgChange = -10
     currentBgType = "rocks"
     the_ground_below.result = nil
 
