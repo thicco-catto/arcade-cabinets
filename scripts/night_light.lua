@@ -434,6 +434,7 @@ local function SpawnGhost(ChosenAxis)
     enemy:GetData().TargetVelocity = -spawningOffset:Normalized() * MinigameConstants.DUST_SPEED
     enemy:GetData().ShouldPlayAnimation = animationToPlay
     enemy.FlipX = isFlip
+    enemy.Visible = false
 end
 
 
@@ -693,6 +694,9 @@ end
 
 
 local function UpdateDust(entity)
+    --Make it visible after appear shit
+    entity.Visible = true
+
     if entity:GetSprite():IsFinished("Poof") then
         entity:Remove()
         return
