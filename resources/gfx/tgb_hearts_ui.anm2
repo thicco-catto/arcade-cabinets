@@ -1,5 +1,5 @@
 <AnimatedActor>
-	<Info CreatedBy="Unknown" CreatedOn="29/06/2022 17:35:05" Version="27" Fps="30"/>
+	<Info CreatedBy="Unknown" CreatedOn="29/06/2022 17:40:21" Version="28" Fps="30"/>
 	<Content>
 		<Spritesheets>
 			<Spritesheet Path="effects\the ground below\tgb_hearts.png" Id="0"/>

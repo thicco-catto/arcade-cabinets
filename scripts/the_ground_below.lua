@@ -90,6 +90,7 @@ local MinigameConstants = {
     KEEPER_TARGET_POS = Vector(550, 400),
     KEEPER_VELOCITY = 4,
     NUM_KEEPER_SHOTS = 6,
+    KEEPER_SHOT_COOLDOWN = 40,
 
     --Random flies attack
     FLY_VELOCITY = 4.5,
@@ -103,6 +104,7 @@ local MinigameConstants = {
     DUKE_TARGET_POS = Vector(610, 400),
     DUKE_DESPAWN = Vector(700, 350),
     DUKE_VELOCITY = 3,
+    DUKE_SPAWN_FLY_COOLDOWN = 110,
     DUKE_NUM_FLY_ROUNDS = 3,
     DUKE_FLY_SPAWN_OFFSET = 10,
     DUKE_FLY_VELOCITY = 7,
@@ -236,10 +238,12 @@ end
 
 
 local function StartHorfAttack()
-    Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.HORF, 0, MinigameConstants.HORF_SPAWNING_POS, Vector(0, -MinigameConstants.HORF_VELOCITY), nil)
+    local horf1 = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.HORF, 0, MinigameConstants.HORF_SPAWNING_POS, Vector(0, -MinigameConstants.HORF_VELOCITY), nil)
+    horf1:GetData().SpawningFrame = game:GetFrameCount() + 10
 
     local spawningPos2 = Vector(game:GetRoom():GetCenterPos().X - (MinigameConstants.HORF_SPAWNING_POS.X - game:GetRoom():GetCenterPos().X), MinigameConstants.HORF_SPAWNING_POS.Y)
-    Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.HORF, 0, spawningPos2, Vector(0, -MinigameConstants.HORF_VELOCITY), nil)
+    local horf2 = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.HORF, 0, spawningPos2, Vector(0, -MinigameConstants.HORF_VELOCITY), nil)
+    horf2:GetData().SpawningFrame = game:GetFrameCount() + 10
 end
 
 
@@ -248,6 +252,7 @@ local function StartHangingKeeperAttack()
     local rightKeeper = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.KEEPER, 0, MinigameConstants.KEEPER_SPAWNING_POS, targetVelocity, nil)
     rightKeeper:GetData().KeeperShotsFired = 0
     rightKeeper:GetData().SpawningPos = MinigameConstants.KEEPER_SPAWNING_POS
+    rightKeeper:GetData().SpawningFrame = game:GetFrameCount() + 30
 
     local spawningPos2 = Vector(game:GetRoom():GetCenterPos().X - (MinigameConstants.KEEPER_SPAWNING_POS.X - game:GetRoom():GetCenterPos().X), MinigameConstants.KEEPER_SPAWNING_POS.Y)
     local targetPos2 = Vector(game:GetRoom():GetCenterPos().X - (MinigameConstants.KEEPER_TARGET_POS.X - game:GetRoom():GetCenterPos().X), MinigameConstants.KEEPER_TARGET_POS.Y)
@@ -255,6 +260,7 @@ local function StartHangingKeeperAttack()
     local leftKeeper = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.KEEPER, 0, spawningPos2, targetVelocity2, nil)
     leftKeeper:GetData().KeeperShotsFired = 0
     leftKeeper:GetData().SpawningPos = spawningPos2
+    leftKeeper:GetData().SpawningFrame = game:GetFrameCount() + 30
 end
 
 
@@ -285,6 +291,7 @@ local function StartDukeAttack()
     local dukeVelocity = (MinigameConstants.DUKE_TARGET_POS - MinigameConstants.DUKE_SPAWNING_POS):Normalized() * MinigameConstants.DUKE_VELOCITY
     local duke = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.DUKE, 0, MinigameConstants.DUKE_SPAWNING_POS, dukeVelocity, nil)
     duke:GetData().NumFlyLinesSpawned = 0
+    duke:GetData().SpawningFrame = game:GetFrameCount() - 10
 end
 
 
@@ -340,7 +347,7 @@ end
 
 
 local function UpdateHorf(effect)
-    if effect:IsFrame(MinigameConstants.HORF_SHOT_COOLDOWN, 0) and
+    if (game:GetFrameCount() - effect:GetData().SpawningFrame) % MinigameConstants.HORF_SHOT_COOLDOWN == 0 and
     math.abs(effect.Position.Y - Isaac.GetPlayer(0).Position.Y) > MinigameConstants.HORF_SAFE_DISTANCE and
     IsPositionOnScreen(effect.Position) then
         effect:GetSprite():Play("Shoot", true)
@@ -381,7 +388,8 @@ end
 
 
 local function UpdateKeeper(effect)
-    if effect.Velocity:Length() < 0.1 and effect:IsFrame(40, 0) then
+    if (game:GetFrameCount() - effect:GetData().SpawningFrame) % MinigameConstants.KEEPER_SHOT_COOLDOWN == 0 and
+     effect.Velocity:Length() < 0.1 then
         effect:GetData().KeeperShotsFired = effect:GetData().KeeperShotsFired + 1
 
         if effect:GetData().KeeperShotsFired == MinigameConstants.NUM_KEEPER_SHOTS then
@@ -458,7 +466,7 @@ end
 
 
 local function UpdateDuke(effect)
-    if effect:IsFrame(100, 0) and effect.Velocity:Length() < 0.1 then
+    if (game:GetFrameCount() - effect:GetData().SpawningFrame) % MinigameConstants.DUKE_SPAWN_FLY_COOLDOWN == 0 and effect.Velocity:Length() < 0.1 then
         if effect:GetData().NumFlyLinesSpawned == MinigameConstants.DUKE_NUM_FLY_ROUNDS then
             effect.Velocity = (MinigameConstants.DUKE_DESPAWN - effect.Position):Normalized() * MinigameConstants.DUKE_VELOCITY
         else
@@ -649,6 +657,12 @@ function the_ground_below:OnRender()
     RenderTransition()
 
     -- RenderFadeOut()
+
+    -- for _, effect in ipairs(Isaac.FindByType(EntityType.ENTITY_EFFECT, MinigameEntityVariants.HORF)) do
+    --     local pos = Isaac.WorldToScreen(effect.Position)
+
+    --     Isaac.RenderText(game:GetFrameCount() - effect:GetData().SpawningFrame % MinigameConstants.HORF_SHOT_COOLDOWN, pos.X, pos.Y, 1, 1, 1, 255)
+    -- end
 end
 the_ground_below.callbacks[ModCallbacks.MC_POST_RENDER] = the_ground_below.OnRender
 
