@@ -49,7 +49,10 @@ local MinigameEntityVariants = {
 
 -- Constants
 local MinigameConstants = {
+    HEARTS_UI_RENDER_POS = Vector(70, 40),
+
     MAX_INTRO_TIMER_FRAMES = 50,
+    MAX_I_FRAMES = 30,
 
     --BG system
     BG_SCROLLING_SPEED = 10,
@@ -110,6 +113,7 @@ local MinigameTimers = {
     IntroScreenTimer = 0,
     FallingTimer = 0,
     FlyLineToSpawnTimer = 0,
+    IFramesTimer = 0,
 }
 
 -- States
@@ -139,6 +143,9 @@ TransitionScreen:ReplaceSpritesheet(0, "gfx/effects/the ground below/tgb_intro.p
 TransitionScreen:ReplaceSpritesheet(1, "gfx/effects/the ground below/tgb_intro.png")
 TransitionScreen:LoadGraphics()
 
+local HeartsUI = Sprite()
+HeartsUI:Load("gfx/tgb_hearts_ui.anm2", true)
+
 -- Other variables
 local PlayerHP = 0
 
@@ -156,6 +163,8 @@ function the_ground_below:Init()
     -- Reset variables
     MinigameTimers.FallingTimer = MinigameConstants.MAX_FALLING_TIMER_FRAMES
     MinigameTimers.IntroScreenTimer = MinigameConstants.MAX_INTRO_TIMER_FRAMES
+    MinigameTimers.IFramesTimer = 0
+    PlayerHP = 3
     CurrentMinigameState = MinigameState.INTRO
     CurrentWave = 1
     CurrentChapter = 1
@@ -204,6 +213,18 @@ local function FinishAttack()
     end
 
     CurrentMinigameState = MinigameState.FALLING
+end
+
+
+local function DealDamage(player)
+    if MinigameTimers.IFramesTimer > 0 then return end
+
+    SFXManager:Play(MinigameSounds.PLAYER_HIT)
+    HeartsUI:Play("Flash", true)
+    player:GetData().FakePlayer:GetSprite():Play("Hurt", true)
+    MinigameTimers.IFramesTimer = MinigameConstants.MAX_I_FRAMES
+
+    PlayerHP = PlayerHP - 1
 end
 
 
@@ -347,7 +368,7 @@ local function UpdateHorf(effect)
         local player = game:GetPlayer(i)
 
         if player.Position:Distance(effect.Position) < MinigameConstants.HORF_HITBOX_RADIUS then
-            SFXManager:Play(MinigameSounds.PLAYER_HIT)
+            DealDamage(player)
         end
     end
 
@@ -430,7 +451,7 @@ local function UpdateFly(effect)
         local player = game:GetPlayer(i)
 
         if player.Position:Distance(effect.Position) < MinigameConstants.FLY_HITBOX_RADIUS then
-            SFXManager:Play(MinigameSounds.PLAYER_HIT)
+            DealDamage(player)
         end
     end
 end
@@ -587,6 +608,8 @@ end
 
 
 function the_ground_below:OnUpdate()
+    if MinigameTimers.IFramesTimer > 0 then MinigameTimers.IFramesTimer = MinigameTimers.IFramesTimer - 1 end
+
     if CurrentMinigameState == MinigameState.INTRO then
         UpdateIntro()
     elseif CurrentMinigameState == MinigameState.FALLING then
@@ -600,6 +623,18 @@ end
 the_ground_below.callbacks[ModCallbacks.MC_POST_UPDATE] = the_ground_below.OnUpdate
 
 
+local function RenderUI()
+    if not HeartsUI:IsPlaying("Flash") then
+        HeartsUI:Play("Idle", true)
+        HeartsUI:SetFrame(PlayerHP)
+    else
+        HeartsUI:Update()
+    end
+
+    HeartsUI:Render(MinigameConstants.HEARTS_UI_RENDER_POS, Vector.Zero, Vector.Zero)
+end
+
+
 local function RenderTransition()
     if CurrentMinigameState ~= MinigameState.INTRO then return end
 
@@ -609,25 +644,33 @@ end
 
 
 function the_ground_below:OnRender()
-    -- RenderUI()
+    RenderUI()
 
     RenderTransition()
 
     -- RenderFadeOut()
-
-    Isaac.RenderText(CurrentMinigameState, 50, 20, 1, 1, 1, 255)
-    Isaac.RenderText("Wave: " .. CurrentWave, 50, 30, 1, 1, 1, 255)
-    Isaac.RenderText("Chapter: " .. CurrentChapter, 50, 40, 1, 1, 1, 255)
-
-    Isaac.RenderText("Next wave: " .. MinigameTimers.FallingTimer, 50, 50, 1, 1, 1, 255)
 end
 the_ground_below.callbacks[ModCallbacks.MC_POST_RENDER] = the_ground_below.OnRender
 
 
 function the_ground_below:OnPlayerUpdate(player)
     player:GetData().FakePlayer.Position = player.Position + Vector(0, 1)
+
+    if player:GetData().FakePlayer:GetSprite():IsFinished("Hurt") then
+        player:GetData().FakePlayer:GetSprite():Play("Idle", true)
+    end
 end
 the_ground_below.callbacks[ModCallbacks.MC_POST_PLAYER_UPDATE] = the_ground_below.OnPlayerUpdate
+
+
+function the_ground_below:OnEntityDamage(tookDamage)
+    if tookDamage:ToPlayer() then
+        DealDamage(tookDamage:ToPlayer())
+
+        return false
+    end
+end
+the_ground_below.callbacks[ModCallbacks.MC_ENTITY_TAKE_DMG] = the_ground_below.OnEntityDamage
 
 
 function the_ground_below:OnInput(_, inputHook, buttonAction)

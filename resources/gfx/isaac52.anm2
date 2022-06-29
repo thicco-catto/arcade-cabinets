@@ -1,5 +1,5 @@
 <AnimatedActor>
-	<Info CreatedBy="robot" CreatedOn="21/04/2022 17:59:55" Version="141" Fps="30"/>
+	<Info CreatedBy="robot" CreatedOn="29/06/2022 17:17:17" Version="142" Fps="30"/>
 	<Content>
 		<Spritesheets>
 			<Spritesheet Path="characters\isaac_bsw.png" Id="0"/>
