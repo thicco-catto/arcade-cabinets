@@ -36,6 +36,7 @@ local MinigameEntityTypes = {
 local MinigameEntityVariants = {
     FAKE_PLAYER = Isaac.GetEntityVariantByName("fake player NL"),
     BUBBLE = Isaac.GetEntityVariantByName("bubble NS"),
+    ARROW = Isaac.GetEntityVariantByName("arrow NS"),
     BACKGROUND = Isaac.GetEntityVariantByName("background TGB"),
 
     SPIKED_MINE = Isaac.GetEntityVariantByName("spiked mine NS"),
@@ -43,6 +44,12 @@ local MinigameEntityVariants = {
 
 -- Constants
 local MinigameConstants = {
+    ARROW_SPAWNING_POS = Vector(400, 200),
+
+    --Wave stuff
+    MAX_WAVES = 3,
+    DISTANCE_NEEDED_FOR_WAVE_START = 600,
+
     --Bubble stuff
     MIN_BUBBLE_SPAWN_TIMER_FRAMES = 7,
     RANDOM_FRAMES_BUBBLE_SPAWN_TIMER = 10,
@@ -76,8 +83,19 @@ TransitionScreen:Load("gfx/minigame_transition.anm2", true)
 
 --Other Variables
 local CurrentBubbleXVelocity = 0
+local DistanceTraveled = 0
+local CurrentWave = 0
+local Arrow = nil
+
 
 function no_splash:Init()
+    --Reset variables
+    CurrentWave = 0
+    DistanceTraveled = 0
+    no_splash.result = nil
+
+    CurrentMinigameState = MinigameState.SWIMMING
+
     rng:SetSeed(game:GetSeeds():GetStartSeed(), 35)
 
     local overlay = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.BACKGROUND, 0, game:GetRoom():GetCenterPos(), Vector.Zero, nil)
@@ -90,7 +108,7 @@ function no_splash:Init()
     bg:GetSprite():Play("Idle", true)
     bg.DepthOffset = -1000
 
-    Isaac.Spawn(MinigameEntityTypes.CUSTOM_ENTITY, MinigameEntityVariants.SPIKED_MINE, 0, Vector(140, 300), Vector.Zero, nil)
+    Arrow = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.ARROW, 0, MinigameConstants.ARROW_SPAWNING_POS, Vector.Zero, nil)
 
     -- Prepare players
     local playerNum = game:GetNumPlayers()
@@ -129,20 +147,21 @@ end
 
 local function CalculateBubbleVelocity()
     if (Input.IsActionPressed(ButtonAction.ACTION_LEFT, 0) or Input.IsActionPressed(ButtonAction.ACTION_RIGHT, 0)) and not
-    (Input.IsActionPressed(ButtonAction.ACTION_LEFT, 0) and Input.IsActionPressed(ButtonAction.ACTION_RIGHT, 0)) then
+    (Input.IsActionPressed(ButtonAction.ACTION_LEFT, 0) and Input.IsActionPressed(ButtonAction.ACTION_RIGHT, 0)) and
+    CurrentMinigameState == MinigameState.SWIMMING then
         if Input.IsActionPressed(ButtonAction.ACTION_LEFT, 0) then
-            CurrentBubbleXVelocity = CurrentBubbleXVelocity - MinigameConstants.BUBBLE_X_ACCELERATION
-
-            if CurrentBubbleXVelocity < -MinigameConstants.BUBBLE_MAX_X_VELOCITY then
-                CurrentBubbleXVelocity = -MinigameConstants.BUBBLE_MAX_X_VELOCITY
-            end
-        end
-
-        if Input.IsActionPressed(ButtonAction.ACTION_RIGHT, 0) then
             CurrentBubbleXVelocity = CurrentBubbleXVelocity + MinigameConstants.BUBBLE_X_ACCELERATION
 
             if CurrentBubbleXVelocity > MinigameConstants.BUBBLE_MAX_X_VELOCITY then
                 CurrentBubbleXVelocity = MinigameConstants.BUBBLE_MAX_X_VELOCITY
+            end
+        end
+
+        if Input.IsActionPressed(ButtonAction.ACTION_RIGHT, 0) then
+            CurrentBubbleXVelocity = CurrentBubbleXVelocity - MinigameConstants.BUBBLE_X_ACCELERATION
+
+            if CurrentBubbleXVelocity < -MinigameConstants.BUBBLE_MAX_X_VELOCITY then
+                CurrentBubbleXVelocity = -MinigameConstants.BUBBLE_MAX_X_VELOCITY
             end
         end
     else
@@ -167,6 +186,13 @@ function no_splash:OnUpdate()
     SpawnBubbles()
 
     CalculateBubbleVelocity()
+
+    Arrow.Velocity = Vector(CurrentBubbleXVelocity, 0)
+    DistanceTraveled = DistanceTraveled - CurrentBubbleXVelocity
+
+    if DistanceTraveled >= MinigameConstants.DISTANCE_NEEDED_FOR_WAVE_START then
+        CurrentMinigameState = MinigameState.FIGHTING
+    end
 end
 no_splash.callbacks[ModCallbacks.MC_POST_UPDATE] = no_splash.OnUpdate
 
@@ -201,6 +227,8 @@ no_splash.callbacks[ModCallbacks.MC_POST_EFFECT_UPDATE] = no_splash.OnEffectUpda
 
 
 function no_splash:OnInput(_, inputHook, buttonAction)
+    if CurrentMinigameState ~= MinigameState.SWIMMING then return end
+
     if buttonAction == ButtonAction.ACTION_UP or buttonAction == ButtonAction.ACTION_DOWN or
      buttonAction == ButtonAction.ACTION_LEFT or buttonAction == ButtonAction.ACTION_RIGHT then
         if inputHook > InputHook.IS_ACTION_TRIGGERED then
@@ -214,6 +242,8 @@ no_splash.callbacks[ModCallbacks.MC_INPUT_ACTION] = no_splash.OnInput
 
 
 function no_splash:OnPlayerUpdate(player)
+    player:GetData().FakePlayer.Position = player.Position + Vector(0, 0.1)
+
     local fakePlayerSprite = player:GetData().FakePlayer:GetSprite()
 
     if (Input.IsActionPressed(ButtonAction.ACTION_LEFT, player.ControllerIndex) or Input.IsActionPressed(ButtonAction.ACTION_RIGHT, player.ControllerIndex)) and not
@@ -249,6 +279,18 @@ function no_splash:OnTearFire(tear)
     end
 end
 no_splash.callbacks[ModCallbacks.MC_POST_FIRE_TEAR] = no_splash.OnTearFire
+
+
+function no_splash:OnRender()
+    -- RenderUI()
+
+    -- RenderFadeOut()
+
+    -- RenderVsScreen()
+
+    Isaac.RenderText(DistanceTraveled, 50, 50, 1, 1, 1, 1)
+end
+no_splash.callbacks[ModCallbacks.MC_POST_RENDER] = no_splash.OnRender
 
 
 return no_splash
