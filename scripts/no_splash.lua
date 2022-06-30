@@ -171,6 +171,18 @@ end
 no_splash.callbacks[ModCallbacks.MC_POST_UPDATE] = no_splash.OnUpdate
 
 
+function no_splash:OnEffectInit(effect)
+    if effect.Variant == EffectVariant.TEAR_POOF_A or effect.Variant == EffectVariant.TEAR_POOF_B then
+        SFXManager:Stop(SoundEffect.SOUND_TEARIMPACTS)
+        SFXManager:Stop(SoundEffect.SOUND_SPLATTER)
+
+        effect:GetSprite():Load("gfx/ns_player_tear_splash.anm2", true)
+        effect:GetSprite():Play("Poof", true)
+    end
+end
+no_splash.callbacks[ModCallbacks.MC_POST_EFFECT_INIT] = no_splash.OnEffectInit
+
+
 local function UpdateBubble(effect)
     if effect.Position.Y < 0 then
         effect:Remove()
@@ -218,7 +230,8 @@ end
 no_splash.callbacks[ModCallbacks.MC_POST_PLAYER_UPDATE] = no_splash.OnPlayerUpdate
 
 
-function no_splash:OnNewTear(tear)
+function no_splash:OnTearFire(tear)
+    SFXManager:Stop(SoundEffect.SOUND_TEARS_FIRE)
     tear:GetSprite():Load("gfx/ns_player_tear.anm2", true)
 
     if math.abs(tear.Velocity.X) > math.abs(tear.Velocity.Y) then
@@ -235,7 +248,7 @@ function no_splash:OnNewTear(tear)
         end
     end
 end
-no_splash.callbacks[ModCallbacks.MC_POST_TEAR_INIT] = no_splash.OnNewTear
+no_splash.callbacks[ModCallbacks.MC_POST_FIRE_TEAR] = no_splash.OnTearFire
 
 
 return no_splash
