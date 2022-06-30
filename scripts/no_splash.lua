@@ -33,15 +33,23 @@ local MinigameEntityTypes = {
 }
 
 local MinigameEntityVariants = {
+    BUBBLE = Isaac.GetEntityVariantByName("bubble NS"),
     BACKGROUND = Isaac.GetEntityVariantByName("background TGB"),
 }
 
 -- Constants
 local MinigameConstants = {
+    --Bubble stuff
+    MIN_BUBBLE_SPAWN_TIMER_FRAMES = 7,
+    RANDOM_FRAMES_BUBBLE_SPAWN_TIMER = 10,
+    BUBBLE_Y_SPAWN_POSITION = 600,
+    BUBBLE_MAX_X_SPAWN_POSITION = 600,
+    BUBBLE_Y_VELOCITY = 4,
 }
 
 -- Timers
 local MinigameTimers = {
+    BubbleSpawnTimer = 0
 }
 
 -- States
@@ -57,18 +65,40 @@ local TransitionScreen = Sprite()
 TransitionScreen:Load("gfx/minigame_transition.anm2", true)
 
 function no_splash:Init()
+    rng:SetSeed(game:GetSeeds():GetStartSeed(), 35)
+
     local overlay = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.BACKGROUND, 0, game:GetRoom():GetCenterPos(), Vector.Zero, nil)
     overlay:GetSprite():Load("gfx/ns_overlay.anm2", true)
     overlay:GetSprite():Play("Idle", true)
     overlay.DepthOffset = 1000
 
     local bg = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.BACKGROUND, 0, game:GetRoom():GetCenterPos(), Vector.Zero, nil)
-    bg:GetSprite():ReplaceSpritesheet(0, "gfx/grid/ns_bg.png")
-    bg:GetSprite():LoadGraphics()
+    bg:GetSprite():Load("gfx/ns_bg.anm2", true)
+    bg:GetSprite():Play("Idle", true)
     bg.DepthOffset = -1000
 end
 
-no_splash.callbacks = {
-}
+
+local function SpawnBubbles()
+    if MinigameTimers.BubbleSpawnTimer > 0 then
+        MinigameTimers.BubbleSpawnTimer = MinigameTimers.BubbleSpawnTimer - 1
+        return
+    end
+
+    MinigameTimers.BubbleSpawnTimer = MinigameConstants.MIN_BUBBLE_SPAWN_TIMER_FRAMES + rng:RandomInt(MinigameConstants.RANDOM_FRAMES_BUBBLE_SPAWN_TIMER)
+
+    local xPosition = rng:RandomInt(MinigameConstants.BUBBLE_MAX_X_SPAWN_POSITION)
+    local bubble = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.BUBBLE, 0, Vector(xPosition, MinigameConstants.BUBBLE_Y_SPAWN_POSITION), Vector(0, -MinigameConstants.BUBBLE_Y_VELOCITY), nil)
+    local bubbleSize = rng:RandomInt(3) + 1
+    bubble:GetSprite():Play("Idle" .. bubbleSize, true)
+    bubble.DepthOffset = -500
+end
+
+
+function no_splash:OnUpdate()
+    SpawnBubbles()
+end
+no_splash.callbacks[ModCallbacks.MC_POST_UPDATE] = no_splash.OnUpdate
+
 
 return no_splash
