@@ -33,6 +33,7 @@ local MinigameEntityTypes = {
 }
 
 local MinigameEntityVariants = {
+    FAKE_PLAYER = Isaac.GetEntityVariantByName("fake player NL"),
     BUBBLE = Isaac.GetEntityVariantByName("bubble NS"),
     BACKGROUND = Isaac.GetEntityVariantByName("background TGB"),
 }
@@ -44,7 +45,8 @@ local MinigameConstants = {
     RANDOM_FRAMES_BUBBLE_SPAWN_TIMER = 10,
     BUBBLE_Y_SPAWN_POSITION = 500,
     BUBBLE_MAX_X_SPAWN_POSITION = 600,
-    BUBBLE_Y_VELOCITY = 4,
+    BUBBLE_Y_VELOCITY = 2.5,
+    BUBBLE_Y_VELOCITY_RANDOM_OFFSET = 1,
     BUBBLE_X_ACCELERATION = 0.1,
     BUBBLE_MAX_X_VELOCITY = 2
 }
@@ -86,12 +88,17 @@ function no_splash:Init()
         local playerNum = game:GetNumPlayers()
         for i = 0, playerNum - 1, 1 do
             local player = game:GetPlayer(i)
-    
+
             for _, item in ipairs(no_splash.startingItems) do
                 player:AddCollectible(item, 0, false)
             end
-    
+
             player.Position = game:GetRoom():GetCenterPos()
+            player.Visible = false
+
+            local fakePlayer = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.FAKE_PLAYER, 0, player.Position + Vector(0, 0.1), Vector.Zero, nil)
+            fakePlayer:GetSprite():Load("gfx/ns_player.anm2", true)
+            player:GetData().FakePlayer = fakePlayer
         end
 end
 
@@ -105,7 +112,7 @@ local function SpawnBubbles()
     MinigameTimers.BubbleSpawnTimer = MinigameConstants.MIN_BUBBLE_SPAWN_TIMER_FRAMES + rng:RandomInt(MinigameConstants.RANDOM_FRAMES_BUBBLE_SPAWN_TIMER)
 
     local xPosition = rng:RandomInt(MinigameConstants.BUBBLE_MAX_X_SPAWN_POSITION)
-    local bubble = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.BUBBLE, 0, Vector(xPosition, MinigameConstants.BUBBLE_Y_SPAWN_POSITION), Vector(0, -MinigameConstants.BUBBLE_Y_VELOCITY), nil)
+    local bubble = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.BUBBLE, 0, Vector(xPosition, MinigameConstants.BUBBLE_Y_SPAWN_POSITION), Vector(0, -MinigameConstants.BUBBLE_Y_VELOCITY - rng:RandomFloat() * MinigameConstants.BUBBLE_Y_VELOCITY_RANDOM_OFFSET), nil)
     local bubbleSize = rng:RandomInt(3) + 1
     bubble:GetSprite():Play("Idle" .. bubbleSize, true)
     bubble.DepthOffset = -500
@@ -186,6 +193,22 @@ function no_splash:OnInput(_, inputHook, buttonAction)
     end
 end
 no_splash.callbacks[ModCallbacks.MC_INPUT_ACTION] = no_splash.OnInput
+
+function no_splash:OnPlayerUpdate(player)
+    local fakePlayerSprite = player:GetData().FakePlayer:GetSprite()
+
+    if (Input.IsActionPressed(ButtonAction.ACTION_LEFT, player.ControllerIndex) or Input.IsActionPressed(ButtonAction.ACTION_RIGHT, player.ControllerIndex)) and not
+    (Input.IsActionPressed(ButtonAction.ACTION_LEFT, player.ControllerIndex) and Input.IsActionPressed(ButtonAction.ACTION_RIGHT, player.ControllerIndex)) then
+        if Input.IsActionPressed(ButtonAction.ACTION_LEFT, player.ControllerIndex) and not fakePlayerSprite:IsPlaying("Left") then
+            fakePlayerSprite:Play("Left", true)
+        elseif Input.IsActionPressed(ButtonAction.ACTION_RIGHT, player.ControllerIndex) and not fakePlayerSprite:IsPlaying("Right") then
+            fakePlayerSprite:Play("Right", true)
+        end
+    else
+        fakePlayerSprite:Play("Idle", true)
+    end
+end
+no_splash.callbacks[ModCallbacks.MC_POST_PLAYER_UPDATE] = no_splash.OnPlayerUpdate
 
 
 return no_splash
