@@ -39,6 +39,7 @@ local MinigameEntityVariants = {
     ARROW = Isaac.GetEntityVariantByName("arrow NS"),
     BACKGROUND = Isaac.GetEntityVariantByName("background TGB"),
 
+    FISH = Isaac.GetEntityVariantByName("fish NS"),
     SPIKED_MINE = Isaac.GetEntityVariantByName("spiked mine NS"),
 }
 
@@ -58,7 +59,11 @@ local MinigameConstants = {
     BUBBLE_Y_VELOCITY = 2.5,
     BUBBLE_Y_VELOCITY_RANDOM_OFFSET = 1,
     BUBBLE_X_ACCELERATION = 0.1,
-    BUBBLE_MAX_X_VELOCITY = 2
+    BUBBLE_MAX_X_VELOCITY = 2,
+
+    --Fish stuff
+    FISH_VELOCITY = 3.5,
+    BONE_FISH_VELOCITY = 5
 }
 
 -- Timers
@@ -224,6 +229,44 @@ function no_splash:OnEffectUpdate(effect)
     end
 end
 no_splash.callbacks[ModCallbacks.MC_POST_EFFECT_UPDATE] = no_splash.OnEffectUpdate
+
+
+local function UpdateFish(fish)
+    if not fish:GetSprite():IsPlaying("Idle") then
+        fish:GetSprite():Play("Idle")
+    end
+
+    local velocity = MinigameConstants.FISH_VELOCITY
+
+    --Its bone
+    if fish.SubType == 1 then velocity = MinigameConstants.BONE_FISH_VELOCITY end
+
+    fish.Velocity = (Isaac.GetPlayer(0).Position - fish.Position):Normalized() * velocity
+    fish.FlipX = Isaac.GetPlayer(0).Position.X > fish.Position.X
+end
+
+
+function no_splash:OnNPCUpdate(entity)
+    if entity.Variant == MinigameEntityVariants.FISH then
+        UpdateFish(entity)
+    end
+end
+no_splash.callbacks[ModCallbacks.MC_NPC_UPDATE] = no_splash.OnNPCUpdate
+
+
+function no_splash:OnEntityDamage(tookDamage, damageAmount, _, _)
+    if tookDamage:ToPlayer() then
+        return false
+    elseif tookDamage.Type == MinigameEntityTypes.CUSTOM_ENTITY and tookDamage.Variant == MinigameEntityVariants.FISH and tookDamage.SubType == 0 and 
+    damageAmount >= tookDamage.HitPoints then
+        local boneFish = Isaac.Spawn(MinigameEntityTypes.CUSTOM_ENTITY, MinigameEntityVariants.FISH, 1, tookDamage.Position, Vector.Zero, nil)
+        boneFish:GetSprite():ReplaceSpritesheet(0, "gfx/enemies/ns_bone_fish.png")
+        boneFish:GetSprite():LoadGraphics()
+        boneFish:ClearEntityFlags(EntityFlag.FLAG_APPEAR)
+        tookDamage:Remove()
+    end
+end
+no_splash.callbacks[ModCallbacks.MC_ENTITY_TAKE_DMG] = no_splash.OnEntityDamage
 
 
 function no_splash:OnInput(_, inputHook, buttonAction)

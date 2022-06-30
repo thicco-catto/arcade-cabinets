@@ -176,7 +176,15 @@
         <gibs amount="0" blood="0" bone="0" eye="0" gut="0" large="0" />
     </entity>
 
-    <entity anm2path="ns_ball.anm2" name="spiked mine NS" id="997" variant="11" baseHP="840" boss="0" champion="0" collisionDamage="0" collisionMass="10" collisionRadius="50" friction="1" gridCollision="walls" numGridCollisionPoints="12" shadowSize="0" stageHP="0">
+    <entity anm2path="ns_ball.anm2" name="spiked mine NS" id="997" variant="11" baseHP="840" boss="0" champion="0" collisionDamage="0" collisionMass="10" collisionRadius="50" friction="1" gridCollision="none" numGridCollisionPoints="12" shadowSize="0" stageHP="0">
+        <gibs amount="0" blood="0" bone="0" dust="0" eye="0" gut="0" large="0"/>
+    </entity>
+
+    <entity anm2path="ns_fish.anm2" name="fish NS" id="997" variant="12" baseHP="12" boss="0" champion="0" collisionDamage="0" collisionMass="10" collisionRadius="15" friction="1" gridCollision="none" numGridCollisionPoints="12" shadowSize="0" stageHP="0">
+        <gibs amount="0" blood="0" bone="0" dust="0" eye="0" gut="0" large="0"/>
+    </entity>
+
+    <entity anm2path="ns_fish.anm2" name="bone fish NS" id="997" variant="12" subtype="1" baseHP="12" boss="0" champion="0" collisionDamage="0" collisionMass="10" collisionRadius="15" friction="1" gridCollision="none" numGridCollisionPoints="12" shadowSize="0" stageHP="0">
         <gibs amount="0" blood="0" bone="0" dust="0" eye="0" gut="0" large="0"/>
     </entity>
 
