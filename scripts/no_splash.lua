@@ -62,6 +62,9 @@ local MinigameTimers = {
 -- States
 local CurrentMinigameState = 0
 local MinigameState = {
+    INTRO = 1,
+    SWIMMING = 2,
+    FIGHTING = 3,
 
     LOSING = 5,
     WINNING = 6,
@@ -187,9 +190,7 @@ no_splash.callbacks[ModCallbacks.MC_POST_EFFECT_UPDATE] = no_splash.OnEffectUpda
 
 function no_splash:OnInput(_, inputHook, buttonAction)
     if buttonAction == ButtonAction.ACTION_UP or buttonAction == ButtonAction.ACTION_DOWN or
-     buttonAction == ButtonAction.ACTION_LEFT or buttonAction == ButtonAction.ACTION_RIGHT or
-     buttonAction == ButtonAction.ACTION_SHOOTLEFT or buttonAction == ButtonAction.ACTION_SHOOTRIGHT or
-     buttonAction == ButtonAction.ACTION_SHOOTUP or buttonAction == ButtonAction.ACTION_SHOOTDOWN then
+     buttonAction == ButtonAction.ACTION_LEFT or buttonAction == ButtonAction.ACTION_RIGHT then
         if inputHook > InputHook.IS_ACTION_TRIGGERED then
             return 0
         else
@@ -198,6 +199,7 @@ function no_splash:OnInput(_, inputHook, buttonAction)
     end
 end
 no_splash.callbacks[ModCallbacks.MC_INPUT_ACTION] = no_splash.OnInput
+
 
 function no_splash:OnPlayerUpdate(player)
     local fakePlayerSprite = player:GetData().FakePlayer:GetSprite()
@@ -214,6 +216,26 @@ function no_splash:OnPlayerUpdate(player)
     end
 end
 no_splash.callbacks[ModCallbacks.MC_POST_PLAYER_UPDATE] = no_splash.OnPlayerUpdate
+
+
+function no_splash:OnNewTear(tear)
+    tear:GetSprite():Load("gfx/ns_player_tear.anm2", true)
+
+    if math.abs(tear.Velocity.X) > math.abs(tear.Velocity.Y) then
+        if tear.Velocity.X > 0 then
+            tear:GetSprite():Play("Right", true)
+        else
+            tear:GetSprite():Play("Left", true)
+        end
+    else
+        if tear.Velocity.Y > 0 then
+            tear:GetSprite():Play("Down", true)
+        else
+            tear:GetSprite():Play("Up", true)
+        end
+    end
+end
+no_splash.callbacks[ModCallbacks.MC_POST_TEAR_INIT] = no_splash.OnNewTear
 
 
 return no_splash
