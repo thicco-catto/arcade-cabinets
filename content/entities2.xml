@@ -172,6 +172,10 @@
         <gibs amount="0" blood="0" bone="0" eye="0" gut="0" large="0" />
     </entity>
 
+    <entity anm2path="ns_ball.anm2" name="spiked mine NS" id="997" variant="11" baseHP="840" boss="0" champion="0" collisionDamage="0" collisionMass="10" collisionRadius="50" friction="1" gridCollision="walls" numGridCollisionPoints="12" shadowSize="0" stageHP="0">
+        <gibs amount="0" blood="0" bone="0" dust="0" eye="0" gut="0" large="0"/>
+    </entity>
+
     <!--The ground below-->
     <entity anm2path="tgb_background.anm2" subtype="0" name="background TGB" variant="" id="1000" baseHP="0" boss="0" champion="0" collisionDamage="0" collisionMass="0" collisionRadius="0" friction="1" numGridCollisionPoints="0" shadowSize="0" shutdoors="false" stageHP="0" gridCollision="none"> 
         <gibs amount="0" blood="0" bone="0" eye="0" gut="0" large="0" />

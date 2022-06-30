@@ -1,5 +1,5 @@
 <AnimatedActor>
-	<Info CreatedBy="Unknown" CreatedOn="23/05/2022 22:04:37" Version="16" Fps="30"/>
+	<Info CreatedBy="Unknown" CreatedOn="30/06/2022 18:19:36" Version="17" Fps="30"/>
 	<Content>
 		<Spritesheets>
 			<Spritesheet Path="enemies\tgb_keeper.png" Id="0"/>

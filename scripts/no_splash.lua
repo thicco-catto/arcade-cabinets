@@ -30,12 +30,15 @@ local MinigameMusic = Isaac.GetMusicIdByName("bsw black beat wielder")
 
 -- Entities
 local MinigameEntityTypes = {
+    CUSTOM_ENTITY = Isaac.GetEntityTypeByName("spiked mine NS")
 }
 
 local MinigameEntityVariants = {
     FAKE_PLAYER = Isaac.GetEntityVariantByName("fake player NL"),
     BUBBLE = Isaac.GetEntityVariantByName("bubble NS"),
     BACKGROUND = Isaac.GetEntityVariantByName("background TGB"),
+
+    SPIKED_MINE = Isaac.GetEntityVariantByName("spiked mine NS"),
 }
 
 -- Constants
@@ -84,22 +87,24 @@ function no_splash:Init()
     bg:GetSprite():Play("Idle", true)
     bg.DepthOffset = -1000
 
-        -- Prepare players
-        local playerNum = game:GetNumPlayers()
-        for i = 0, playerNum - 1, 1 do
-            local player = game:GetPlayer(i)
+    Isaac.Spawn(MinigameEntityTypes.CUSTOM_ENTITY, MinigameEntityVariants.SPIKED_MINE, 0, Vector(140, 300), Vector.Zero, nil)
 
-            for _, item in ipairs(no_splash.startingItems) do
-                player:AddCollectible(item, 0, false)
-            end
+    -- Prepare players
+    local playerNum = game:GetNumPlayers()
+    for i = 0, playerNum - 1, 1 do
+        local player = game:GetPlayer(i)
 
-            player.Position = game:GetRoom():GetCenterPos()
-            player.Visible = false
-
-            local fakePlayer = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.FAKE_PLAYER, 0, player.Position + Vector(0, 0.1), Vector.Zero, nil)
-            fakePlayer:GetSprite():Load("gfx/ns_player.anm2", true)
-            player:GetData().FakePlayer = fakePlayer
+        for _, item in ipairs(no_splash.startingItems) do
+            player:AddCollectible(item, 0, false)
         end
+
+        player.Position = game:GetRoom():GetCenterPos()
+        player.Visible = false
+
+        local fakePlayer = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.FAKE_PLAYER, 0, player.Position + Vector(0, 0.1), Vector.Zero, nil)
+        fakePlayer:GetSprite():Load("gfx/ns_player.anm2", true)
+        player:GetData().FakePlayer = fakePlayer
+    end
 end
 
 
