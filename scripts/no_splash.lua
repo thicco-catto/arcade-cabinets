@@ -42,9 +42,11 @@ local MinigameConstants = {
     --Bubble stuff
     MIN_BUBBLE_SPAWN_TIMER_FRAMES = 7,
     RANDOM_FRAMES_BUBBLE_SPAWN_TIMER = 10,
-    BUBBLE_Y_SPAWN_POSITION = 600,
+    BUBBLE_Y_SPAWN_POSITION = 500,
     BUBBLE_MAX_X_SPAWN_POSITION = 600,
     BUBBLE_Y_VELOCITY = 4,
+    BUBBLE_X_ACCELERATION = 0.1,
+    BUBBLE_MAX_X_VELOCITY = 2
 }
 
 -- Timers
@@ -64,6 +66,9 @@ local MinigameState = {
 local TransitionScreen = Sprite()
 TransitionScreen:Load("gfx/minigame_transition.anm2", true)
 
+--Other Variables
+local CurrentBubbleXVelocity = 0
+
 function no_splash:Init()
     rng:SetSeed(game:GetSeeds():GetStartSeed(), 35)
 
@@ -76,6 +81,18 @@ function no_splash:Init()
     bg:GetSprite():Load("gfx/ns_bg.anm2", true)
     bg:GetSprite():Play("Idle", true)
     bg.DepthOffset = -1000
+
+        -- Prepare players
+        local playerNum = game:GetNumPlayers()
+        for i = 0, playerNum - 1, 1 do
+            local player = game:GetPlayer(i)
+    
+            for _, item in ipairs(no_splash.startingItems) do
+                player:AddCollectible(item, 0, false)
+            end
+    
+            player.Position = game:GetRoom():GetCenterPos()
+        end
 end
 
 
@@ -95,10 +112,80 @@ local function SpawnBubbles()
 end
 
 
+local function CalculateBubbleVelocity()
+    if (Input.IsActionPressed(ButtonAction.ACTION_LEFT, 0) or Input.IsActionPressed(ButtonAction.ACTION_RIGHT, 0)) and not
+    (Input.IsActionPressed(ButtonAction.ACTION_LEFT, 0) and Input.IsActionPressed(ButtonAction.ACTION_RIGHT, 0)) then
+        if Input.IsActionPressed(ButtonAction.ACTION_LEFT, 0) then
+            CurrentBubbleXVelocity = CurrentBubbleXVelocity - MinigameConstants.BUBBLE_X_ACCELERATION
+
+            if CurrentBubbleXVelocity < -MinigameConstants.BUBBLE_MAX_X_VELOCITY then
+                CurrentBubbleXVelocity = -MinigameConstants.BUBBLE_MAX_X_VELOCITY
+            end
+        end
+
+        if Input.IsActionPressed(ButtonAction.ACTION_RIGHT, 0) then
+            CurrentBubbleXVelocity = CurrentBubbleXVelocity + MinigameConstants.BUBBLE_X_ACCELERATION
+
+            if CurrentBubbleXVelocity > MinigameConstants.BUBBLE_MAX_X_VELOCITY then
+                CurrentBubbleXVelocity = MinigameConstants.BUBBLE_MAX_X_VELOCITY
+            end
+        end
+    else
+        if CurrentBubbleXVelocity > 0 then
+            CurrentBubbleXVelocity = CurrentBubbleXVelocity - MinigameConstants.BUBBLE_X_ACCELERATION
+
+            if CurrentBubbleXVelocity < 0 then
+                CurrentBubbleXVelocity = 0
+            end
+        elseif CurrentBubbleXVelocity < 0 then
+            CurrentBubbleXVelocity = CurrentBubbleXVelocity + MinigameConstants.BUBBLE_X_ACCELERATION
+
+            if CurrentBubbleXVelocity > 0 then
+                CurrentBubbleXVelocity = 0
+            end
+        end
+    end
+end
+
+
 function no_splash:OnUpdate()
     SpawnBubbles()
+
+    CalculateBubbleVelocity()
 end
 no_splash.callbacks[ModCallbacks.MC_POST_UPDATE] = no_splash.OnUpdate
+
+
+local function UpdateBubble(effect)
+    if effect.Position.Y < 0 then
+        effect:Remove()
+    end
+
+    effect.Velocity = Vector(CurrentBubbleXVelocity, effect.Velocity.Y)
+end
+
+
+function no_splash:OnEffectUpdate(effect)
+    if effect.Variant == MinigameEntityVariants.BUBBLE then
+        UpdateBubble(effect)
+    end
+end
+no_splash.callbacks[ModCallbacks.MC_POST_EFFECT_UPDATE] = no_splash.OnEffectUpdate
+
+
+function no_splash:OnInput(_, inputHook, buttonAction)
+    if buttonAction == ButtonAction.ACTION_UP or buttonAction == ButtonAction.ACTION_DOWN or
+     buttonAction == ButtonAction.ACTION_LEFT or buttonAction == ButtonAction.ACTION_RIGHT or
+     buttonAction == ButtonAction.ACTION_SHOOTLEFT or buttonAction == ButtonAction.ACTION_SHOOTRIGHT or
+     buttonAction == ButtonAction.ACTION_SHOOTUP or buttonAction == ButtonAction.ACTION_SHOOTDOWN then
+        if inputHook > InputHook.IS_ACTION_TRIGGERED then
+            return 0
+        else
+            return false
+        end
+    end
+end
+no_splash.callbacks[ModCallbacks.MC_INPUT_ACTION] = no_splash.OnInput
 
 
 return no_splash
