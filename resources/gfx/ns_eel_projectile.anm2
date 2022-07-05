@@ -1,5 +1,5 @@
 <AnimatedActor>
-	<Info CreatedBy="Unknown" CreatedOn="05/07/2022 19:38:21" Version="31" Fps="15"/>
+	<Info CreatedBy="Unknown" CreatedOn="05/07/2022 20:29:33" Version="32" Fps="15"/>
 	<Content>
 		<Spritesheets>
 			<Spritesheet Path="effects\no splash\ns_eel_projectiles.png" Id="0"/>

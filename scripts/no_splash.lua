@@ -40,6 +40,7 @@ local MinigameEntityVariants = {
     BACKGROUND = Isaac.GetEntityVariantByName("background TGB"),
 
     FISH = Isaac.GetEntityVariantByName("fish NS"),
+    CUNT = Isaac.GetEntityVariantByName("cunt NS"),
     EEL = Isaac.GetEntityVariantByName("eel NS"),
     SPIKED_MINE = Isaac.GetEntityVariantByName("spiked mine NS"),
 }
@@ -65,6 +66,9 @@ local MinigameConstants = {
     --Fish stuff
     FISH_VELOCITY = 3.5,
     BONE_FISH_VELOCITY = 5,
+
+    --Cunt stuff
+    CUNT_VELOCITY = 4,
 
     --Eel stuff
     EEL_VELOCITY = 3,
@@ -254,6 +258,16 @@ local function UpdateFish(fish)
 end
 
 
+local function UpdateCunt(cunt)
+    if not cunt:GetSprite():IsPlaying("Idle") then
+        cunt:GetSprite():Play("Idle")
+    end
+
+    cunt.Velocity = (Isaac.GetPlayer(0).Position - cunt.Position):Normalized() * MinigameConstants.CUNT_VELOCITY
+    cunt.FlipX = Isaac.GetPlayer(0).Position.X > cunt.Position.X
+end
+
+
 local function UpdateEel(eel)
     if eel:GetSprite():IsPlaying("Idle") then
         eel.FlipX = Isaac.GetPlayer(0).Position.X > eel.Position.X
@@ -285,6 +299,8 @@ end
 function no_splash:OnNPCUpdate(entity)
     if entity.Variant == MinigameEntityVariants.FISH then
         UpdateFish(entity)
+    elseif entity.Variant == MinigameEntityVariants.CUNT then
+        UpdateCunt(entity)
     elseif entity.Variant == MinigameEntityVariants.EEL then
         UpdateEel(entity)
     end
