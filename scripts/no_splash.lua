@@ -40,6 +40,7 @@ local MinigameEntityVariants = {
     BACKGROUND = Isaac.GetEntityVariantByName("background TGB"),
 
     FISH = Isaac.GetEntityVariantByName("fish NS"),
+    EEL = Isaac.GetEntityVariantByName("eel NS"),
     SPIKED_MINE = Isaac.GetEntityVariantByName("spiked mine NS"),
 }
 
@@ -49,7 +50,7 @@ local MinigameConstants = {
 
     --Wave stuff
     MAX_WAVES = 3,
-    DISTANCE_NEEDED_FOR_WAVE_START = 600,
+    DISTANCE_NEEDED_FOR_WAVE_START = 450,
 
     --Bubble stuff
     MIN_BUBBLE_SPAWN_TIMER_FRAMES = 7,
@@ -63,7 +64,11 @@ local MinigameConstants = {
 
     --Fish stuff
     FISH_VELOCITY = 3.5,
-    BONE_FISH_VELOCITY = 5
+    BONE_FISH_VELOCITY = 5,
+
+    --Eel stuff
+    EEL_VELOCITY = 3,
+    EEL_SHOOT_COOLDOWN = 60,
 }
 
 -- Timers
@@ -196,6 +201,7 @@ function no_splash:OnUpdate()
     DistanceTraveled = DistanceTraveled - CurrentBubbleXVelocity
 
     if DistanceTraveled >= MinigameConstants.DISTANCE_NEEDED_FOR_WAVE_START then
+        CurrentBubbleXVelocity = 0
         CurrentMinigameState = MinigameState.FIGHTING
     end
 end
@@ -232,8 +238,10 @@ no_splash.callbacks[ModCallbacks.MC_POST_EFFECT_UPDATE] = no_splash.OnEffectUpda
 
 
 local function UpdateFish(fish)
-    if not fish:GetSprite():IsPlaying("Idle") then
-        fish:GetSprite():Play("Idle")
+    if fish:GetSprite():IsPlaying("Transition") then
+        return
+    elseif fish:GetSprite():IsFinished("Transition") then
+        fish:GetSprite():Play("Idle", true)
     end
 
     local velocity = MinigameConstants.FISH_VELOCITY
@@ -246,9 +254,39 @@ local function UpdateFish(fish)
 end
 
 
+local function UpdateEel(eel)
+    if eel:GetSprite():IsPlaying("Idle") then
+        eel.FlipX = Isaac.GetPlayer(0).Position.X > eel.Position.X
+        eel.Velocity = (Isaac.GetPlayer(0).Position - eel.Position):Normalized() * MinigameConstants.EEL_VELOCITY
+    else
+        eel.Velocity = Vector.Zero
+    end
+
+    if eel:IsFrame(MinigameConstants.EEL_SHOOT_COOLDOWN, 0) then
+        eel:GetSprite():Play("Shoot", true)
+    end
+
+    if eel:GetSprite():IsEventTriggered("Shoot") then
+        local spawningPos = eel.Position + Vector(10, 0)
+        local spawningSpeed = (game:GetPlayer(0).Position - spawningPos):Normalized() * 10
+        local projectileType = 2
+        local params = ProjectileParams()
+        params.BulletFlags = ProjectileFlags.NO_WALL_COLLIDE
+        params.Spread = 1
+        eel:ToNPC():FireProjectiles(spawningPos, spawningSpeed, projectileType, params)
+    end
+
+    if eel:GetSprite():IsFinished("Shoot") then
+        eel:GetSprite():Play("Idle", true)
+    end
+end
+
+
 function no_splash:OnNPCUpdate(entity)
     if entity.Variant == MinigameEntityVariants.FISH then
         UpdateFish(entity)
+    elseif entity.Variant == MinigameEntityVariants.EEL then
+        UpdateEel(entity)
     end
 end
 no_splash.callbacks[ModCallbacks.MC_NPC_UPDATE] = no_splash.OnNPCUpdate
@@ -259,14 +297,31 @@ function no_splash:OnEntityDamage(tookDamage, damageAmount, _, _)
         return false
     elseif tookDamage.Type == MinigameEntityTypes.CUSTOM_ENTITY and tookDamage.Variant == MinigameEntityVariants.FISH and tookDamage.SubType == 0 and 
     damageAmount >= tookDamage.HitPoints then
-        local boneFish = Isaac.Spawn(MinigameEntityTypes.CUSTOM_ENTITY, MinigameEntityVariants.FISH, 1, tookDamage.Position, Vector.Zero, nil)
-        boneFish:GetSprite():ReplaceSpritesheet(0, "gfx/enemies/ns_bone_fish.png")
-        boneFish:GetSprite():LoadGraphics()
-        boneFish:ClearEntityFlags(EntityFlag.FLAG_APPEAR)
+        if tookDamage:GetSprite():IsPlaying("Transition") then return false end
+
+        local bonerFish = Isaac.Spawn(MinigameEntityTypes.CUSTOM_ENTITY, MinigameEntityVariants.FISH, 1, tookDamage.Position, Vector.Zero, nil)
+        bonerFish:GetSprite():ReplaceSpritesheet(0, "gfx/enemies/ns_bone_fish.png")
+        bonerFish:GetSprite():LoadGraphics()
+        bonerFish:GetSprite():Play("Transition", true)
+        bonerFish:ClearEntityFlags(EntityFlag.FLAG_APPEAR)
+        bonerFish:AddEntityFlags(EntityFlag.FLAG_NO_FLASH_ON_DAMAGE | EntityFlag.FLAG_NO_KNOCKBACK | EntityFlag.FLAG_NO_PHYSICS_KNOCKBACK)
+        bonerFish.FlipX = tookDamage.FlipX
+        tookDamage:Remove()
+    elseif tookDamage.Type == MinigameEntityTypes.CUSTOM_ENTITY and tookDamage.Variant == MinigameEntityVariants.EEL and
+    damageAmount >= tookDamage.HitPoints then
         tookDamage:Remove()
     end
 end
 no_splash.callbacks[ModCallbacks.MC_ENTITY_TAKE_DMG] = no_splash.OnEntityDamage
+
+
+function no_splash:OnProjectileInit(projectile)
+    if projectile.SpawnerType == MinigameEntityTypes.CUSTOM_ENTITY and projectile.SpawnerVariant == MinigameEntityVariants.EEL then
+        projectile:GetSprite():Load("gfx/ns_eel_projectile.anm2", true)
+        projectile:GetSprite():Play("Idle", true)
+    end
+end
+no_splash.callbacks[ModCallbacks.MC_POST_PROJECTILE_INIT] = no_splash.OnProjectileInit
 
 
 function no_splash:OnInput(_, inputHook, buttonAction)
