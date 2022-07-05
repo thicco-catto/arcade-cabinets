@@ -323,7 +323,15 @@ function no_splash:OnEntityDamage(tookDamage, damageAmount, _, _)
         bonerFish:AddEntityFlags(EntityFlag.FLAG_NO_FLASH_ON_DAMAGE | EntityFlag.FLAG_NO_KNOCKBACK | EntityFlag.FLAG_NO_PHYSICS_KNOCKBACK)
         bonerFish.FlipX = tookDamage.FlipX
         tookDamage:Remove()
-    elseif tookDamage.Type == MinigameEntityTypes.CUSTOM_ENTITY and tookDamage.Variant == MinigameEntityVariants.EEL and
+    elseif tookDamage.Type == MinigameEntityTypes.CUSTOM_ENTITY and tookDamage.Variant == MinigameEntityVariants.SPIKED_MINE and tookDamage.SubType == 0 and 
+    damageAmount >= tookDamage.HitPoints then
+        local params = ProjectileParams()
+        params.BulletFlags = ProjectileFlags.NO_WALL_COLLIDE
+        params.Spread = 1
+        tookDamage:ToNPC():FireProjectiles(tookDamage.Position, Vector(10, 0), 8, params)
+        tookDamage:Remove()
+    elseif tookDamage.Type == MinigameEntityTypes.CUSTOM_ENTITY and 
+    (tookDamage.Variant == MinigameEntityVariants.EEL or tookDamage.Variant == MinigameEntityVariants.CUNT) and
     damageAmount >= tookDamage.HitPoints then
         tookDamage:Remove()
     end
@@ -331,13 +339,68 @@ end
 no_splash.callbacks[ModCallbacks.MC_ENTITY_TAKE_DMG] = no_splash.OnEntityDamage
 
 
+local function SetUpSpikeProjectile(projectile)
+    local pSprite = projectile:GetSprite()
+    pSprite:Load("gfx/ns_spike_projectile.anm2", true)
+
+    local pVelocity = projectile.Velocity
+
+    if math.abs(math.abs(pVelocity.X) - math.abs(pVelocity.Y)) > 0.1 then
+        --Not diagonal :)
+        if math.abs(pVelocity.X) > math.abs(pVelocity.Y) then
+            if pVelocity.X > 0 then
+                pSprite:Play("Right", true)
+            else
+                pSprite:Play("Left", true)
+            end
+        else
+            if pVelocity.Y > 0 then
+                pSprite:Play("Down", true)
+            else
+                pSprite:Play("Up", true)
+            end
+        end
+    else
+        --Diagonal
+        if pVelocity.Y > 0 then
+            if pVelocity.X > 0 then
+                pSprite:Play("Down-Right", true)
+            else
+                pSprite:Play("Down-Left", true)
+            end
+        else
+            if pVelocity.X > 0 then
+                pSprite:Play("Up-Right", true)
+            else
+                pSprite:Play("Up-Left", true)
+            end
+        end
+    end
+end
+
+
 function no_splash:OnProjectileInit(projectile)
-    if projectile.SpawnerType == MinigameEntityTypes.CUSTOM_ENTITY and projectile.SpawnerVariant == MinigameEntityVariants.EEL then
+    if projectile.SpawnerType ~= MinigameEntityTypes.CUSTOM_ENTITY then return end
+
+    if  projectile.SpawnerVariant == MinigameEntityVariants.EEL then
         projectile:GetSprite():Load("gfx/ns_eel_projectile.anm2", true)
         projectile:GetSprite():Play("Idle", true)
+    elseif projectile.SpawnerVariant == MinigameEntityVariants.SPIKED_MINE then
+        SetUpSpikeProjectile(projectile)
     end
 end
 no_splash.callbacks[ModCallbacks.MC_POST_PROJECTILE_INIT] = no_splash.OnProjectileInit
+
+
+function no_splash:OnProjectileUpdate(projectile)
+    if projectile.Color.A < 1 then
+        projectile:SetColor(Color(1, 1, 1, 1, 0, 0, 0), 300, -1, false, false)
+    end
+
+    projectile.FallingSpeed = 0
+    projectile.FallingAccel = -0.1
+end
+no_splash.callbacks[ModCallbacks.MC_POST_PROJECTILE_UPDATE] = no_splash.OnProjectileUpdate
 
 
 function no_splash:OnInput(_, inputHook, buttonAction)
