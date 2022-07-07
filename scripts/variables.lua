@@ -36,6 +36,8 @@ ArcadeCabinetVariables.ArcadeCabinetRooms = {
     [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_TOOUNDERGROUND] = "220"
 }
 
+ArcadeCabinetVariables.ArcadeCabinetScripts = nil
+
 ArcadeCabinetVariables.GameState = {
     NOT_PLAYING = 1,
     FADE_IN = 2,
@@ -52,6 +54,7 @@ ArcadeCabinetVariables.MinigameResult = {
 }
 ArcadeCabinetVariables.CurrentMinigameResult = nil
 
+ArcadeCabinetVariables.CabinetRadius = 20
 ArcadeCabinetVariables.MinigameDoor = nil
 ArcadeCabinetVariables.CurrentMinigame = nil
 ArcadeCabinetVariables.CurrentScript = nil
@@ -59,6 +62,7 @@ ArcadeCabinetVariables.LevelCurses = nil
 ArcadeCabinetVariables.OptionsChargeBar = nil
 ArcadeCabinetVariables.OptionsFilter = nil
 ArcadeCabinetVariables.TransitionScreen = Sprite()
+ArcadeCabinetVariables.TransitionScreen:Load("gfx/minigame_transition.anm2", true)
 ArcadeCabinetVariables.TransitionFrameCount = -1
 ArcadeCabinetVariables.LastRoomCollectibles = {}
 ArcadeCabinetVariables.MAX_ID_TMTRAINER = 4294967295

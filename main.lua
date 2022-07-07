@@ -15,8 +15,6 @@ end
 
 local ArcadeCabinetVariables = loadFile("scripts/variables")
 
-ArcadeCabinetVariables.TransitionScreen:Load("gfx/minigame_transition.anm2")
-
 --Add this here so it doesn't loop infinitely
 ArcadeCabinetVariables.ArcadeCabinetScripts = {
     [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_BLACKSTONEWIELDER] = loadFile("scripts/black_stone_wielder"),
@@ -30,52 +28,55 @@ ArcadeCabinetVariables.ArcadeCabinetScripts = {
     [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_TOOUNDERGROUND] = loadFile("scripts/too_underground")
 }
 
-local function InitPlayerForMinigame(player)
-    local data = player:GetData().ArcadeCabinet
+local CabinetManagement = loadFile("scripts/cabinet")
+CabinetManagement:Init(ArcadeCabinetMod, ArcadeCabinetVariables)
 
-    --Store the previous character
-    data.playerType = player:GetPlayerType()
+-- local function InitPlayerForMinigame(player)
+--     local data = player:GetData().ArcadeCabinet
 
-    --Transform them to Isaac
-    player:ChangePlayerType(PlayerType.PLAYER_ISAAC)
+--     --Store the previous character
+--     data.playerType = player:GetPlayerType()
 
-    --Store their pickups
-    data.coins = player:GetNumCoins()
-    data.bombs = player:GetNumBombs()
-    data.keys = player:GetNumKeys()
+--     --Transform them to Isaac
+--     player:ChangePlayerType(PlayerType.PLAYER_ISAAC)
 
-    --Remove their pickups
-    player:AddCoins(-player:GetNumCoins())
-    player:AddBombs(-player:GetNumBombs())
-    player:AddKeys(-player:GetNumKeys())
+--     --Store their pickups
+--     data.coins = player:GetNumCoins()
+--     data.bombs = player:GetNumBombs()
+--     data.keys = player:GetNumKeys()
 
-    --Store their trinkets
-    data.trinkets = {}
-    for i = 1, 0, -1 do
-        if player:GetTrinket(i) ~= 0 then 
-            Isaac.DebugString("Proceeding")
-            data.trinkets[i] = player:GetTrinket(i) 
-            player:TryRemoveTrinket(player:GetTrinket(i))
-        end
-    end
+--     --Remove their pickups
+--     player:AddCoins(-player:GetNumCoins())
+--     player:AddBombs(-player:GetNumBombs())
+--     player:AddKeys(-player:GetNumKeys())
 
-    --Store their active items
-    data.activeItems = {}
-    data.activeItemsCharges = {}
-    for i = 3, 0, -1 do
-        if player:GetActiveItem(i) ~= 0 then
-            data.activeItems[i] = player:GetActiveItem(i)
-            data.activeItemsCharges[i] = player:GetActiveCharge(i)
-            player:RemoveCollectible(player:GetActiveItem(i), false, i)
-        end
-    end
+--     --Store their trinkets
+--     data.trinkets = {}
+--     for i = 1, 0, -1 do
+--         if player:GetTrinket(i) ~= 0 then 
+--             Isaac.DebugString("Proceeding")
+--             data.trinkets[i] = player:GetTrinket(i) 
+--             player:TryRemoveTrinket(player:GetTrinket(i))
+--         end
+--     end
 
-    --Remove their items
-    player:FlushQueueItem()
-    for i = 1, #data.collectedItemsOrdered, 1 do
-        player:RemoveCollectible(tonumber(data.collectedItemsOrdered[i]))
-    end
-end
+--     --Store their active items
+--     data.activeItems = {}
+--     data.activeItemsCharges = {}
+--     for i = 3, 0, -1 do
+--         if player:GetActiveItem(i) ~= 0 then
+--             data.activeItems[i] = player:GetActiveItem(i)
+--             data.activeItemsCharges[i] = player:GetActiveCharge(i)
+--             player:RemoveCollectible(player:GetActiveItem(i), false, i)
+--         end
+--     end
+
+--     --Remove their items
+--     player:FlushQueueItem()
+--     for i = 1, #data.collectedItemsOrdered, 1 do
+--         player:RemoveCollectible(tonumber(data.collectedItemsOrdered[i]))
+--     end
+-- end
 
 
 local function RestorePlayerFromMinigame(player)
@@ -135,7 +136,7 @@ local function InitCabinetMinigame()
     --Disable controls for everyplayer
     local playerNum = game:GetNumPlayers()
     for i = 0, playerNum - 1, 1 do
-        game:GetPlayer(i).ControlsEnabled = false       
+        game:GetPlayer(i).ControlsEnabled = false
     end
 
     --Set the transition screen graphics
@@ -278,7 +279,7 @@ local function CheckCollectedItems()
 
                 if (data.collectedItems[itemId] or 0) ~= numCollectible then
                     data.collectedItems[itemId] = numCollectible
-                    data.collectedItemsOrdered[#data.collectedItemsOrdered+1] = itemId    
+                    data.collectedItemsOrdered[#data.collectedItemsOrdered+1] = itemId
                 end
             end            
         end
@@ -321,91 +322,91 @@ end
 ArcadeCabinetMod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, ArcadeCabinetMod.OnArcadeRoom)
 
 
-function ArcadeCabinetMod:OnCabinetUse(player, entity)
+-- function ArcadeCabinetMod:OnCabinetUse(player, entity)
 
-    player = player:ToPlayer()
+--     player = player:ToPlayer()
 
-    if not CanUseMachine(player, entity) then return end
+--     if not CanUseMachine(player, entity) then return end
 
-    --Remove coins from the player that used the machine
-	player:AddCoins(-5)
+--     --Remove coins from the player that used the machine
+-- 	player:AddCoins(-5)
 
-    --Play the machine animation and play the sound
-    entity:GetSprite():Play("Wiggle", true)
-    SFXManager():Play(SoundEffect.SOUND_COIN_SLOT, 1, 0, false, math.random(9,11)/10)
+--     --Play the machine animation and play the sound
+--     entity:GetSprite():Play("Wiggle", true)
+--     SFXManager():Play(SoundEffect.SOUND_COIN_SLOT, 1, 0, false, math.random(9,11)/10)
 
-    --Set the current minigame
-    ArcadeCabinetVariables.CurrentMinigame = entity.Variant
+--     --Set the current minigame
+--     ArcadeCabinetVariables.CurrentMinigame = entity.Variant
 
-    InitCabinetMinigame()
-end
-ArcadeCabinetMod:AddCallback(ModCallbacks.MC_PRE_PLAYER_COLLISION, ArcadeCabinetMod.OnCabinetUse)
-
-
-function ArcadeCabinetMod:OnRender()
-
-    --DebugRender()
-
-    --Only render the screen if it's on fade in or on transition
-    if ArcadeCabinetVariables.CurrentGameState ~= ArcadeCabinetVariables.GameState.FADE_IN and
-    ArcadeCabinetVariables.CurrentGameState ~= ArcadeCabinetVariables.GameState.TRANSITION and
-    ArcadeCabinetVariables.CurrentGameState ~= ArcadeCabinetVariables.GameState.FADE_OUT then return end
-
-    if ArcadeCabinetVariables.TransitionScreen:IsFinished("Appear") then
-        ArcadeCabinetVariables.CurrentGameState = ArcadeCabinetVariables.GameState.TRANSITION
-        ArcadeCabinetVariables.TransitionScreen:Play("Idle", true)
-        ArcadeCabinetVariables.TransitionFrameCount = game:GetFrameCount()
-
-        --Teleport players to the room
-        local roomIndex = ArcadeCabinetVariables.ArcadeCabinetRooms[ArcadeCabinetVariables.CurrentMinigame]
-        Isaac.ExecuteCommand("goto s.isaacs." .. roomIndex)
-
-        --Change all players to isaac and manage their pickups
-        local playerNum = game:GetNumPlayers()
-        for i = 0, playerNum - 1, 1 do
-            InitPlayerForMinigame(game:GetPlayer(i))
-        end
-    elseif ArcadeCabinetVariables.TransitionScreen:IsFinished("Disappear") then
-        ArcadeCabinetVariables.CurrentGameState = ArcadeCabinetVariables.GameState.NOT_PLAYING
-        game:GetHUD():SetVisible(true)
-        local playerNum = game:GetNumPlayers()
-        for i = 0, playerNum - 1, 1 do
-            game:GetPlayer(i).ControlsEnabled = true
-        end
-    end
-
-    if ArcadeCabinetVariables.CurrentGameState == ArcadeCabinetVariables.GameState.FADE_OUT and ArcadeCabinetVariables.FadeOutTimer > 0 then
-        ArcadeCabinetVariables.FadeOutTimer = ArcadeCabinetVariables.FadeOutTimer - 1
-
-        ArcadeCabinetVariables.TransitionScreen:SetFrame(0)
-    end
-
-    ArcadeCabinetVariables.TransitionScreen:Render(Vector(Isaac.GetScreenWidth() / 2, Isaac.GetScreenHeight() / 2), Vector.Zero, Vector.Zero)
-    ArcadeCabinetVariables.TransitionScreen:Update()
-end
-ArcadeCabinetMod:AddCallback(ModCallbacks.MC_POST_RENDER, ArcadeCabinetMod.OnRender)
+--     InitCabinetMinigame()
+-- end
+-- ArcadeCabinetMod:AddCallback(ModCallbacks.MC_PRE_PLAYER_COLLISION, ArcadeCabinetMod.OnCabinetUse)
 
 
-function ArcadeCabinetMod:GetShaderParams(shaderName)
-	if shaderName == 'MinigameShader' then
-        local params = {
-                Time = Isaac.GetFrameCount(),
-                Amount = "1",
-                Enabled = 0
-            }
-        return params;
-    elseif shaderName == "MinigameShaderV2" then
-        local isEnabled = 0
-        if ArcadeCabinetVariables.CurrentGameState == ArcadeCabinetVariables.GameState.TRANSITION or
-        ArcadeCabinetVariables.CurrentGameState == ArcadeCabinetVariables.GameState.PLAYING then isEnabled = 1 end
-        local params = { 
-            Time = game:GetFrameCount(),
-            Enabled = isEnabled
-        }
-        return params;
-    end
-end
-ArcadeCabinetMod:AddCallback(ModCallbacks.MC_GET_SHADER_PARAMS, ArcadeCabinetMod.GetShaderParams)
+-- function ArcadeCabinetMod:OnRender()
+
+--     --DebugRender()
+
+--     --Only render the screen if it's on fade in or on transition
+--     if ArcadeCabinetVariables.CurrentGameState ~= ArcadeCabinetVariables.GameState.FADE_IN and
+--     ArcadeCabinetVariables.CurrentGameState ~= ArcadeCabinetVariables.GameState.TRANSITION and
+--     ArcadeCabinetVariables.CurrentGameState ~= ArcadeCabinetVariables.GameState.FADE_OUT then return end
+
+--     if ArcadeCabinetVariables.TransitionScreen:IsFinished("Appear") then
+--         ArcadeCabinetVariables.CurrentGameState = ArcadeCabinetVariables.GameState.TRANSITION
+--         ArcadeCabinetVariables.TransitionScreen:Play("Idle", true)
+--         ArcadeCabinetVariables.TransitionFrameCount = game:GetFrameCount()
+
+--         --Teleport players to the room
+--         local roomIndex = ArcadeCabinetVariables.ArcadeCabinetRooms[ArcadeCabinetVariables.CurrentMinigame]
+--         Isaac.ExecuteCommand("goto s.isaacs." .. roomIndex)
+
+--         --Change all players to isaac and manage their pickups
+--         local playerNum = game:GetNumPlayers()
+--         for i = 0, playerNum - 1, 1 do
+--             InitPlayerForMinigame(game:GetPlayer(i))
+--         end
+--     elseif ArcadeCabinetVariables.TransitionScreen:IsFinished("Disappear") then
+--         ArcadeCabinetVariables.CurrentGameState = ArcadeCabinetVariables.GameState.NOT_PLAYING
+--         game:GetHUD():SetVisible(true)
+--         local playerNum = game:GetNumPlayers()
+--         for i = 0, playerNum - 1, 1 do
+--             game:GetPlayer(i).ControlsEnabled = true
+--         end
+--     end
+
+--     if ArcadeCabinetVariables.CurrentGameState == ArcadeCabinetVariables.GameState.FADE_OUT and ArcadeCabinetVariables.FadeOutTimer > 0 then
+--         ArcadeCabinetVariables.FadeOutTimer = ArcadeCabinetVariables.FadeOutTimer - 1
+
+--         ArcadeCabinetVariables.TransitionScreen:SetFrame(0)
+--     end
+
+--     ArcadeCabinetVariables.TransitionScreen:Render(Vector(Isaac.GetScreenWidth() / 2, Isaac.GetScreenHeight() / 2), Vector.Zero, Vector.Zero)
+--     ArcadeCabinetVariables.TransitionScreen:Update()
+-- end
+-- ArcadeCabinetMod:AddCallback(ModCallbacks.MC_POST_RENDER, ArcadeCabinetMod.OnRender)
+
+
+-- function ArcadeCabinetMod:GetShaderParams(shaderName)
+-- 	if shaderName == 'MinigameShader' then
+--         local params = {
+--                 Time = Isaac.GetFrameCount(),
+--                 Amount = "1",
+--                 Enabled = 0
+--             }
+--         return params;
+--     elseif shaderName == "MinigameShaderV2" then
+--         local isEnabled = 0
+--         if ArcadeCabinetVariables.CurrentGameState == ArcadeCabinetVariables.GameState.TRANSITION or
+--         ArcadeCabinetVariables.CurrentGameState == ArcadeCabinetVariables.GameState.PLAYING then isEnabled = 1 end
+--         local params = { 
+--             Time = game:GetFrameCount(),
+--             Enabled = isEnabled
+--         }
+--         return params;
+--     end
+-- end
+-- ArcadeCabinetMod:AddCallback(ModCallbacks.MC_GET_SHADER_PARAMS, ArcadeCabinetMod.GetShaderParams)
 
 
 local function SpawnMachine(variant, pos)
