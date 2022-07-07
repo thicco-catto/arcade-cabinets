@@ -43,6 +43,7 @@ local MinigameEntityVariants = {
     CUNT = Isaac.GetEntityVariantByName("cunt NS"),
     EEL = Isaac.GetEntityVariantByName("eel NS"),
     SPIKED_MINE = Isaac.GetEntityVariantByName("spiked mine NS"),
+    ANGLER_FISH = Isaac.GetEntityVariantByName("angler fish NS")
 }
 
 -- Constants
@@ -296,6 +297,21 @@ local function UpdateEel(eel)
 end
 
 
+---@param anglerFish EntityNPC
+local function UpdateAnglerFish(anglerFish)
+    local anglerFishSpr = anglerFish:GetSprite()
+
+    if anglerFishSpr:IsPlaying("ProjectileLoop") then
+        local frame = anglerFishSpr:GetFrame()
+        if frame % 3 == 0 and frame % 6 == 0 then
+            anglerFishSpr:SetOverlayFrame("BlueTail", frame)
+        elseif frame % 3 == 0 then
+            anglerFishSpr:SetOverlayFrame("WhiteTail", frame)
+        end
+    end
+end
+
+
 function no_splash:OnNPCUpdate(entity)
     if entity.Variant == MinigameEntityVariants.FISH then
         UpdateFish(entity)
@@ -303,6 +319,8 @@ function no_splash:OnNPCUpdate(entity)
         UpdateCunt(entity)
     elseif entity.Variant == MinigameEntityVariants.EEL then
         UpdateEel(entity)
+    elseif entity.Variant == MinigameEntityVariants.ANGLER_FISH then
+        UpdateAnglerFish(entity)
     end
 end
 no_splash.callbacks[ModCallbacks.MC_NPC_UPDATE] = no_splash.OnNPCUpdate
@@ -418,6 +436,7 @@ end
 no_splash.callbacks[ModCallbacks.MC_INPUT_ACTION] = no_splash.OnInput
 
 
+---@param player EntityPlayer
 function no_splash:OnPlayerUpdate(player)
     player:GetData().FakePlayer.Position = player.Position + Vector(0, 0.1)
 
@@ -433,8 +452,31 @@ function no_splash:OnPlayerUpdate(player)
     else
         fakePlayerSprite:Play("Idle", true)
     end
+
+    player:AddCacheFlags(CacheFlag.CACHE_DAMAGE | CacheFlag.CACHE_FIREDELAY | CacheFlag.CACHE_SHOTSPEED | CacheFlag.CACHE_RANGE)
+    player:EvaluateItems()
 end
 no_splash.callbacks[ModCallbacks.MC_POST_PLAYER_UPDATE] = no_splash.OnPlayerUpdate
+
+
+function no_splash:OnCache(player, cacheFlags)
+    if cacheFlags == CacheFlag.CACHE_DAMAGE then
+        player.Damage = 2
+    end
+
+    if cacheFlags == CacheFlag.CACHE_FIREDELAY then
+        player.MaxFireDelay = 5
+    end
+
+    if cacheFlags == CacheFlag.CACHE_SHOTSPEED then
+        player.ShotSpeed = 1.33
+    end
+
+    if cacheFlags == CacheFlag.CACHE_RANGE then
+        player.TearRange = 500
+    end
+end
+no_splash.callbacks[ModCallbacks.MC_EVALUATE_CACHE] = no_splash.OnCache
 
 
 function no_splash:OnTearFire(tear)

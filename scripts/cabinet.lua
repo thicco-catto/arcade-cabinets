@@ -171,7 +171,6 @@ end
 function CabinetManagement:GetShaderParams(shaderName)
     --Render transition (here so it renders on top of the hud)
     RenderTransitionScreen()
-    Isaac.RenderText(ArcadeCabinetVariables.CurrentGameState, 50, 50, 1, 1, 1, 1)
 
     --Shader stuff
 	if shaderName == 'MinigameShader' then
@@ -223,7 +222,7 @@ end
 
 
 function CabinetManagement:OnRender()
-    DebugRender()
+    --DebugRender()
 
     --Update the animation here because the anm2 and everything is planned to update on render
     --Incredibly shitty but works
