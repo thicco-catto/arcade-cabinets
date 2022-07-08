@@ -62,7 +62,7 @@ local MinigameConstants = {
     BUBBLE_Y_VELOCITY = 2.5,
     BUBBLE_Y_VELOCITY_RANDOM_OFFSET = 1,
     BUBBLE_X_ACCELERATION = 0.1,
-    BUBBLE_MAX_X_VELOCITY = 2,
+    BUBBLE_MAX_X_VELOCITY = 3,
 
     --Fish stuff
     FISH_VELOCITY = 3.5,
@@ -74,6 +74,14 @@ local MinigameConstants = {
     --Eel stuff
     EEL_VELOCITY = 3,
     EEL_SHOOT_COOLDOWN = 60,
+
+    --Angler fish stuff
+    BONE_CUNTS_NUMBER = 8,
+    ANGLER_FISH_BONE_CUNT_OFFSET = Vector(70, 5),
+    ANGLER_FISH_PROJECTILE_OFFSET = Vector(110, -60),
+    ANGLER_FISH_PROJECTILE_NUMBER = 3,
+    ANGLER_FISH_VELOCITY = 1,
+    ANGLER_FISH_CHARGE_VELOCITY = 3,
 }
 
 -- Timers
@@ -101,6 +109,7 @@ local CurrentBubbleXVelocity = 0
 local DistanceTraveled = 0
 local CurrentWave = 0
 local Arrow = nil
+local AnglerFishProjectiles = 0
 
 
 function no_splash:Init()
@@ -298,8 +307,35 @@ end
 
 
 ---@param anglerFish EntityNPC
+---@param anglerFishSpr Sprite
+local function CalculateAnglerFishVel(anglerFish, anglerFishSpr)
+    if anglerFishSpr:IsPlaying("ProjectileStart") or anglerFishSpr:IsPlaying("ChargeStart") then
+        anglerFish.Velocity = Vector.Zero
+        if game:GetFrameCount() % 2 == 0 then
+            anglerFish.Position = anglerFish.Position + Vector(5, 0)
+        else
+            anglerFish.Position = anglerFish.Position - Vector(5, 0)
+        end
+    elseif anglerFishSpr:IsPlaying("ProjectileLoop") then
+        anglerFish.Velocity = Vector.Zero
+    elseif anglerFishSpr:IsPlaying("ChargeLoop") then
+        if anglerFish.FlipX then
+            anglerFish.Velocity = Vector(MinigameConstants.ANGLER_FISH_CHARGE_VELOCITY, 0)
+        else
+            anglerFish.Velocity = Vector(-MinigameConstants.ANGLER_FISH_CHARGE_VELOCITY, 0)
+        end
+    elseif anglerFishSpr:IsPlaying("Idle") then
+        anglerFish.Velocity = (Isaac.GetPlayer(0).Position - anglerFish.Position):Normalized() * MinigameConstants.ANGLER_FISH_VELOCITY
+        anglerFish.FlipX = Isaac.GetPlayer(0).Position.X > anglerFish.Position.X
+    end
+end
+
+
+---@param anglerFish EntityNPC
 local function UpdateAnglerFish(anglerFish)
     local anglerFishSpr = anglerFish:GetSprite()
+
+    local mouthOffset = CalculateAnglerFishVel(anglerFish, anglerFishSpr)
 
     if anglerFishSpr:IsPlaying("ProjectileLoop") then
         local frame = anglerFishSpr:GetFrame()
@@ -308,6 +344,53 @@ local function UpdateAnglerFish(anglerFish)
         elseif frame % 3 == 0 then
             anglerFishSpr:SetOverlayFrame("WhiteTail", frame)
         end
+    end
+
+    if anglerFishSpr:IsFinished("ProjectileStart") then
+        anglerFishSpr:Play("ProjectileLoop", true)
+    end
+
+    if anglerFishSpr:IsFinished("ProjectileLoop") then
+        if AnglerFishProjectiles == MinigameConstants.ANGLER_FISH_PROJECTILE_NUMBER then
+            AnglerFishProjectiles = 0
+            anglerFishSpr:Play("Idle", true)
+            anglerFishSpr:PlayOverlay("IdleTail", true)
+        else
+            anglerFishSpr:Play("ProjectileLoop", true)
+        end
+    end
+
+    if anglerFishSpr:IsEventTriggered("SpawnCunts") then
+        for _ = 1, MinigameConstants.BONE_CUNTS_NUMBER, 1 do
+            local spawnOffset = Vector(MinigameConstants.ANGLER_FISH_BONE_CUNT_OFFSET.X, MinigameConstants.ANGLER_FISH_BONE_CUNT_OFFSET.Y)
+            if not anglerFish.FlipX then spawnOffset.X = -spawnOffset.X end
+            local spawningPos = anglerFish.Position + mouthOffset + Vector(rng:RandomFloat(), rng:RandomFloat())
+            local skellyCunt = Isaac.Spawn(MinigameEntityTypes.CUSTOM_ENTITY, MinigameEntityVariants.CUNT, 0, spawningPos, Vector.Zero, anglerFish)
+            skellyCunt:ClearEntityFlags(EntityFlag.FLAG_APPEAR)
+            skellyCunt:AddEntityFlags(EntityFlag.FLAG_NO_FLASH_ON_DAMAGE)
+            skellyCunt:GetSprite():ReplaceSpritesheet(0, "gfx/enemies/ns_skelly_cunt.png")
+            skellyCunt:GetSprite():LoadGraphics()
+            skellyCunt.DepthOffset = 30
+        end
+    end
+
+    if anglerFishSpr:IsEventTriggered("ShootProjectiles") then
+        print(MinigameConstants.ANGLER_FISH_PROJECTILE_OFFSET)
+        local spawnOffset = Vector(MinigameConstants.ANGLER_FISH_PROJECTILE_OFFSET.X, MinigameConstants.ANGLER_FISH_PROJECTILE_OFFSET.Y)
+        if not anglerFish.FlipX then spawnOffset.X = -spawnOffset.X end
+        local spawningPos = anglerFish.Position + spawnOffset
+        local spawningSpeed = (game:GetPlayer(0).Position - spawningPos):Normalized() * 5
+        local projectileType = 0
+        local params = ProjectileParams()
+        params.BulletFlags = ProjectileFlags.NO_WALL_COLLIDE | ProjectileFlags.SMART
+        params.Spread = 1
+        anglerFish:FireProjectiles(spawningPos, spawningSpeed, projectileType, params)
+
+        AnglerFishProjectiles = AnglerFishProjectiles + 1
+    end
+
+    if anglerFish:IsFrame(200, 0) then
+        anglerFishSpr:Play("ProjectileStart", true)
     end
 end
 
@@ -397,10 +480,11 @@ local function SetUpSpikeProjectile(projectile)
 end
 
 
+---@param projectile EntityProjectile
 function no_splash:OnProjectileInit(projectile)
     if projectile.SpawnerType ~= MinigameEntityTypes.CUSTOM_ENTITY then return end
 
-    if  projectile.SpawnerVariant == MinigameEntityVariants.EEL then
+    if  projectile.SpawnerVariant == MinigameEntityVariants.EEL or projectile.SpawnerVariant == MinigameEntityVariants.ANGLER_FISH then
         projectile:GetSprite():Load("gfx/ns_eel_projectile.anm2", true)
         projectile:GetSprite():Play("Idle", true)
     elseif projectile.SpawnerVariant == MinigameEntityVariants.SPIKED_MINE then
@@ -411,9 +495,8 @@ no_splash.callbacks[ModCallbacks.MC_POST_PROJECTILE_INIT] = no_splash.OnProjecti
 
 
 function no_splash:OnProjectileUpdate(projectile)
-    if projectile.Color.A < 1 then
         projectile:SetColor(Color(1, 1, 1, 1, 0, 0, 0), 300, -1, false, false)
-    end
+    
 
     projectile.FallingSpeed = 0
     projectile.FallingAccel = -0.1
