@@ -180,11 +180,11 @@
         <gibs amount="0" blood="0" bone="0" dust="0" eye="0" gut="0" large="0"/>
     </entity>
 
-    <entity anm2path="ns_fish.anm2" name="fish NS" id="997" variant="12" baseHP="12" boss="0" champion="0" collisionDamage="0" collisionMass="10" collisionRadius="15" friction="1" gridCollision="none" numGridCollisionPoints="12" shadowSize="0" stageHP="0">
+    <entity anm2path="ns_fish.anm2" name="fish NS" id="997" variant="12" baseHP="6" boss="0" champion="0" collisionDamage="0" collisionMass="10" collisionRadius="15" friction="1" gridCollision="none" numGridCollisionPoints="12" shadowSize="0" stageHP="0">
         <gibs amount="0" blood="0" bone="0" dust="0" eye="0" gut="0" large="0"/>
     </entity>
 
-    <entity anm2path="ns_fish.anm2" name="bone fish NS" id="997" variant="12" subtype="1" baseHP="12" boss="0" champion="0" collisionDamage="0" collisionMass="10" collisionRadius="15" friction="1" gridCollision="none" numGridCollisionPoints="12" shadowSize="0" stageHP="0">
+    <entity anm2path="ns_fish.anm2" name="bone fish NS" id="997" variant="12" subtype="1" baseHP="9" boss="0" champion="0" collisionDamage="0" collisionMass="10" collisionRadius="15" friction="1" gridCollision="none" numGridCollisionPoints="12" shadowSize="0" stageHP="0">
         <gibs amount="0" blood="0" bone="0" dust="0" eye="0" gut="0" large="0"/>
     </entity>
 
@@ -192,11 +192,15 @@
         <gibs amount="0" blood="0" bone="0" dust="0" eye="0" gut="0" large="0"/>
     </entity>
 
-    <entity anm2path="ns_cunt.anm2" name="cunt NS" id="997" variant="14" baseHP="3" boss="0" champion="0" collisionDamage="0" collisionMass="10" collisionRadius="6" friction="1" gridCollision="none" numGridCollisionPoints="12" shadowSize="0" stageHP="0">
+    <entity anm2path="ns_cunt.anm2" name="cunt NS" id="997" variant="14" baseHP="1" boss="0" champion="0" collisionDamage="0" collisionMass="10" collisionRadius="6" friction="1" gridCollision="none" numGridCollisionPoints="12" shadowSize="0" stageHP="0">
         <gibs amount="0" blood="0" bone="0" dust="0" eye="0" gut="0" large="0"/>
     </entity>
 
-    <entity anm2path="ns_angler_fish.anm2" name="angler fish NS" id="997" variant="15" baseHP="200" boss="0" champion="0" collisionDamage="0" collisionMass="10" collisionRadius="45" collisionRadiusXMulti="1.4" friction="1" gridCollision="none" numGridCollisionPoints="12" shadowSize="0" stageHP="0">
+    <entity anm2path="ns_clam.anm2" name="clam NS" id="997" variant="15" baseHP="8" boss="0" champion="0" collisionDamage="0" collisionMass="10" collisionRadius="15" friction="1" gridCollision="none" numGridCollisionPoints="12" shadowSize="0" stageHP="0">
+        <gibs amount="0" blood="0" bone="0" dust="0" eye="0" gut="0" large="0"/>
+    </entity>
+
+    <entity anm2path="ns_angler_fish.anm2" name="angler fish NS" id="997" variant="16" baseHP="200" boss="0" champion="0" collisionDamage="0" collisionMass="10" collisionRadius="45" collisionRadiusXMulti="1.4" friction="1" gridCollision="none" numGridCollisionPoints="12" shadowSize="0" stageHP="0">
         <gibs amount="0" blood="0" bone="0" dust="0" eye="0" gut="0" large="0"/>
     </entity>
 

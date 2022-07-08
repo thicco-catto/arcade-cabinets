@@ -42,6 +42,7 @@ local MinigameEntityVariants = {
     FISH = Isaac.GetEntityVariantByName("fish NS"),
     CUNT = Isaac.GetEntityVariantByName("cunt NS"),
     EEL = Isaac.GetEntityVariantByName("eel NS"),
+    CLAM = Isaac.GetEntityVariantByName("clam NS"),
     SPIKED_MINE = Isaac.GetEntityVariantByName("spiked mine NS"),
     ANGLER_FISH = Isaac.GetEntityVariantByName("angler fish NS")
 }
@@ -53,6 +54,8 @@ local MinigameConstants = {
     --Wave stuff
     MAX_WAVES = 3,
     DISTANCE_NEEDED_FOR_WAVE_START = 450,
+    X_POSITION_TO_SPAWN = 500,
+    X_POSITION_PER_MINIWAVE = 200,
 
     --Bubble stuff
     MIN_BUBBLE_SPAWN_TIMER_FRAMES = 7,
@@ -65,15 +68,25 @@ local MinigameConstants = {
     BUBBLE_MAX_X_VELOCITY = 3,
 
     --Fish stuff
+    FISH_AMOUNT = 2,
     FISH_VELOCITY = 3.5,
     BONE_FISH_VELOCITY = 5,
 
     --Cunt stuff
-    CUNT_VELOCITY = 4,
+    CUNT_AMOUNT = 8,
+    CUNT_VELOCITY = 5,
 
     --Eel stuff
     EEL_VELOCITY = 3,
     EEL_SHOOT_COOLDOWN = 60,
+
+    --Clam stuff
+    CLAM_VELOCITY = 3,
+    CLAM_TARGET_Y = 400,
+    CLAM_SPAWNING_Y = 500,
+    CLAM_SPAWNING_X = 70,
+    CLAM_SPAWNING_X_OFFSET = 400,
+    CLAM_SHOOT_COOLDOWN = 30,
 
     --Angler fish stuff
     BONE_CUNTS_NUMBER = 8,
@@ -89,7 +102,7 @@ local MinigameConstants = {
 
 -- Timers
 local MinigameTimers = {
-    BubbleSpawnTimer = 0
+    BubbleSpawnTimer = 0,
 }
 
 -- States
@@ -209,18 +222,111 @@ local function CalculateBubbleVelocity()
 end
 
 
+local function SpawnEnemy(EntityVariant, YPos, miniwave)
+    local spawningPos = Vector(700 + MinigameConstants.X_POSITION_PER_MINIWAVE * miniwave, YPos + rng:RandomInt(4))
+    local velocity = Vector.Zero
+
+    if EntityVariant == MinigameEntityVariants.CLAM then
+        spawningPos = Vector(MinigameConstants.CLAM_SPAWNING_X + rng:RandomInt(MinigameConstants.CLAM_SPAWNING_X_OFFSET), MinigameConstants.CLAM_SPAWNING_Y)
+        velocity = Vector(0, -MinigameConstants.CLAM_VELOCITY)
+    end
+
+    local entity = Isaac.Spawn(MinigameEntityTypes.CUSTOM_ENTITY, EntityVariant, 0, spawningPos, velocity, nil)
+    entity:ClearEntityFlags(EntityFlag.FLAG_APPEAR)
+    entity:AddEntityFlags(EntityFlag.FLAG_NO_FLASH_ON_DAMAGE)
+    entity:GetSprite():Play("Idle", true)
+end
+
+
+local function StartWave()
+    Arrow:Remove()
+    CurrentBubbleXVelocity = 0
+    DistanceTraveled = 0
+    CurrentMinigameState = MinigameState.FIGHTING
+
+    if CurrentWave == MinigameConstants.MAX_WAVES then
+        local anglerFish = Isaac.Spawn(MinigameEntityTypes.CUSTOM_ENTITY, MinigameEntityVariants.ANGLER_FISH, 0, Vector(rng:RandomInt(500), MinigameConstants.X_POSITION_TO_SPAWN + 200), Vector.Zero, nil)
+        anglerFish:GetSprite():Play("Idle", true)
+        anglerFish:GetSprite():PlayOverlay("IdleTail", true)
+        anglerFish:ClearEntityFlags(EntityFlag.FLAG_APPEAR)
+        anglerFish:AddEntityFlags(EntityFlag.FLAG_NO_FLASH_ON_DAMAGE)
+        anglerFish.DepthOffset = -100
+    else
+        for miniwave = 1, 2, 1 do
+            local chosenEnemy = rng:RandomInt(4)
+            chosenEnemy = 3
+            local amountToSpawn = 1
+
+            if CurrentWave == 2 or
+            CurrentWave == 1 and miniwave == 1 then
+                amountToSpawn = 2
+            end
+
+            if chosenEnemy == 0 then
+                --Fish
+                local yInitial = rng:RandomInt(500)
+                for _ = 1, MinigameConstants.FISH_AMOUNT + CurrentWave, 1 do
+                    SpawnEnemy(MinigameEntityVariants.FISH, yInitial, miniwave)
+                end
+            elseif chosenEnemy == 1 then
+                --Eel
+                for _ = 1, amountToSpawn, 1 do
+                    SpawnEnemy(MinigameEntityVariants.EEL, rng:RandomInt(500), miniwave)
+                end
+            elseif chosenEnemy == 2 then
+                --Cunts
+                for _ = 1, amountToSpawn, 1 do
+                    local yInitial = rng:RandomInt(500)
+                    for _ = 1, MinigameConstants.CUNT_AMOUNT + CurrentWave, 1 do
+                        SpawnEnemy(MinigameEntityVariants.CUNT, yInitial, miniwave)
+                    end
+                end
+            elseif chosenEnemy == 3 then
+                --Clam
+                for _ = 1, amountToSpawn, 1 do
+                    SpawnEnemy(MinigameEntityVariants.CLAM, 1, miniwave)
+                end
+            end
+        end
+    end
+
+    CurrentWave = CurrentWave + 1
+end
+
+
+local function FinishWave()
+    Arrow = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.ARROW, 0, MinigameConstants.ARROW_SPAWNING_POS, Vector.Zero, nil)
+    CurrentMinigameState = MinigameState.SWIMMING
+    game:ShakeScreen(10)
+end
+
+
 function no_splash:OnUpdate()
     SpawnBubbles()
 
     CalculateBubbleVelocity()
 
-    Arrow.Velocity = Vector(CurrentBubbleXVelocity, 0)
-    DistanceTraveled = DistanceTraveled - CurrentBubbleXVelocity
+    if CurrentMinigameState == MinigameState.SWIMMING then
+        Arrow.Velocity = Vector(CurrentBubbleXVelocity, 0)
+        DistanceTraveled = DistanceTraveled - CurrentBubbleXVelocity
 
-    if DistanceTraveled >= MinigameConstants.DISTANCE_NEEDED_FOR_WAVE_START then
-        CurrentBubbleXVelocity = 0
-        CurrentMinigameState = MinigameState.FIGHTING
+        if DistanceTraveled >= MinigameConstants.DISTANCE_NEEDED_FOR_WAVE_START then
+            StartWave()
+        end
+    elseif CurrentMinigameState == MinigameState.FIGHTING then
+        local isClear = true
+
+        for _, entity in ipairs(Isaac.GetRoomEntities()) do
+            if entity:IsVulnerableEnemy() then
+                isClear = false
+                break
+            end
+        end
+
+        if isClear then FinishWave() end
     end
+
+    
 end
 no_splash.callbacks[ModCallbacks.MC_POST_UPDATE] = no_splash.OnUpdate
 
@@ -259,6 +365,7 @@ local function UpdateFish(fish)
         return
     elseif fish:GetSprite():IsFinished("Transition") then
         fish:GetSprite():Play("Idle", true)
+        fish:ClearEntityFlags(EntityFlag.FLAG_NO_PHYSICS_KNOCKBACK)
     end
 
     local velocity = MinigameConstants.FISH_VELOCITY
@@ -289,7 +396,7 @@ local function UpdateEel(eel)
         eel.Velocity = Vector.Zero
     end
 
-    if eel:IsFrame(MinigameConstants.EEL_SHOOT_COOLDOWN, 0) then
+    if eel:IsFrame(MinigameConstants.EEL_SHOOT_COOLDOWN, 0) and (Isaac.GetPlayer(0).Position - eel.Position):Length() < 300 then
         eel:GetSprite():Play("Shoot", true)
     end
 
@@ -305,6 +412,29 @@ local function UpdateEel(eel)
 
     if eel:GetSprite():IsFinished("Shoot") then
         eel:GetSprite():Play("Idle", true)
+    end
+end
+
+
+---@param clam EntityNPC
+local function UpdateClam(clam)
+    if clam.Position.Y <= MinigameConstants.CLAM_TARGET_Y then
+        clam.Velocity = Vector.Zero
+    end
+
+    if clam:IsFrame(MinigameConstants.CLAM_SHOOT_COOLDOWN, 0) and clam.Position.Y <= MinigameConstants.CLAM_TARGET_Y then
+        clam:GetSprite():Play("Shoot", true)
+        local spawningPos = clam.Position + Vector(0, 5)
+        local spawningSpeed = (game:GetPlayer(0).Position - spawningPos):Normalized() * 10
+        local projectileType = 0
+        local params = ProjectileParams()
+        params.BulletFlags = ProjectileFlags.NO_WALL_COLLIDE
+        params.Spread = 1
+        clam:FireProjectiles(spawningPos, spawningSpeed, projectileType, params)
+    end
+
+    if clam:GetSprite():IsFinished("Shoot") then
+        clam:GetSprite():Play("Idle", true)
     end
 end
 
@@ -426,6 +556,8 @@ function no_splash:OnNPCUpdate(entity)
         UpdateCunt(entity)
     elseif entity.Variant == MinigameEntityVariants.EEL then
         UpdateEel(entity)
+    elseif entity.Variant == MinigameEntityVariants.CLAM then
+        UpdateClam(entity)
     elseif entity.Variant == MinigameEntityVariants.ANGLER_FISH then
         UpdateAnglerFish(entity)
     end
@@ -445,7 +577,7 @@ function no_splash:OnEntityDamage(tookDamage, damageAmount, _, _)
         bonerFish:GetSprite():LoadGraphics()
         bonerFish:GetSprite():Play("Transition", true)
         bonerFish:ClearEntityFlags(EntityFlag.FLAG_APPEAR)
-        bonerFish:AddEntityFlags(EntityFlag.FLAG_NO_FLASH_ON_DAMAGE | EntityFlag.FLAG_NO_KNOCKBACK | EntityFlag.FLAG_NO_PHYSICS_KNOCKBACK)
+        bonerFish:AddEntityFlags(EntityFlag.FLAG_NO_FLASH_ON_DAMAGE | EntityFlag.FLAG_NO_PHYSICS_KNOCKBACK)
         bonerFish.FlipX = tookDamage.FlipX
         tookDamage:Remove()
     elseif tookDamage.Type == MinigameEntityTypes.CUSTOM_ENTITY and tookDamage.Variant == MinigameEntityVariants.SPIKED_MINE and tookDamage.SubType == 0 and 
@@ -456,7 +588,7 @@ function no_splash:OnEntityDamage(tookDamage, damageAmount, _, _)
         tookDamage:ToNPC():FireProjectiles(tookDamage.Position, Vector(10, 0), 8, params)
         tookDamage:Remove()
     elseif tookDamage.Type == MinigameEntityTypes.CUSTOM_ENTITY and 
-    (tookDamage.Variant == MinigameEntityVariants.EEL or tookDamage.Variant == MinigameEntityVariants.CUNT) and
+    (tookDamage.Variant == MinigameEntityVariants.EEL or tookDamage.Variant == MinigameEntityVariants.CUNT or tookDamage.Variant == MinigameEntityVariants.FISH) and
     damageAmount >= tookDamage.HitPoints then
         tookDamage:Remove()
     end
@@ -508,8 +640,13 @@ end
 function no_splash:OnProjectileInit(projectile)
     if projectile.SpawnerType ~= MinigameEntityTypes.CUSTOM_ENTITY then return end
 
-    if  projectile.SpawnerVariant == MinigameEntityVariants.EEL or projectile.SpawnerVariant == MinigameEntityVariants.ANGLER_FISH then
+    projectile.DepthOffset = 20
+
+    if projectile.SpawnerVariant == MinigameEntityVariants.EEL or projectile.SpawnerVariant == MinigameEntityVariants.ANGLER_FISH then
         projectile:GetSprite():Load("gfx/ns_eel_projectile.anm2", true)
+        projectile:GetSprite():Play("Idle", true)
+    elseif projectile.SpawnerVariant == MinigameEntityVariants.CLAM then
+        projectile:GetSprite():Load("gfx/ns_pearl_projectile.anm2", true)
         projectile:GetSprite():Play("Idle", true)
     elseif projectile.SpawnerVariant == MinigameEntityVariants.SPIKED_MINE then
         SetUpSpikeProjectile(projectile)
@@ -519,8 +656,7 @@ no_splash.callbacks[ModCallbacks.MC_POST_PROJECTILE_INIT] = no_splash.OnProjecti
 
 
 function no_splash:OnProjectileUpdate(projectile)
-        projectile:SetColor(Color(1, 1, 1, 1, 0, 0, 0), 300, -1, false, false)
-    
+    projectile:SetColor(Color(1, 1, 1, 1, 0, 0, 0), 300, -1, false, false)
 
     projectile.FallingSpeed = 0
     projectile.FallingAccel = -0.1
