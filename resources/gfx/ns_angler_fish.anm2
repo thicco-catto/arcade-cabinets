@@ -1,5 +1,5 @@
 <AnimatedActor>
-	<Info CreatedBy="Unknown" CreatedOn="08/07/2022 14:13:49" Version="55" Fps="60"/>
+	<Info CreatedBy="Unknown" CreatedOn="08/07/2022 19:33:44" Version="56" Fps="60"/>
 	<Content>
 		<Spritesheets>
 			<Spritesheet Path="enemies\ns_angler_fish.png" Id="0"/>

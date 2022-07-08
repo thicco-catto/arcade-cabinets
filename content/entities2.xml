@@ -196,7 +196,7 @@
         <gibs amount="0" blood="0" bone="0" dust="0" eye="0" gut="0" large="0"/>
     </entity>
 
-    <entity anm2path="ns_clam.anm2" name="clam NS" id="997" variant="15" baseHP="8" boss="0" champion="0" collisionDamage="0" collisionMass="10" collisionRadius="15" friction="1" gridCollision="none" numGridCollisionPoints="12" shadowSize="0" stageHP="0">
+    <entity anm2path="ns_clam.anm2" name="clam NS" id="997" variant="15" boss="0" champion="0" collisionDamage="0" collisionMass="10" collisionRadius="15" friction="1" gridCollision="none" numGridCollisionPoints="12" shadowSize="0" stageHP="0">
         <gibs amount="0" blood="0" bone="0" dust="0" eye="0" gut="0" large="0"/>
     </entity>
 
