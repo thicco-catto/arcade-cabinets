@@ -81,7 +81,10 @@ local MinigameConstants = {
     ANGLER_FISH_PROJECTILE_OFFSET = Vector(110, -60),
     ANGLER_FISH_PROJECTILE_NUMBER = 3,
     ANGLER_FISH_VELOCITY = 1,
-    ANGLER_FISH_CHARGE_VELOCITY = 3,
+    ANGLER_FISH_CHARGE_START_VELOCITY = 0.5,
+    ANGLER_FISH_CHARGE_VELOCITY = 15,
+    ANGLER_FISH_CHARGE_STOP_RIGHT = 720,
+    ANGLER_FISH_CHARGE_STOP_LEFT = -80,
 }
 
 -- Timers
@@ -310,7 +313,16 @@ end
 ---@param anglerFishSpr Sprite
 local function CalculateAnglerFishVel(anglerFish, anglerFishSpr)
     if anglerFishSpr:IsPlaying("ProjectileStart") or anglerFishSpr:IsPlaying("ChargeStart") then
-        anglerFish.Velocity = Vector.Zero
+        if anglerFishSpr:IsPlaying("ProjectileStart") then
+            anglerFish.Velocity = Vector.Zero
+        else
+            if anglerFish.FlipX then
+                anglerFish.Velocity = Vector(-MinigameConstants.ANGLER_FISH_CHARGE_START_VELOCITY, 0)
+            else
+                anglerFish.Velocity = Vector(MinigameConstants.ANGLER_FISH_CHARGE_START_VELOCITY, 0)
+            end
+        end
+
         if game:GetFrameCount() % 2 == 0 then
             anglerFish.Position = anglerFish.Position + Vector(5, 0)
         else
@@ -360,6 +372,18 @@ local function UpdateAnglerFish(anglerFish)
         end
     end
 
+    if anglerFishSpr:IsFinished("ChargeStart") then
+        anglerFishSpr:Play("ChargeLoop", true)
+        anglerFishSpr:PlayOverlay("ChargeTail", true)
+    end
+
+    if anglerFishSpr:IsPlaying("ChargeLoop") and
+    (anglerFish.Position.X < MinigameConstants.ANGLER_FISH_CHARGE_STOP_LEFT and not anglerFish.FlipX or
+    anglerFish.Position.X > MinigameConstants.ANGLER_FISH_CHARGE_STOP_RIGHT and anglerFish.FlipX) then
+        anglerFish.Position = Vector(anglerFish.Position.X, game:GetPlayer(0).Position.Y)
+        anglerFish.FlipX = not anglerFish.FlipX
+    end
+
     if anglerFishSpr:IsEventTriggered("SpawnCunts") then
         for _ = 1, MinigameConstants.BONE_CUNTS_NUMBER, 1 do
             local spawnOffset = Vector(MinigameConstants.ANGLER_FISH_BONE_CUNT_OFFSET.X, MinigameConstants.ANGLER_FISH_BONE_CUNT_OFFSET.Y)
@@ -389,9 +413,9 @@ local function UpdateAnglerFish(anglerFish)
         AnglerFishProjectiles = AnglerFishProjectiles + 1
     end
 
-    if anglerFish:IsFrame(200, 0) then
-        anglerFishSpr:Play("ProjectileStart", true)
-    end
+    -- if anglerFish:IsFrame(300, 0) then
+    --     anglerFishSpr:Play("ChargeStart", true)
+    -- end
 end
 
 
