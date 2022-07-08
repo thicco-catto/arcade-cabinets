@@ -166,6 +166,27 @@
         <sample weight="1" path="night light/spooky transition.wav"/>
     </sound>
 
+    <!--No splash-->
+    <sound name="ns hiss">
+        <sample weight="1" path="no splash/hiss.wav"/>
+    </sound>
+
+    <sound name="ns rawr">
+        <sample weight="1" path="no splash/rawr.wav"/>
+    </sound>
+
+    <sound name="ns wave finish">
+        <sample weight="1" path="no splash/wavefinish.wav"/>
+    </sound>
+
+    <sound name="ns zap">
+        <sample weight="1" path="no splash/zap.wav"/>
+    </sound>
+
+    <sound name="ns charge">
+        <sample weight="1" path="no splash/crash.wav"/>
+    </sound>
+
     <!--The ground below-->
     <sound name="tgb intro">
         <sample weight="1" path="the ground below/intro.wav"/>

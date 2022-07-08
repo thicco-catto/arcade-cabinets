@@ -21,8 +21,13 @@ no_splash.startingItems = {}
 
 -- Sounds
 local MinigameSounds = {
+    HISS = Isaac.GetSoundIdByName("ns hiss"),
+    RAWR = Isaac.GetSoundIdByName("ns rawr"),
+    WAVE_FINISH = Isaac.GetSoundIdByName("ns wave finish"),
+    ZAP = Isaac.GetSoundIdByName("ns zap"),
     CHUCK_CHICANERY = Isaac.GetSoundIdByName("jc third wave"),
-    CHUCK_DASH = Isaac.GetSoundIdByName("jc special attack"),
+    CHUCK_DASH_START = Isaac.GetSoundIdByName("jc special attack"),
+    CHUCK_DASH = Isaac.GetSoundIdByName("ns charge"),
 
     WIN = Isaac.GetSoundIdByName("arcade cabinet win"),
     LOSE = Isaac.GetSoundIdByName("arcade cabinet lose")
@@ -287,6 +292,7 @@ local function StartWave()
                 end
             elseif chosenEnemy == 1 then
                 --Eel
+                SFXManager:Play(MinigameSounds.RAWR)
                 hasSpawnedEelOrClam = true
                 for _ = 1, amountToSpawn, 1 do
                     SpawnEnemy(MinigameEntityVariants.EEL, rng:RandomInt(500), miniwave)
@@ -433,6 +439,7 @@ local function UpdateEel(eel)
 
     if eel:IsFrame(MinigameConstants.EEL_SHOOT_COOLDOWN, 0) and (Isaac.GetPlayer(0).Position - eel.Position):Length() < 300 then
         eel:GetSprite():Play("Shoot", true)
+        SFXManager:Play(MinigameSounds.ZAP)
     end
 
     if eel:GetSprite():IsEventTriggered("Shoot") then
@@ -552,17 +559,20 @@ local function ManageAttacking(anglerFish, anglerFishSpr)
     if anglerFish.HitPoints / anglerFish.MaxHitPoints <= 0.25 then
         anglerFish:GetData().IsChicaneryMode = true
         anglerFishSpr:Play("ChargeStart", true)
+        SFXManager:Play(MinigameSounds.CHUCK_DASH_START)
         return
     end
 
     if AnglerFishAttacksInARow == MinigameConstants.ANGLER_FISH_MAX_ATTACKS_IN_A_ROW then
         anglerFishSpr:Play("ChargeStart", true)
+        SFXManager:Play(MinigameSounds.CHUCK_DASH_START)
         AnglerFishAttacksInARow = 0
         return
     end
 
     if rng:RandomInt(2) == 0 then
         anglerFishSpr:Play("ProjectileStart", true)
+        SFXManager:Play(MinigameSounds.HISS)
     else
         anglerFishSpr:Play("SpawnCunts", true)
     end
@@ -620,6 +630,8 @@ local function UpdateAnglerFish(anglerFish)
     if anglerFishSpr:IsFinished("ChargeStart") then
         anglerFishSpr:Play("ChargeLoop", true)
         anglerFishSpr:PlayOverlay("ChargeTail", true)
+        SFXManager:Play(MinigameSounds.CHUCK_DASH)
+        game:ShakeScreen(25)
     end
 
     if anglerFishSpr:IsFinished("SpawnCunts") then
@@ -634,6 +646,8 @@ local function UpdateAnglerFish(anglerFish)
 
         if anglerFish:GetData().IsChicaneryMode then
             anglerFish.Position = Vector(anglerFish.Position.X, game:GetPlayer(0).Position.Y)
+            SFXManager:Play(MinigameSounds.CHUCK_DASH)
+            game:ShakeScreen(25)
         else
             anglerFishSpr:Play("Idle", true)
             anglerFishSpr:PlayOverlay("IdleTail", true)
@@ -641,10 +655,12 @@ local function UpdateAnglerFish(anglerFish)
     end
 
     if anglerFishSpr:IsEventTriggered("SpawnCunts") then
+        SFXManager:Play(MinigameSounds.RAWR)
+
         for _ = 1, MinigameConstants.BONE_CUNTS_NUMBER, 1 do
             local spawnOffset = Vector(MinigameConstants.ANGLER_FISH_BONE_CUNT_OFFSET.X, MinigameConstants.ANGLER_FISH_BONE_CUNT_OFFSET.Y)
             if not anglerFish.FlipX then spawnOffset.X = -spawnOffset.X end
-            local spawningPos = anglerFish.Position + spawnOffset + Vector(rng:RandomFloat(), rng:RandomFloat())
+            local spawningPos = anglerFish.Position + spawnOffset + Vector(rng:RandomInt(5), rng:RandomInt(5))
             local skellyCunt = Isaac.Spawn(MinigameEntityTypes.CUSTOM_ENTITY, MinigameEntityVariants.CUNT, 0, spawningPos, Vector.Zero, anglerFish)
             skellyCunt:ClearEntityFlags(EntityFlag.FLAG_APPEAR)
             skellyCunt:AddEntityFlags(EntityFlag.FLAG_NO_FLASH_ON_DAMAGE)
@@ -655,6 +671,8 @@ local function UpdateAnglerFish(anglerFish)
     end
 
     if anglerFishSpr:IsEventTriggered("ShootProjectiles") then
+        SFXManager:Play(MinigameSounds.ZAP)
+
         local spawnOffset = Vector(MinigameConstants.ANGLER_FISH_PROJECTILE_OFFSET.X, MinigameConstants.ANGLER_FISH_PROJECTILE_OFFSET.Y)
         if not anglerFish.FlipX then spawnOffset.X = -spawnOffset.X end
         local spawningPos = anglerFish.Position + spawnOffset
