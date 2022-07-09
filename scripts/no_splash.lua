@@ -315,7 +315,6 @@ local function StartWave()
                 end
             elseif chosenEnemy == 1 then
                 --Eel
-                SFXManager:Play(MinigameSounds.RAWR)
                 hasSpawnedEelOrClam = true
                 for _ = 1, amountToSpawn, 1 do
                     SpawnEnemy(MinigameEntityVariants.EEL, rng:RandomInt(500), miniwave)
@@ -759,6 +758,7 @@ function no_splash:OnEntityDamage(tookDamage, damageAmount, _, _)
             SFXManager:Play(MinigameSounds.PLAYER_HIT)
             PlayerHealthUI:Play("Flash", true)
             MinigameTimers.IFramesTimer = MinigameConstants.MAX_PLAYER_IFRAMES
+            tookDamage:GetData().FakePlayer:GetSprite():Play("Hurt", true)
         end
 
         return false
@@ -914,15 +914,37 @@ function no_splash:OnPlayerUpdate(player)
 
     local fakePlayerSprite = player:GetData().FakePlayer:GetSprite()
 
-    if (Input.IsActionPressed(ButtonAction.ACTION_LEFT, player.ControllerIndex) or Input.IsActionPressed(ButtonAction.ACTION_RIGHT, player.ControllerIndex)) and not
-    (Input.IsActionPressed(ButtonAction.ACTION_LEFT, player.ControllerIndex) and Input.IsActionPressed(ButtonAction.ACTION_RIGHT, player.ControllerIndex)) then
-        if Input.IsActionPressed(ButtonAction.ACTION_LEFT, player.ControllerIndex) and not fakePlayerSprite:IsPlaying("Left") then
-            fakePlayerSprite:Play("Left", true)
-        elseif Input.IsActionPressed(ButtonAction.ACTION_RIGHT, player.ControllerIndex) and not fakePlayerSprite:IsPlaying("Right") then
-            fakePlayerSprite:Play("Right", true)
+    if not fakePlayerSprite:IsPlaying("Hurt") then
+        if CurrentMinigameState == MinigameState.SWIMMING then
+            if (Input.IsActionPressed(ButtonAction.ACTION_LEFT, player.ControllerIndex) or Input.IsActionPressed(ButtonAction.ACTION_RIGHT, player.ControllerIndex)) and not
+            (Input.IsActionPressed(ButtonAction.ACTION_LEFT, player.ControllerIndex) and Input.IsActionPressed(ButtonAction.ACTION_RIGHT, player.ControllerIndex)) then
+                if Input.IsActionPressed(ButtonAction.ACTION_LEFT, player.ControllerIndex) and not fakePlayerSprite:IsPlaying("Left") then
+                    fakePlayerSprite:Play("Left", true)
+                elseif Input.IsActionPressed(ButtonAction.ACTION_RIGHT, player.ControllerIndex) and not fakePlayerSprite:IsPlaying("Right") then
+                    fakePlayerSprite:Play("Right", true)
+                end
+            else
+                fakePlayerSprite:Play("Idle", true)
+            end
+        else
+            if (Input.IsActionPressed(ButtonAction.ACTION_DOWN, player.ControllerIndex) or Input.IsActionPressed(ButtonAction.ACTION_UP, player.ControllerIndex)) and not
+            (Input.IsActionPressed(ButtonAction.ACTION_DOWN, player.ControllerIndex) and Input.IsActionPressed(ButtonAction.ACTION_UP, player.ControllerIndex)) then
+                if Input.IsActionPressed(ButtonAction.ACTION_DOWN, player.ControllerIndex) and not fakePlayerSprite:IsPlaying("Left") then
+                    fakePlayerSprite:Play("Down", true)
+                elseif Input.IsActionPressed(ButtonAction.ACTION_UP, player.ControllerIndex) and not fakePlayerSprite:IsPlaying("Right") then
+                    fakePlayerSprite:Play("Up", true)
+                end
+            elseif (Input.IsActionPressed(ButtonAction.ACTION_LEFT, player.ControllerIndex) or Input.IsActionPressed(ButtonAction.ACTION_RIGHT, player.ControllerIndex)) and not
+            (Input.IsActionPressed(ButtonAction.ACTION_LEFT, player.ControllerIndex) and Input.IsActionPressed(ButtonAction.ACTION_RIGHT, player.ControllerIndex)) then
+                if Input.IsActionPressed(ButtonAction.ACTION_LEFT, player.ControllerIndex) and not fakePlayerSprite:IsPlaying("Left") then
+                    fakePlayerSprite:Play("Left", true)
+                elseif Input.IsActionPressed(ButtonAction.ACTION_RIGHT, player.ControllerIndex) and not fakePlayerSprite:IsPlaying("Right") then
+                    fakePlayerSprite:Play("Right", true)
+                end
+            else
+                fakePlayerSprite:Play("Idle", true)
+            end
         end
-    else
-        fakePlayerSprite:Play("Idle", true)
     end
 
     player:AddCacheFlags(CacheFlag.CACHE_DAMAGE | CacheFlag.CACHE_FIREDELAY | CacheFlag.CACHE_SHOTSPEED | CacheFlag.CACHE_RANGE)
