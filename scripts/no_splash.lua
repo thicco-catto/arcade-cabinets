@@ -21,6 +21,8 @@ no_splash.startingItems = {}
 
 -- Sounds
 local MinigameSounds = {
+    PLAYER_HIT = Isaac.GetSoundIdByName("bsw player hit"),
+
     HISS = Isaac.GetSoundIdByName("ns hiss"),
     RAWR = Isaac.GetSoundIdByName("ns rawr"),
     WAVE_FINISH = Isaac.GetSoundIdByName("ns wave finish"),
@@ -56,7 +58,11 @@ local MinigameEntityVariants = {
 
 -- Constants
 local MinigameConstants = {
+    MAX_PLAYER_IFRAMES = 30,
+
+    --UI
     ARROW_SPAWNING_POS = Vector(400, 200),
+    PLAYER_HEALTH_RENDER_POS = Vector(120, 20),
 
     --Wave stuff
     MAX_WAVES = 1,
@@ -118,6 +124,7 @@ local MinigameConstants = {
 local MinigameTimers = {
     BubbleSpawnTimer = 0,
     AnglerFishAttackTimer = 0,
+    IFramesTimer = 0,
 }
 
 -- States
@@ -134,8 +141,11 @@ local MinigameState = {
 -- UI
 local TransitionScreen = Sprite()
 TransitionScreen:Load("gfx/minigame_transition.anm2", true)
+local PlayerHealthUI = Sprite()
+PlayerHealthUI:Load("gfx/ns_player_health_ui.anm2", true)
 
 --Other Variables
+local PlayerHP = 3
 local CurrentBubbleXVelocity = 0
 local DistanceTraveled = 0
 local CurrentWave = 0
@@ -146,11 +156,14 @@ local AnglerFishAttacksInARow = 0
 
 function no_splash:Init()
     --Reset variables
+    PlayerHP = 3
     CurrentWave = 0
     DistanceTraveled = 0
     AnglerFishProjectiles = 0
     AnglerFishAttacksInARow = 0
     no_splash.result = nil
+
+    MinigameTimers.IFramesTimer = 0
 
     CurrentMinigameState = MinigameState.SWIMMING
 
@@ -337,6 +350,8 @@ end
 
 
 function no_splash:OnUpdate()
+    if MinigameTimers.IFramesTimer > 0 then MinigameTimers.IFramesTimer = MinigameTimers.IFramesTimer - 1 end
+
     SpawnBubbles()
 
     CalculateBubbleVelocity()
@@ -706,6 +721,13 @@ no_splash.callbacks[ModCallbacks.MC_NPC_UPDATE] = no_splash.OnNPCUpdate
 
 function no_splash:OnEntityDamage(tookDamage, damageAmount, _, _)
     if tookDamage:ToPlayer() then
+        if MinigameTimers.IFramesTimer <= 0 then
+            PlayerHP = PlayerHP - 1
+            SFXManager:Play(MinigameSounds.PLAYER_HIT)
+            PlayerHealthUI:Play("Flash", true)
+            MinigameTimers.IFramesTimer = MinigameConstants.MAX_PLAYER_IFRAMES
+        end
+
         return false
     elseif tookDamage.Type == MinigameEntityTypes.CUSTOM_ENTITY and tookDamage.Variant == MinigameEntityVariants.FISH and tookDamage.SubType == 0 and 
     damageAmount >= tookDamage.HitPoints then
@@ -882,14 +904,23 @@ end
 no_splash.callbacks[ModCallbacks.MC_POST_FIRE_TEAR] = no_splash.OnTearFire
 
 
+function RenderUI()
+    if PlayerHealthUI:IsPlaying("Flash") then
+        PlayerHealthUI:Update()
+    else
+        PlayerHealthUI:Play("Idle", true)
+        PlayerHealthUI:SetFrame(PlayerHP)
+    end
+    PlayerHealthUI:Render(MinigameConstants.PLAYER_HEALTH_RENDER_POS, Vector.Zero, Vector.Zero)
+end
+
+
 function no_splash:OnRender()
-    -- RenderUI()
+    RenderUI()
 
     -- RenderFadeOut()
 
     -- RenderVsScreen()
-
-    Isaac.RenderText(DistanceTraveled, 50, 50, 1, 1, 1, 1)
 end
 no_splash.callbacks[ModCallbacks.MC_POST_RENDER] = no_splash.OnRender
 

@@ -461,7 +461,7 @@ function ArcadeCabinetMod:OnFrameUpdate()
         SpawnMachine(ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_NIGHTLIGHT, Vector(470, 150))
         SpawnMachine(ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_NOSPLASH, Vector(540, 150))
 
-        SpawnMachine(ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_THEBLOB, Vector(100, 250))
+        --SpawnMachine(ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_THEBLOB, Vector(100, 250))
         SpawnMachine(ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_THEGROUNDBELOW, Vector(320, 250))
         SpawnMachine(ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_TOOUNDERGROUND, Vector(540, 250))
     end
