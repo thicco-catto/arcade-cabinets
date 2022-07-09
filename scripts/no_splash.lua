@@ -139,6 +139,7 @@ local MinigameState = {
     INTRO = 1,
     SWIMMING = 2,
     FIGHTING = 3,
+    FINISHING_WAVE = 4,
 
     LOSING = 5,
     WINNING = 6,
@@ -162,6 +163,7 @@ local CurrentWave = 0
 local Arrow = nil
 local AnglerFishProjectiles = 0
 local AnglerFishAttacksInARow = 0
+local LastPlayerPosX = 0
 
 
 function no_splash:Init()
@@ -312,6 +314,7 @@ local function StartWave()
                 local yInitial = rng:RandomInt(500)
                 for _ = 1, MinigameConstants.FISH_AMOUNT + CurrentWave, 1 do
                     SpawnEnemy(MinigameEntityVariants.FISH, yInitial, miniwave)
+                    yInitial = yInitial + 10
                 end
             elseif chosenEnemy == 1 then
                 --Eel
@@ -353,8 +356,9 @@ end
 
 local function FinishWave()
     Arrow = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.ARROW, 0, MinigameConstants.ARROW_SPAWNING_POS, Vector.Zero, nil)
-    CurrentMinigameState = MinigameState.SWIMMING
-    game:ShakeScreen(10)
+    CurrentMinigameState = MinigameState.FINISHING_WAVE
+    game:ShakeScreen(14)
+    LastPlayerPosX = game:GetPlayer(0).Position.X
 end
 
 
@@ -390,9 +394,24 @@ function no_splash:OnUpdate()
             end
             FinishWave()
         end
-    end
+    elseif CurrentMinigameState == MinigameState.FINISHING_WAVE then
+        local centerPosX = game:GetRoom():GetCenterPos().X
+        local currentPlayerPosX = game:GetPlayer(0).Position.X
 
-    
+        if LastPlayerPosX > centerPosX and currentPlayerPosX <= centerPosX or 
+        LastPlayerPosX < centerPosX and currentPlayerPosX >= centerPosX then
+            CurrentMinigameState = MinigameState.SWIMMING
+            SFXManager:Play(MinigameSounds.WAVE_FINISH)
+
+            local playerNum = game:GetNumPlayers()
+            for i = 0, playerNum - 1, 1 do
+                local player = game:GetPlayer(i)
+                player.Velocity = Vector.Zero
+            end
+        end
+
+        LastPlayerPosX = currentPlayerPosX
+    end
 end
 no_splash.callbacks[ModCallbacks.MC_POST_UPDATE] = no_splash.OnUpdate
 
@@ -509,7 +528,7 @@ end
 local function UpdateClam(clam)
     clam:AddEntityFlags(EntityFlag.FLAG_NO_PHYSICS_KNOCKBACK)
 
-    if CurrentMinigameState == MinigameState.SWIMMING then
+    if CurrentMinigameState == MinigameState.FINISHING_WAVE or CurrentMinigameState == MinigameState.SWIMMING then
         clam.Velocity = Vector(0, MinigameConstants.CLAM_VELOCITY)
 
         if clam.Position.Y > MinigameConstants.CLAM_SPAWNING_Y then
