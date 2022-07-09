@@ -1041,7 +1041,11 @@ function no_splash:OnPlayerUpdate(player)
     local fakePlayerSprite = player:GetData().FakePlayer:GetSprite()
 
     if not fakePlayerSprite:IsPlaying("Hurt") then
-        if CurrentMinigameState == MinigameState.SWIMMING then
+        if CurrentMinigameState == MinigameState.WINNING then
+            fakePlayerSprite:Play("Happy")
+        elseif CurrentMinigameState == MinigameState.LOSING then
+            fakePlayerSprite:Play("Hurt")
+        elseif CurrentMinigameState == MinigameState.SWIMMING then
             if (Input.IsActionPressed(ButtonAction.ACTION_LEFT, player.ControllerIndex) or Input.IsActionPressed(ButtonAction.ACTION_RIGHT, player.ControllerIndex)) and not
             (Input.IsActionPressed(ButtonAction.ACTION_LEFT, player.ControllerIndex) and Input.IsActionPressed(ButtonAction.ACTION_RIGHT, player.ControllerIndex)) then
                 if Input.IsActionPressed(ButtonAction.ACTION_LEFT, player.ControllerIndex) and not fakePlayerSprite:IsPlaying("Left") then
@@ -1136,6 +1140,8 @@ function RenderUI()
 
     if CurrentMinigameState == MinigameState.FIGHTING then
         CoolTextUI:Play("FIGHT", true)
+    elseif CurrentMinigameState == MinigameState.WINNING then
+        CoolTextUI:Play("WIN", true)
     else
         CoolTextUI:Play("GO", true)
     end
@@ -1180,8 +1186,6 @@ function no_splash:OnRender()
     RenderUI()
 
     RenderFadeOut()
-
-    -- RenderVsScreen()
 end
 no_splash.callbacks[ModCallbacks.MC_POST_RENDER] = no_splash.OnRender
 
