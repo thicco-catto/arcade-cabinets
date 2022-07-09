@@ -1,5 +1,5 @@
 <AnimatedActor>
-	<Info CreatedBy="Unknown" CreatedOn="09/07/2022 13:54:22" Version="36" Fps="30"/>
+	<Info CreatedBy="Unknown" CreatedOn="09/07/2022 14:23:23" Version="37" Fps="30"/>
 	<Content>
 		<Spritesheets>
 			<Spritesheet Path="effects\no splash\ns_boss_health_ui.png" Id="0"/>

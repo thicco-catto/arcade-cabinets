@@ -48,6 +48,9 @@ local MinigameEntityVariants = {
     ARROW = Isaac.GetEntityVariantByName("arrow NS"),
     BACKGROUND = Isaac.GetEntityVariantByName("background TGB"),
 
+    CORPSE = Isaac.GetEntityVariantByName("corpse NS"),
+    BLOOD_EXPLOSION = Isaac.GetEntityVariantByName("blood explosion NS"),
+
     FISH = Isaac.GetEntityVariantByName("fish NS"),
     CUNT = Isaac.GetEntityVariantByName("cunt NS"),
     EEL = Isaac.GetEntityVariantByName("eel NS"),
@@ -59,6 +62,7 @@ local MinigameEntityVariants = {
 -- Constants
 local MinigameConstants = {
     MAX_PLAYER_IFRAMES = 30,
+    CORPSE_VELOCITY = 2,
 
     --UI
     ARROW_SPAWNING_POS = Vector(400, 200),
@@ -66,7 +70,7 @@ local MinigameConstants = {
     MAX_BOSS_HEALTH_FLASH_FRAMES = 9,
 
     --Wave stuff
-    MAX_WAVES = 1,
+    MAX_WAVES = 3,
     DISTANCE_NEEDED_FOR_WAVE_START = 450,
     X_POSITION_TO_SPAWN = 500,
     X_POSITION_PER_MINIWAVE = 200,
@@ -415,9 +419,31 @@ local function UpdateBubble(effect)
 end
 
 
+---@param explosion EntityEffect
+local function UpdateExplosion(explosion)
+    if explosion:GetSprite():IsFinished("Idle") then
+        explosion:Remove()
+    end
+end
+
+
+---@param corpse EntityEffect
+local function UpdateCorpse(corpse)
+    corpse.Velocity = Vector(CurrentBubbleXVelocity, corpse.Velocity.Y)
+
+    if corpse.Position.Y < 0 or corpse.Position.Y > 600 then
+        corpse:Remove()
+    end
+end
+
+
 function no_splash:OnEffectUpdate(effect)
     if effect.Variant == MinigameEntityVariants.BUBBLE then
         UpdateBubble(effect)
+    elseif effect.Variant == MinigameEntityVariants.BLOOD_EXPLOSION then
+        UpdateExplosion(effect)
+    elseif effect.Variant == MinigameEntityVariants.CORPSE then
+        UpdateCorpse(effect)
     end
 end
 no_splash.callbacks[ModCallbacks.MC_POST_EFFECT_UPDATE] = no_splash.OnEffectUpdate
@@ -736,31 +762,64 @@ function no_splash:OnEntityDamage(tookDamage, damageAmount, _, _)
         end
 
         return false
-    elseif tookDamage.Type == MinigameEntityTypes.CUSTOM_ENTITY and tookDamage.Variant == MinigameEntityVariants.FISH and tookDamage.SubType == 0 and 
-    damageAmount >= tookDamage.HitPoints then
-        if tookDamage:GetSprite():IsPlaying("Transition") then return false end
+    end
 
-        local bonerFish = Isaac.Spawn(MinigameEntityTypes.CUSTOM_ENTITY, MinigameEntityVariants.FISH, 1, tookDamage.Position, Vector.Zero, nil)
-        bonerFish:GetSprite():ReplaceSpritesheet(0, "gfx/enemies/ns_bone_fish.png")
-        bonerFish:GetSprite():LoadGraphics()
-        bonerFish:GetSprite():Play("Transition", true)
-        bonerFish:ClearEntityFlags(EntityFlag.FLAG_APPEAR)
-        bonerFish:AddEntityFlags(EntityFlag.FLAG_NO_FLASH_ON_DAMAGE | EntityFlag.FLAG_NO_PHYSICS_KNOCKBACK)
-        bonerFish.FlipX = tookDamage.FlipX
+    if tookDamage.Type ~= MinigameEntityTypes.CUSTOM_ENTITY then return end
+
+    --Negate damage if the fish is playing the transition anim
+    if tookDamage.Variant == MinigameEntityVariants.FISH and tookDamage:GetSprite():IsPlaying("Transition") then
+        return false
+    elseif tookDamage.Variant == MinigameEntityVariants.ANGLER_FISH then
+        MinigameTimers.BossHealthFlashTimer = MinigameConstants.MAX_BOSS_HEALTH_FLASH_FRAMES
+    end
+
+    if damageAmount < tookDamage.HitPoints then return end
+
+    if tookDamage.Variant == MinigameEntityVariants.FISH then
+        if tookDamage.SubType == 0 then
+            local bonerFish = Isaac.Spawn(MinigameEntityTypes.CUSTOM_ENTITY, MinigameEntityVariants.FISH, 1, tookDamage.Position, Vector.Zero, nil)
+            bonerFish:GetSprite():ReplaceSpritesheet(0, "gfx/enemies/ns_bone_fish.png")
+            bonerFish:GetSprite():LoadGraphics()
+            bonerFish:GetSprite():Play("Transition", true)
+            bonerFish:ClearEntityFlags(EntityFlag.FLAG_APPEAR)
+            bonerFish:AddEntityFlags(EntityFlag.FLAG_NO_FLASH_ON_DAMAGE | EntityFlag.FLAG_NO_PHYSICS_KNOCKBACK)
+            bonerFish.FlipX = tookDamage.FlipX
+            tookDamage:Remove()
+        else
+            local corpse = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.CORPSE, 0, tookDamage.Position, Vector(0, MinigameConstants.CORPSE_VELOCITY), nil)
+            corpse:GetSprite():Play("Fish")
+            corpse.DepthOffset = -100
+
+            local explosion = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.BLOOD_EXPLOSION, 0, tookDamage.Position, Vector.Zero, nil)
+            explosion:GetSprite():ReplaceSpritesheet(0, "gfx/effects/no splash/ns_blood_explosion.png")
+            explosion:GetSprite():LoadGraphics()
+            explosion:GetSprite():Play("Idle", true)
+
+            tookDamage:Remove()
+        end
+    elseif tookDamage.Variant == MinigameEntityVariants.EEL then
+        local corpse = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.CORPSE, 0, tookDamage.Position, Vector(0, -MinigameConstants.CORPSE_VELOCITY), nil)
+        corpse:GetSprite():Play("Eel")
+        corpse.DepthOffset = -100
+
+        local explosion = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.BLOOD_EXPLOSION, 0, tookDamage.Position, Vector.Zero, nil)
+        explosion:GetSprite():ReplaceSpritesheet(0, "gfx/effects/no splash/ns_blood_explosion.png")
+        explosion:GetSprite():LoadGraphics()
+        explosion:GetSprite():Play("Idle", true)
+
         tookDamage:Remove()
-    elseif tookDamage.Type == MinigameEntityTypes.CUSTOM_ENTITY and tookDamage.Variant == MinigameEntityVariants.SPIKED_MINE and tookDamage.SubType == 0 and 
-    damageAmount >= tookDamage.HitPoints then
+    elseif tookDamage.Variant == MinigameEntityVariants.CUNT then
+        local corpse = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.CORPSE, 0, tookDamage.Position, Vector(0, -MinigameConstants.CORPSE_VELOCITY), nil)
+        corpse:GetSprite():Play("Cunt")
+        corpse.DepthOffset = -100
+
+        tookDamage:Remove()
+    elseif tookDamage.Variant == MinigameEntityVariants.SPIKED_MINE then
         local params = ProjectileParams()
         params.BulletFlags = ProjectileFlags.NO_WALL_COLLIDE
         params.Spread = 1
         tookDamage:ToNPC():FireProjectiles(tookDamage.Position, Vector(10, 0), 8, params)
         tookDamage:Remove()
-    elseif tookDamage.Type == MinigameEntityTypes.CUSTOM_ENTITY and 
-    (tookDamage.Variant == MinigameEntityVariants.EEL or tookDamage.Variant == MinigameEntityVariants.CUNT or tookDamage.Variant == MinigameEntityVariants.FISH or tookDamage.Variant == MinigameEntityVariants.CLAM) and
-    damageAmount >= tookDamage.HitPoints then
-        tookDamage:Remove()
-    elseif tookDamage.Type == MinigameEntityTypes.CUSTOM_ENTITY and tookDamage.Variant == MinigameEntityVariants.ANGLER_FISH then
-        MinigameTimers.BossHealthFlashTimer = MinigameConstants.MAX_BOSS_HEALTH_FLASH_FRAMES
     end
 end
 no_splash.callbacks[ModCallbacks.MC_ENTITY_TAKE_DMG] = no_splash.OnEntityDamage
