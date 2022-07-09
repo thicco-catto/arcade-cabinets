@@ -63,6 +63,7 @@ local MinigameConstants = {
     --UI
     ARROW_SPAWNING_POS = Vector(400, 200),
     PLAYER_HEALTH_RENDER_POS = Vector(120, 20),
+    MAX_BOSS_HEALTH_FLASH_FRAMES = 9,
 
     --Wave stuff
     MAX_WAVES = 1,
@@ -125,6 +126,7 @@ local MinigameTimers = {
     BubbleSpawnTimer = 0,
     AnglerFishAttackTimer = 0,
     IFramesTimer = 0,
+    BossHealthFlashTimer = 0,
 }
 
 -- States
@@ -143,6 +145,10 @@ local TransitionScreen = Sprite()
 TransitionScreen:Load("gfx/minigame_transition.anm2", true)
 local PlayerHealthUI = Sprite()
 PlayerHealthUI:Load("gfx/ns_player_health_ui.anm2", true)
+local CoolTextUI = Sprite()
+CoolTextUI:Load("gfx/ns_cool_text_ui.anm2", true)
+local BossHealthUI = Sprite()
+BossHealthUI:Load("gfx/ns_boss_health_ui.anm2", true)
 
 --Other Variables
 local PlayerHP = 3
@@ -351,6 +357,7 @@ end
 
 function no_splash:OnUpdate()
     if MinigameTimers.IFramesTimer > 0 then MinigameTimers.IFramesTimer = MinigameTimers.IFramesTimer - 1 end
+    if MinigameTimers.BossHealthFlashTimer > 0 then MinigameTimers.BossHealthFlashTimer = MinigameTimers.BossHealthFlashTimer - 1 end
 
     SpawnBubbles()
 
@@ -752,6 +759,8 @@ function no_splash:OnEntityDamage(tookDamage, damageAmount, _, _)
     (tookDamage.Variant == MinigameEntityVariants.EEL or tookDamage.Variant == MinigameEntityVariants.CUNT or tookDamage.Variant == MinigameEntityVariants.FISH or tookDamage.Variant == MinigameEntityVariants.CLAM) and
     damageAmount >= tookDamage.HitPoints then
         tookDamage:Remove()
+    elseif tookDamage.Type == MinigameEntityTypes.CUSTOM_ENTITY and tookDamage.Variant == MinigameEntityVariants.ANGLER_FISH then
+        MinigameTimers.BossHealthFlashTimer = MinigameConstants.MAX_BOSS_HEALTH_FLASH_FRAMES
     end
 end
 no_splash.callbacks[ModCallbacks.MC_ENTITY_TAKE_DMG] = no_splash.OnEntityDamage
@@ -912,6 +921,26 @@ function RenderUI()
         PlayerHealthUI:SetFrame(PlayerHP)
     end
     PlayerHealthUI:Render(MinigameConstants.PLAYER_HEALTH_RENDER_POS, Vector.Zero, Vector.Zero)
+
+    if CurrentMinigameState == MinigameState.FIGHTING then
+        CoolTextUI:Play("FIGHT", true)
+    else
+        CoolTextUI:Play("GO", true)
+    end
+
+    CoolTextUI:Render(Vector(Isaac.GetScreenWidth()/2, 20), Vector.Zero, Vector.Zero)
+
+    if #Isaac.FindByType(MinigameEntityTypes.CUSTOM_ENTITY, MinigameEntityVariants.ANGLER_FISH) == 0 then return end
+
+    if MinigameTimers.BossHealthFlashTimer > 0 then
+        BossHealthUI:Play("Flash", true)
+    else
+        BossHealthUI:Play("Idle", true)
+    end
+
+    local chuck = Isaac.FindByType(MinigameEntityTypes.CUSTOM_ENTITY, MinigameEntityVariants.ANGLER_FISH)[1]
+    BossHealthUI:SetFrame(math.floor(chuck.HitPoints/chuck.MaxHitPoints * 40))
+    BossHealthUI:Render(Vector(Isaac.GetScreenWidth() - MinigameConstants.PLAYER_HEALTH_RENDER_POS.X, MinigameConstants.PLAYER_HEALTH_RENDER_POS.Y), Vector.Zero, Vector.Zero)
 end
 
 
