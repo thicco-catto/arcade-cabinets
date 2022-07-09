@@ -200,7 +200,7 @@
         <gibs amount="0" blood="0" bone="0" dust="0" eye="0" gut="0" large="0"/>
     </entity>
 
-    <entity anm2path="ns_angler_fish.anm2" name="angler fish NS" id="997" variant="16" baseHP="200" boss="0" champion="0" collisionDamage="1" collisionMass="10" collisionRadius="45" collisionRadiusXMulti="1.4" friction="1" gridCollision="none" numGridCollisionPoints="12" shadowSize="0" stageHP="0">
+    <entity anm2path="ns_angler_fish.anm2" name="angler fish NS" id="997" variant="16" baseHP="350" boss="0" champion="0" collisionDamage="1" collisionMass="10" collisionRadius="45" collisionRadiusXMulti="1.4" friction="1" gridCollision="none" numGridCollisionPoints="12" shadowSize="0" stageHP="0">
         <gibs amount="0" blood="0" bone="0" dust="0" eye="0" gut="0" large="0"/>
     </entity>
 
@@ -209,6 +209,10 @@
     </entity>
 
     <entity anm2path="hs_end_explosion.anm2" subtype="0" name="blood explosion NS" variant="" id="1000" baseHP="0" boss="0" champion="0" collisionDamage="0" collisionMass="0" collisionRadius="0" friction="1" numGridCollisionPoints="0" shadowSize="0" shutdoors="false" stageHP="0" gridCollision="none"> 
+        <gibs amount="0" blood="0" bone="0" eye="0" gut="0" large="0" />
+    </entity>
+
+    <entity anm2path="ns_chuck_corpse.anm2" subtype="0" name="chuck corpse NS" variant="" id="1000" baseHP="0" boss="0" champion="0" collisionDamage="0" collisionMass="0" collisionRadius="0" friction="1" numGridCollisionPoints="0" shadowSize="0" shutdoors="false" stageHP="0" gridCollision="none"> 
         <gibs amount="0" blood="0" bone="0" eye="0" gut="0" large="0" />
     </entity>
 

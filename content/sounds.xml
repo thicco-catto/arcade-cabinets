@@ -187,6 +187,18 @@
         <sample weight="1" path="no splash/crash.wav"/>
     </sound>
 
+    <sound name="ns cunt dead">
+        <sample weight="1" path="no splash/cuntdead.wav"/>
+    </sound>
+
+    <sound name="ns fish skin">
+        <sample weight="1" path="no splash/fishskin.wav"/>
+    </sound>
+
+    <sound name="ns bone dead">
+        <sample weight="1" path="no splash/bonedead.wav"/>
+    </sound>
+
     <!--The ground below-->
     <sound name="tgb intro">
         <sample weight="1" path="the ground below/intro.wav"/>
