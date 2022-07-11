@@ -1,6 +1,5 @@
 local CabinetManagement = {}
 local game = Game()
-local rng = RNG()
 
 ----------------------------------------------
 --FANCY REQUIRE (Thanks manaphoenix <3)
@@ -13,6 +12,35 @@ local function loadFile(loc, ...)
 end
 
 local ArcadeCabinetVariables = nil
+
+
+---@param machineVariant number
+---@return boolean
+local function IsModdedVariant(machineVariant)
+    for _, variant in pairs(ArcadeCabinetVariables.ArcadeCabinetVariant) do
+        if machineVariant == variant then
+            return true
+        end
+    end
+
+    return false
+end
+
+
+---Returns a rng object for a determined cabinet. It is the same everytime for each machine.
+---@param cabinet Entity
+---@return RNG
+local function GetCabinetRNG(cabinet)
+    local rng = RNG()
+    local level = game:GetLevel()
+    local room = game:GetRoom()
+    local gridIndex = room:GetGridIndex(cabinet.Position)
+
+    rng:SetSeed(game:GetSeeds():GetStartSeed() + level:GetAbsoluteStage() + level:GetCurrentRoomIndex() + gridIndex, 35)
+
+    return rng
+end
+
 
 ---@param slot Entity
 local function UseMachine(slot)
@@ -47,15 +75,8 @@ function CabinetManagement:OnPlayerUpdate(player)
     if player:GetNumCoins() < 5 then return end
 
     for _, slot in pairs(Isaac.FindByType(EntityType.ENTITY_SLOT)) do
-        for _, variant in pairs(ArcadeCabinetVariables.ArcadeCabinetVariant) do
-            if slot.Variant == variant then
-                isModdedMachine = true
-                break
-            end
-        end
-
         --If it isnt one of our machines we can just skip the rest
-        if not isModdedMachine then break end
+        if not IsModdedVariant(slot.Variant) then break end
 
         if (player.Position - slot.Position):Length() <= ArcadeCabinetVariables.CabinetRadius then
             player:AddCoins(-5)
@@ -275,11 +296,34 @@ function CabinetManagement:OnPeffectUpdate(player)
 end
 
 
+function CabinetManagement:OnNewRoom()
+    local moddedMachines = {}
+
+    for _, slot in ipairs(Isaac.FindByType(EntityType.ENTITY_SLOT)) do
+        if IsModdedVariant(slot.Variant) then
+            table.insert(moddedMachines, slot)
+        end
+    end
+
+    for _, cabinet in ipairs(moddedMachines) do
+        local cabinetRng = GetCabinetRNG(cabinet)
+        local seed = cabinetRng:RandomInt(999) * 10000 + 10000
+        local chosenCollectible = game:GetItemPool():GetCollectible(ItemPoolType.POOL_CRANE_GAME, false, seed)
+        local itemSprite = Isaac.GetItemConfig():GetCollectible(chosenCollectible).GfxFileName
+
+        cabinet:GetSprite():ReplaceSpritesheet(2, itemSprite)
+        cabinet:GetSprite():LoadGraphics()
+    end
+end
+
+
+
 function CabinetManagement:Init(mod, variables)
     mod:AddCallback(ModCallbacks.MC_POST_PLAYER_UPDATE, CabinetManagement.OnPlayerUpdate)
     mod:AddCallback(ModCallbacks.MC_GET_SHADER_PARAMS, CabinetManagement.GetShaderParams)
     mod:AddCallback(ModCallbacks.MC_POST_RENDER, CabinetManagement.OnRender)
     mod:AddCallback(ModCallbacks.MC_POST_PEFFECT_UPDATE, CabinetManagement.OnPeffectUpdate)
+    mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, CabinetManagement.OnNewRoom)
     ArcadeCabinetVariables = variables
 end
 
