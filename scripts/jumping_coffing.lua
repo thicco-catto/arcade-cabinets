@@ -614,10 +614,10 @@ function jumping_coffing:OnBossUpdate(boss)
                 local fly
                 if ArcadeCabinetVariables.IsCurrentMinigameClitched and rng:RandomInt(100) < 5 then
                     fly = Isaac.Spawn(EntityType.ENTITY_TWITCHY, 0, 0, MinigameConstants.SPAWNING_POSITIONS[flyCorner], Vector.Zero, nil)
-                    enemy:GetSprite():Load("gfx/jc_twitchy.anm2", false)
-                    enemy:GetSprite():ReplaceSpritesheet(0, "gfx/enemies/jc_glitch_twitchy_body.png")
-                    enemy:GetSprite():ReplaceSpritesheet(1, "gfx/enemies/jc_glitch_twitchy_head.png")
-                    enemy:GetSprite():LoadGraphics()
+                    fly:GetSprite():Load("gfx/jc_twitchy.anm2", false)
+                    fly:GetSprite():ReplaceSpritesheet(0, "gfx/enemies/jc_glitch_twitchy_body.png")
+                    fly:GetSprite():ReplaceSpritesheet(1, "gfx/enemies/jc_glitch_twitchy_head.png")
+                    fly:GetSprite():LoadGraphics()
                 else
                     fly = Isaac.Spawn(EntityType.ENTITY_ATTACKFLY, 0, 0, MinigameConstants.SPAWNING_POSITIONS[flyCorner], Vector.Zero, nil)
                     fly.Target = TargetEntity
