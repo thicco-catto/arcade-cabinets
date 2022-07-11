@@ -7,7 +7,6 @@ ArcadeCabinetVariables.ArcadeCabinetVariant = {
     VARIANT_JUMPINGCOFFING = Isaac.GetEntityVariantByName("Arcade Cabinet JC"),
     VARIANT_NIGHTLIGHT = Isaac.GetEntityVariantByName("Arcade Cabinet NL"),
     VARIANT_NOSPLASH = Isaac.GetEntityVariantByName("Arcade Cabinet NS"),
-    VARIANT_THEBLOB = Isaac.GetEntityVariantByName("Arcade Cabinet TB"),
     VARIANT_THEGROUNDBELOW = Isaac.GetEntityVariantByName("Arcade Cabinet TGB"),
     VARIANT_TOOUNDERGROUND = Isaac.GetEntityVariantByName("Arcade Cabinet TUG")
 }
@@ -19,7 +18,6 @@ ArcadeCabinetVariables.ArcadeCabinetSprite = {
     [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_JUMPINGCOFFING] = "jc.png",
     [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_NIGHTLIGHT] = "nl.png",
     [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_NOSPLASH] = "ns.png",
-    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_THEBLOB] = "tb.png",
     [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_THEGROUNDBELOW] = "tgb.png",
     [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_TOOUNDERGROUND] = "tug.png"
 }
@@ -31,7 +29,6 @@ ArcadeCabinetVariables.ArcadeCabinetRooms = {
     [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_JUMPINGCOFFING] = "170",
     [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_NIGHTLIGHT] = "180",
     [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_NOSPLASH] = "190",
-    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_THEBLOB] = "200",
     [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_THEGROUNDBELOW] = "210",
     [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_TOOUNDERGROUND] = "220"
 }
@@ -58,6 +55,7 @@ ArcadeCabinetVariables.CabinetRadius = 20
 ArcadeCabinetVariables.MinigameDoor = nil
 ArcadeCabinetVariables.CurrentMinigame = nil
 ArcadeCabinetVariables.CurrentScript = nil
+ArcadeCabinetVariables.IsCurrentMinigameClitched = nil
 ArcadeCabinetVariables.LevelCurses = nil
 ArcadeCabinetVariables.OptionsChargeBar = nil
 ArcadeCabinetVariables.OptionsFilter = nil

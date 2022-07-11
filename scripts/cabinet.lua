@@ -1,4 +1,5 @@
 local CabinetManagement = {}
+local ArcadeCabinetMod = nil
 local game = Game()
 
 ----------------------------------------------
@@ -48,10 +49,16 @@ local function UseMachine(slot)
     ArcadeCabinetVariables.CurrentGameState = ArcadeCabinetVariables.GameState.FADE_IN
     ArcadeCabinetVariables.CurrentMinigame = slot.Variant
     ArcadeCabinetVariables.CurrentScript = ArcadeCabinetVariables.ArcadeCabinetScripts[ArcadeCabinetVariables.CurrentMinigame]
+    ArcadeCabinetVariables.IsCurrentMinigameClitched = slot:GetData().IsGlitched
 
     --Set the transition screen graphics
-    ArcadeCabinetVariables.TransitionScreen:ReplaceSpritesheet(0, "gfx/effects/" .. ArcadeCabinetVariables.ArcadeCabinetSprite[ArcadeCabinetVariables.CurrentMinigame])
-    ArcadeCabinetVariables.TransitionScreen:ReplaceSpritesheet(1, "gfx/effects/" .. ArcadeCabinetVariables.ArcadeCabinetSprite[ArcadeCabinetVariables.CurrentMinigame])
+    local path = "gfx/effects/"
+    if ArcadeCabinetVariables.IsCurrentMinigameClitched then
+        path = path .. "glitched_"
+    end
+    path = path .. ArcadeCabinetVariables.ArcadeCabinetSprite[ArcadeCabinetVariables.CurrentMinigame]
+    ArcadeCabinetVariables.TransitionScreen:ReplaceSpritesheet(0, path)
+    ArcadeCabinetVariables.TransitionScreen:ReplaceSpritesheet(1, path)
     ArcadeCabinetVariables.TransitionScreen:LoadGraphics()
     ArcadeCabinetVariables.TransitionScreen:Play("Appear", true)
 
@@ -152,7 +159,7 @@ local function FinishTransitionFadeIn()
     local roomIndex = ArcadeCabinetVariables.ArcadeCabinetRooms[ArcadeCabinetVariables.CurrentMinigame]
     Isaac.ExecuteCommand("goto s.isaacs." .. roomIndex)
 
-    --Change all players to isaac and manage their pickups
+    --Prepare all players for the minigame
     local playerNum = game:GetNumPlayers()
     for i = 0, playerNum - 1, 1 do
         InitPlayerForMinigame(game:GetPlayer(i))
@@ -257,6 +264,38 @@ function CabinetManagement:OnRender()
 end
 
 
+local function IsAnyPlayerPressingStart()
+    local playerNum = game:GetNumPlayers()
+    for i = 0, playerNum - 1, 1 do
+        local player = game:GetPlayer(i)
+        if Input.IsActionPressed(ButtonAction.ACTION_ITEM, player.ControllerIndex) then
+            return true
+        end
+    end
+
+    return false
+end
+
+
+local function CheckIfStartMinigame()
+    --We only need to run this function if we are on the minigame transition
+    if ArcadeCabinetVariables.CurrentGameState ~= ArcadeCabinetVariables.GameState.TRANSITION then return end
+
+    --Give the players some time to admire the wonderful transition screen
+    if game:GetFrameCount() - ArcadeCabinetVariables.TransitionFrameCount < 20 then return end
+
+    if IsAnyPlayerPressingStart() then
+        ArcadeCabinetVariables.CurrentGameState = ArcadeCabinetVariables.GameState.PLAYING
+        ArcadeCabinetVariables.CurrentScript:Init(ArcadeCabinetMod, ArcadeCabinetVariables)
+    end
+end
+
+
+function CabinetManagement:OnFrameUpdate()
+    CheckIfStartMinigame()
+end
+
+
 ---@param player EntityPlayer
 function CheckCollectedItems(player)
     local data = player:GetData().ArcadeCabinet
@@ -296,26 +335,32 @@ function CabinetManagement:OnPeffectUpdate(player)
 end
 
 
-function CabinetManagement:OnNewRoom()
-    local moddedMachines = {}
+---@param cabinet Entity
+local function SetUpCabinet(cabinet)
+    local cabinetRng = GetCabinetRNG(cabinet)
+    --Do the 10000 thing because the collectible doesnt change for small values
+    local seed = cabinetRng:RandomInt(999) * 10000 + 10000
+    local chosenCollectible = game:GetItemPool():GetCollectible(ItemPoolType.POOL_CRANE_GAME, false, seed)
+    local itemSprite = Isaac.GetItemConfig():GetCollectible(chosenCollectible).GfxFileName
+    cabinet:GetSprite():ReplaceSpritesheet(2, itemSprite)
 
-    for _, slot in ipairs(Isaac.FindByType(EntityType.ENTITY_SLOT)) do
-        if IsModdedVariant(slot.Variant) then
-            table.insert(moddedMachines, slot)
-        end
+    if cabinetRng:RandomInt(1) < 5 then
+        cabinet:GetSprite():ReplaceSpritesheet(1, "gfx/slots/glitched_" .. ArcadeCabinetVariables.ArcadeCabinetSprite[cabinet.Variant])
+        cabinet:GetData().IsGlitched = true
     end
 
-    for _, cabinet in ipairs(moddedMachines) do
-        local cabinetRng = GetCabinetRNG(cabinet)
-        local seed = cabinetRng:RandomInt(999) * 10000 + 10000
-        local chosenCollectible = game:GetItemPool():GetCollectible(ItemPoolType.POOL_CRANE_GAME, false, seed)
-        local itemSprite = Isaac.GetItemConfig():GetCollectible(chosenCollectible).GfxFileName
-
-        cabinet:GetSprite():ReplaceSpritesheet(2, itemSprite)
-        cabinet:GetSprite():LoadGraphics()
-    end
+    cabinet:GetSprite():LoadGraphics()
 end
 
+
+function CabinetManagement:OnNewRoom()
+    --Find all modded cabinets and set them up
+    for _, slot in ipairs(Isaac.FindByType(EntityType.ENTITY_SLOT)) do
+        if IsModdedVariant(slot.Variant) then
+            SetUpCabinet(slot)
+        end
+    end
+end
 
 
 function CabinetManagement:Init(mod, variables)
@@ -324,6 +369,8 @@ function CabinetManagement:Init(mod, variables)
     mod:AddCallback(ModCallbacks.MC_POST_RENDER, CabinetManagement.OnRender)
     mod:AddCallback(ModCallbacks.MC_POST_PEFFECT_UPDATE, CabinetManagement.OnPeffectUpdate)
     mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, CabinetManagement.OnNewRoom)
+    mod:AddCallback(ModCallbacks.MC_POST_UPDATE, CabinetManagement.OnFrameUpdate)
+    ArcadeCabinetMod = mod
     ArcadeCabinetVariables = variables
 end
 

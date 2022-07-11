@@ -1,9 +1,9 @@
 <AnimatedActor>
-	<Info CreatedBy="trtv" CreatedOn="23/02/2022 18:32:11" Version="3" Fps="30"/>
+	<Info CreatedBy="trtv" CreatedOn="11/07/2022 19:55:58" Version="5" Fps="30"/>
 	<Content>
 		<Spritesheets>
-			<Spritesheet Path="enemies\rotten_gaper_body.png" Id="0"/>
-			<Spritesheet Path="enemies\rotten_gaper_heads.png" Id="1"/>
+			<Spritesheet Path="enemies\jc_rotten_gaper_body.png" Id="0"/>
+			<Spritesheet Path="enemies\jc_rotten_gaper_heads.png" Id="1"/>
 		</Spritesheets>
 		<Layers>
 			<Layer Name="body" Id="0" SpritesheetId="0"/>

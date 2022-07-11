@@ -23,7 +23,6 @@ ArcadeCabinetVariables.ArcadeCabinetScripts = {
     [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_JUMPINGCOFFING] = loadFile("scripts/jumping_coffing"),
     [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_NIGHTLIGHT] = loadFile("scripts/night_light"),
     [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_NOSPLASH] = loadFile("scripts/no_splash"),
-    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_THEBLOB] = loadFile("scripts/the_blob"),
     [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_THEGROUNDBELOW] = loadFile("scripts/the_ground_below"),
     [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_TOOUNDERGROUND] = loadFile("scripts/too_underground")
 }
@@ -232,60 +231,60 @@ end
 
 
 local function CheckCollectedItems()
-    local roomCollectibles = Isaac.FindByType(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_COLLECTIBLE, -1)
+    -- local roomCollectibles = Isaac.FindByType(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_COLLECTIBLE, -1)
 
-    local aux = {}
-    for _, item in ipairs(roomCollectibles) do
-        if item.SubType ~= 0 and 
-        (Isaac.GetItemConfig():GetCollectible(item.SubType).Type == ItemType.ITEM_PASSIVE or 
-        Isaac.GetItemConfig():GetCollectible(item.SubType).Type == ItemType.ITEM_FAMILIAR) then 
-            if aux[tostring(item.SubType)] then
-                aux[tostring(item.SubType)] = aux[tostring(item.SubType)] + 1
-            else
-                aux[tostring(item.SubType)] = 1
-            end
-        end
-    end
-    roomCollectibles = aux
+    -- local aux = {}
+    -- for _, item in ipairs(roomCollectibles) do
+    --     if item.SubType ~= 0 and 
+    --     (Isaac.GetItemConfig():GetCollectible(item.SubType).Type == ItemType.ITEM_PASSIVE or 
+    --     Isaac.GetItemConfig():GetCollectible(item.SubType).Type == ItemType.ITEM_FAMILIAR) then 
+    --         if aux[tostring(item.SubType)] then
+    --             aux[tostring(item.SubType)] = aux[tostring(item.SubType)] + 1
+    --         else
+    --             aux[tostring(item.SubType)] = 1
+    --         end
+    --     end
+    -- end
+    -- roomCollectibles = aux
 
-    local missingItems = {}
-    local thereWasMissing = false
+    -- local missingItems = {}
+    -- local thereWasMissing = false
 
-    for itemID, val in pairs(ArcadeCabinetVariables.LastRoomCollectibles) do
-        if not roomCollectibles[itemID] then --That collectible is not longer in the room
-            thereWasMissing = true
-            missingItems[itemID] = 1
-        elseif roomCollectibles[itemID] < val then --There are less of that collectible
-            thereWasMissing = true
-            missingItems[itemID] = val - roomCollectibles[itemID]
-        end
-    end
+    -- for itemID, val in pairs(ArcadeCabinetVariables.LastRoomCollectibles) do
+    --     if not roomCollectibles[itemID] then --That collectible is not longer in the room
+    --         thereWasMissing = true
+    --         missingItems[itemID] = 1
+    --     elseif roomCollectibles[itemID] < val then --There are less of that collectible
+    --         thereWasMissing = true
+    --         missingItems[itemID] = val - roomCollectibles[itemID]
+    --     end
+    -- end
 
-    if thereWasMissing then
-        for itemId, _ in pairs(missingItems) do
-            local playerNum = game:GetNumPlayers()
+    -- if thereWasMissing then
+    --     for itemId, _ in pairs(missingItems) do
+    --         local playerNum = game:GetNumPlayers()
 
-            for i = 0, playerNum - 1, 1 do
-                local player = game:GetPlayer(i)
-                local data = player:GetData().ArcadeCabinet
-                local numCollectible = player:GetCollectibleNum(tonumber(itemId))
+    --         for i = 0, playerNum - 1, 1 do
+    --             local player = game:GetPlayer(i)
+    --             local data = player:GetData().ArcadeCabinet
+    --             local numCollectible = player:GetCollectibleNum(tonumber(itemId))
 
-                if player.QueuedItem.Item then
-                    if player.QueuedItem.Item.ID < 0 and ArcadeCabinetVariables.MAX_ID_TMTRAINER + player.QueuedItem.Item.ID + 1 == tonumber(itemId) or
-                     player.QueuedItem.Item.ID == tonumber(itemId) then
-                        numCollectible = numCollectible + 1
-                    end
-                end
+    --             if player.QueuedItem.Item then
+    --                 if player.QueuedItem.Item.ID < 0 and ArcadeCabinetVariables.MAX_ID_TMTRAINER + player.QueuedItem.Item.ID + 1 == tonumber(itemId) or
+    --                  player.QueuedItem.Item.ID == tonumber(itemId) then
+    --                     numCollectible = numCollectible + 1
+    --                 end
+    --             end
 
-                if (data.collectedItems[itemId] or 0) ~= numCollectible then
-                    data.collectedItems[itemId] = numCollectible
-                    data.collectedItemsOrdered[#data.collectedItemsOrdered+1] = itemId
-                end
-            end            
-        end
-    end
+    --             if (data.collectedItems[itemId] or 0) ~= numCollectible then
+    --                 data.collectedItems[itemId] = numCollectible
+    --                 data.collectedItemsOrdered[#data.collectedItemsOrdered+1] = itemId
+    --             end
+    --         end            
+    --     end
+    -- end
 
-    ArcadeCabinetVariables.LastRoomCollectibles = roomCollectibles
+    -- ArcadeCabinetVariables.LastRoomCollectibles = roomCollectibles
 end
 
 
@@ -486,39 +485,41 @@ function ArcadeCabinetMod:OnFrameUpdate()
                 end
             end
         end
-    elseif ArcadeCabinetVariables.CurrentGameState == ArcadeCabinetVariables.GameState.TRANSITION then
+    -- elseif ArcadeCabinetVariables.CurrentGameState == ArcadeCabinetVariables.GameState.TRANSITION then
 
-        local room = game:GetRoom()
+    --     local room = game:GetRoom()
 
-        if game:GetFrameCount() - ArcadeCabinetVariables.TransitionFrameCount == 2 then
-            --If the 2 frames passed we must be in the new room so close doors
-            for i = 0, 7, 1 do
-                local door = room:GetDoor(i)
-                if door then
-                    ArcadeCabinetVariables.MinigameDoor = door
-                end
-            end
-        elseif  game:GetFrameCount() - ArcadeCabinetVariables.TransitionFrameCount > 5 and Input.IsActionPressed(ButtonAction.ACTION_ITEM, 0) then
-            --If the player presses space we begin playing
-            ArcadeCabinetVariables.CurrentGameState = ArcadeCabinetVariables.GameState.PLAYING
+    --     if game:GetFrameCount() - ArcadeCabinetVariables.TransitionFrameCount == 2 then
+    --         --If the 2 frames passed we must be in the new room so close doors
+    --         for i = 0, 7, 1 do
+    --             local door = room:GetDoor(i)
+    --             if door then
+    --                 ArcadeCabinetVariables.MinigameDoor = door
+    --             end
+    --         end
+    --     elseif  game:GetFrameCount() - ArcadeCabinetVariables.TransitionFrameCount > 5 and Input.IsActionPressed(ButtonAction.ACTION_ITEM, 0) then
+    --         --If the player presses space we begin playing
+    --         ArcadeCabinetVariables.CurrentGameState = ArcadeCabinetVariables.GameState.PLAYING
 
-            ArcadeCabinetVariables.CurrentScript:Init()
+    --         ArcadeCabinetVariables.CurrentScript:Init()
 
-            for callback, funct in pairs(ArcadeCabinetVariables.CurrentScript.callbacks) do
-                ArcadeCabinetMod:AddCallback(callback, funct)
-            end
-        end
+    --         for callback, funct in pairs(ArcadeCabinetVariables.CurrentScript.callbacks) do
+    --             ArcadeCabinetMod:AddCallback(callback, funct)
+    --         end
+    --     end
     end
 end
 ArcadeCabinetMod:AddCallback(ModCallbacks.MC_POST_UPDATE, ArcadeCabinetMod.OnFrameUpdate)
 
 
+---@param player EntityPlayer
 function ArcadeCabinetMod:OnPlayerInit(player)
     --Initialize the custom data table for each player
     player:GetData().ArcadeCabinet = {}
     player:GetData().ArcadeCabinet.collectedItems = {}
     player:GetData().ArcadeCabinet.collectedItemsOrdered = {}
     player:AddCoins(20)
+    player:AddTrinket(TrinketType.TRINKET_DOOR_STOP, true)
 end
 ArcadeCabinetMod:AddCallback(ModCallbacks.MC_POST_PLAYER_INIT, ArcadeCabinetMod.OnPlayerInit)
 
