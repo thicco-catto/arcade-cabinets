@@ -551,8 +551,10 @@ local function RenderFadeOut()
 
     if WaveTransitionScreen:IsFinished("Appear") then
         if CurrentMinigameState == MinigameStates.WINNING then
+            ArcadeCabinetVariables.CurrentMinigameResult = ArcadeCabinetVariables.MinigameResult.WIN
             jumping_coffing.result = ArcadeCabinetVariables.MinigameResult.WIN
         else
+            ArcadeCabinetVariables.CurrentMinigameResult = ArcadeCabinetVariables.MinigameResult.LOSE
             jumping_coffing.result = ArcadeCabinetVariables.MinigameResult.LOSE
         end
     end

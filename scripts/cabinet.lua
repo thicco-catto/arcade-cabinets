@@ -47,6 +47,7 @@ end
 local function UseMachine(slot)
     --Set states and current minigame
     ArcadeCabinetVariables.CurrentGameState = ArcadeCabinetVariables.GameState.FADE_IN
+    ArcadeCabinetVariables.CurrentMinigameResult = nil
     ArcadeCabinetVariables.CurrentMinigame = slot.Variant
     ArcadeCabinetVariables.CurrentScript = ArcadeCabinetVariables.ArcadeCabinetScripts[ArcadeCabinetVariables.CurrentMinigame]
     ArcadeCabinetVariables.IsCurrentMinigameClitched = slot:GetData().IsGlitched
@@ -146,6 +147,48 @@ local function InitPlayerForMinigame(player)
 end
 
 
+---@param player EntityPlayer
+local function RestorePlayerFromMinigame(player)
+    local data = player:GetData().ArcadeCabinet
+
+    for _, item in ipairs(ArcadeCabinetVariables.CurrentScript.startingItems) do
+        player:RemoveCollectible(item)
+    end
+
+    --Transform them to their old player type
+    player:ChangePlayerType(data.playerType)
+
+    --Give their items back
+    for i = #data.collectedItemsOrdered, 1, -1 do
+        player:AddCollectible(tonumber(data.collectedItemsOrdered[i]))
+    end
+
+    --Give their active items back
+    for slot, item in pairs(data.activeItems) do
+        if item then
+            player:AddCollectible(item, data.activeItemsCharges[slot], false, slot)
+        end
+    end
+
+    --Give their trinkets back
+    for i = 0, #data.trinkets, 1 do
+        if data.trinkets[i] then
+            player:AddTrinket(data.trinkets[i])
+        end
+    end
+
+    --Remove pickups gained from items
+    player:AddCoins(-player:GetNumCoins())
+    player:AddBombs(-player:GetNumBombs())
+    player:AddKeys(-player:GetNumKeys())
+
+    --Give their pickups back
+    player:AddCoins(data.coins)
+    player:AddBombs(data.bombs)
+    player:AddKeys(data.keys)
+end
+
+
 local function FinishTransitionFadeIn()
     --Set state and transition screen
     ArcadeCabinetVariables.CurrentGameState = ArcadeCabinetVariables.GameState.TRANSITION
@@ -158,6 +201,15 @@ local function FinishTransitionFadeIn()
     --Teleport players to the room
     local roomIndex = ArcadeCabinetVariables.ArcadeCabinetRooms[ArcadeCabinetVariables.CurrentMinigame]
     Isaac.ExecuteCommand("goto s.isaacs." .. roomIndex)
+
+    --Set options like chargebar and filter
+    ArcadeCabinetVariables.OptionsChargeBar = Options.ChargeBars
+    ArcadeCabinetVariables.OptionsFilter = Options.Filter
+    ArcadeCabinetVariables.OptionsActiveCam = Options.CameraStyle
+
+    Options.ChargeBars = false
+    Options.Filter = false
+    Options.CameraStyle = 2
 
     --Prepare all players for the minigame
     local playerNum = game:GetNumPlayers()
@@ -291,8 +343,68 @@ local function CheckIfStartMinigame()
 end
 
 
+local function CheckIfEndMinigame()
+    --If we're not playing we can skip this
+    if ArcadeCabinetVariables.CurrentGameState ~= ArcadeCabinetVariables.GameState.PLAYING then return end
+
+    --If the result is nil the minigame hasnt ended yet
+    if not ArcadeCabinetVariables.CurrentMinigameResult then return end
+
+    --Set the state and transition screen
+    ArcadeCabinetVariables.CurrentGameState = ArcadeCabinetVariables.GameState.FADE_OUT
+    ArcadeCabinetVariables.TransitionScreen:Play("Disappear")
+    ArcadeCabinetVariables.FadeOutTimer = 20
+
+    --Remove the callbacks for the mod
+    ArcadeCabinetVariables.CurrentScript:RemoveCallbacks(ArcadeCabinetMod)
+
+    --Teleport the players back through the door
+    local room = game:GetRoom()
+    local openDoor = nil
+    for i = 0, 7, 1 do
+        local door = room:GetDoor(i)
+        if door then
+            openDoor = door
+            door:Open()
+            break
+        end
+    end
+
+    local extraVelocity = nil
+
+    if openDoor.Direction == Direction.LEFT then
+        extraVelocity = Vector(-100, 0)
+    elseif openDoor.Direction == Direction.RIGHT then
+        extraVelocity = Vector(100, 0)
+    elseif openDoor.Direction == Direction.UP then
+        extraVelocity = Vector(0, -100)
+    else
+        extraVelocity = Vector(0, 100)
+    end
+
+    game:GetPlayer(0).Position = openDoor.Position
+    game:GetPlayer(0):AddVelocity(extraVelocity)
+
+    --Restore the options
+    Options.ChargeBars = ArcadeCabinetVariables.OptionsChargeBar
+    Options.Filter = ArcadeCabinetVariables.OptionsFilter
+    Options.CameraStyle = ArcadeCabinetVariables.OptionsActiveCam
+
+    --Restore the players' states
+    local playerNum = game:GetNumPlayers()
+    for i = 0, playerNum - 1, 1 do
+        RestorePlayerFromMinigame(game:GetPlayer(i))
+    end
+
+    --Set the restore positions flag for next on new room callback
+    ArcadeCabinetVariables.RepositionPlayers = true
+end
+
+
 function CabinetManagement:OnFrameUpdate()
     CheckIfStartMinigame()
+
+    CheckIfEndMinigame()
 end
 
 
@@ -358,6 +470,17 @@ function CabinetManagement:OnNewRoom()
     for _, slot in ipairs(Isaac.FindByType(EntityType.ENTITY_SLOT)) do
         if IsModdedVariant(slot.Variant) then
             SetUpCabinet(slot)
+        end
+    end
+
+    --If the restore positions flag is set, well, do that
+    if ArcadeCabinetVariables.RepositionPlayers then
+        ArcadeCabinetVariables.RepositionPlayers = false
+
+        local playerNum = game:GetNumPlayers()
+        for i = 0, playerNum - 1, 1 do
+            local player = game:GetPlayer(i)
+            player.Position = player:GetData().ArcadeCabinet.position
         end
     end
 end
