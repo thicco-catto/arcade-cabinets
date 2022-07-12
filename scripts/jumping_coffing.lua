@@ -5,12 +5,6 @@ local SFXManager = SFXManager()
 local MusicManager = MusicManager()
 local ArcadeCabinetVariables = nil
 
-jumping_coffing.callbacks = {}
-jumping_coffing.result = nil
-jumping_coffing.startingItems = {
-    CollectibleType.COLLECTIBLE_SPIRIT_SWORD,
-}
-
 --Sounds
 local BannedSounds = {
     SoundEffect.SOUND_TEARS_FIRE,
@@ -550,12 +544,16 @@ local function RenderFadeOut()
     if CurrentMinigameState ~= MinigameStates.WINNING and CurrentMinigameState ~= MinigameStates.LOSING then return end
 
     if WaveTransitionScreen:IsFinished("Appear") then
+        local playerNum = game:GetNumPlayers()
+        for i = 0, playerNum - 1, 1 do
+            local player = game:GetPlayer(i)
+            player:RemoveCollectible(CollectibleType.COLLECTIBLE_SPIRIT_SWORD)
+        end
+
         if CurrentMinigameState == MinigameStates.WINNING then
             ArcadeCabinetVariables.CurrentMinigameResult = ArcadeCabinetVariables.MinigameResult.WIN
-            jumping_coffing.result = ArcadeCabinetVariables.MinigameResult.WIN
         else
             ArcadeCabinetVariables.CurrentMinigameResult = ArcadeCabinetVariables.MinigameResult.LOSE
-            jumping_coffing.result = ArcadeCabinetVariables.MinigameResult.LOSE
         end
     end
 
@@ -966,9 +964,7 @@ function jumping_coffing:Init(mod, variables)
     for i = 0, playerNum - 1, 1 do
         local player = game:GetPlayer(i)
 
-        for _, item in ipairs(jumping_coffing.startingItems) do
-            player:AddCollectible(item, 0, false)
-        end
+        player:AddCollectible(CollectibleType.COLLECTIBLE_SPIRIT_SWORD, 0, false)
 
         --Set spritesheet
         local playerSprite = player:GetSprite()

@@ -3,21 +3,7 @@ local game = Game()
 local rng = RNG()
 local SFXManager = SFXManager()
 local MusicManager = MusicManager()
-----------------------------------------------
--- FANCY REQUIRE (Thanks manaphoenix <3)
-----------------------------------------------
-local function loadFile(loc, ...)
-    local _, err = pcall(require, "")
-    local modName = err:match("/mods/(.*)/%.lua")
-    local path = "mods/" .. modName .. "/"
-
-    return assert(loadfile(path .. loc .. ".lua"))(...)
-end
-local ArcadeCabinetVariables = loadFile("scripts/variables")
-
-holy_smokes.callbacks = {}
-holy_smokes.result = nil
-holy_smokes.startingItems = {}
+local ArcadeCabinetVariables
 
 -- Sounds
 local BannedSounds = {
@@ -182,63 +168,6 @@ local DiamondProjectileWavesNum = 0
 local FloorCracksNum = 0
 
 local DoubleLaserProjectilesNum = 0
-
--- INIT MINIGAME
-function holy_smokes:Init()
-    -- Reset variables
-    holy_smokes.result = nil
-    PlayerHP = MinigameConstants.MAX_PLAYER_HEALTH
-    PlayerPower = 0
-
-    CurrentMinigameState = MinigameState.INTRO
-    CurrentSatanAttack = SatanAttack.FALLING_STALAGMITES
-
-    rng:SetSeed(game:GetSeeds():GetStartSeed(), 35)
-
-    --Set vs screen stuff
-    MinigameTimers.IntroTimer = MinigameConstants.MAX_INTRO_FRAMES
-    TransitionScreen:Play("Idle", true)
-    SFXManager:Play(MinigameSounds.SATAN_STALAGMITE_SCREAM)
-
-    -- Backdrop
-    Backdrop = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, ArcadeCabinetVariables.Backdrop1x2Variant, 0, game:GetRoom():GetCenterPos(), Vector.Zero, nil)
-    Backdrop:GetSprite():Load("gfx/backdrop/backdrop_hs.anm2", true)
-    Backdrop.DepthOffset = -9000
-
-    local platform = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.PLATFORM, 0, game:GetRoom():GetCenterPos() + MinigameConstants.PLATFORM_SPAWNING_OFFSET, Vector.Zero, nil)
-    platform.DepthOffset = -500
-
-    -- Boss
-    SatanHead = Isaac.Spawn(MinigameEntityTypes.CUSTOM_ENTITY, MinigameEntityVariants.SATAN_HEAD, 0, game:GetRoom():GetCenterPos() + MinigameConstants.SATAN_HEAD_SPAWNING_OFFSET, Vector.Zero, nil)
-    SatanHead:AddEntityFlags(EntityFlag.FLAG_NO_FLASH_ON_DAMAGE | EntityFlag.FLAG_NO_KNOCKBACK | EntityFlag.FLAG_NO_PHYSICS_KNOCKBACK)
-    SatanHead:ClearEntityFlags(EntityFlag.FLAG_APPEAR)
-
-    -- UI
-    PlayerHealthUI:Play("Idle", true)
-    PlayerPowerUI:Play("Idle", true)
-    BossHealthUI:Play("Idle", true)
-
-    -- Prepare players
-    local playerNum = game:GetNumPlayers()
-    for i = 0, playerNum - 1, 1 do
-        local player = game:GetPlayer(i)
-
-        for _, item in ipairs(holy_smokes.startingItems) do
-            player:AddCollectible(item, 0, false)
-        end
-
-        --Set the spritesheets
-        local playerSprite = player:GetSprite()
-        playerSprite:Load("gfx/hs_isaac52.anm2", true)
-        playerSprite:ReplaceSpritesheet(1, "gfx/characters/isaac_hs.png")
-        playerSprite:ReplaceSpritesheet(4, "gfx/characters/isaac_hs.png")
-        playerSprite:ReplaceSpritesheet(12, "gfx/characters/isaac_hs.png")
-        playerSprite:LoadGraphics()
-
-        local costume = Isaac.GetCostumeIdByPath("gfx/costumes/hs_halo.anm2")
-        player:AddNullCostume(costume)
-    end
-end
 
 
 -- UPDATE CALLBACKS
@@ -773,7 +702,7 @@ local function SpawnEndExplosions()
 end
 
 
-function holy_smokes:FrameUpdate()
+function holy_smokes:OnFrameUpdate()
     if MinigameTimers.IntroTimer > 0 then MinigameTimers.IntroTimer = MinigameTimers.IntroTimer - 1 end
     if MinigameTimers.IFramesTimer > 0 then MinigameTimers.IFramesTimer = MinigameTimers.IFramesTimer - 1 end
     if MinigameTimers.NextAttackTimer > 0 then MinigameTimers.NextAttackTimer = MinigameTimers.NextAttackTimer - 1 end
@@ -789,6 +718,12 @@ function holy_smokes:FrameUpdate()
         if MinigameTimers.IntroTimer == 0 then
             CurrentMinigameState = MinigameState.NO_ATTACK
             MinigameTimers.NextAttackTimer = MinigameConstants.FIRST_NO_ATTACK_FRAMES
+
+            local playerNum = game:GetNumPlayers()
+            for i = 0, playerNum - 1, 1 do
+                local player = game:GetPlayer(i)
+                player.ControlsEnabled = true
+            end
         end
     elseif CurrentMinigameState == MinigameState.NO_ATTACK then
         if game:GetFrameCount() % 70 == 0 then
@@ -838,10 +773,9 @@ function holy_smokes:FrameUpdate()
         end
     end
 end
-holy_smokes.callbacks[ModCallbacks.MC_POST_UPDATE] = holy_smokes.FrameUpdate
 
 
-function holy_smokes:PlayerUpdate(player)
+function holy_smokes:OnPlayerUpdate(player)
     player:AddCacheFlags(CacheFlag.CACHE_DAMAGE | CacheFlag.CACHE_FIREDELAY | CacheFlag.CACHE_SHOTSPEED | CacheFlag.CACHE_RANGE)
     player:EvaluateItems()
 
@@ -851,7 +785,6 @@ function holy_smokes:PlayerUpdate(player)
         end
     end
 end
-holy_smokes.callbacks[ModCallbacks.MC_POST_PEFFECT_UPDATE] = holy_smokes.PlayerUpdate
 
 
 local function RenderUI()
@@ -903,9 +836,9 @@ local function RenderFadeOut()
         end
 
         if CurrentMinigameState == MinigameState.WINNING then
-            holy_smokes.result = ArcadeCabinetVariables.MinigameResult.WIN
+            ArcadeCabinetVariables.CurrentMinigameResult = ArcadeCabinetVariables.MinigameResult.WIN
         else
-            holy_smokes.result = ArcadeCabinetVariables.MinigameResult.LOSE
+            ArcadeCabinetVariables.CurrentMinigameResult = ArcadeCabinetVariables.MinigameResult.LOSE
         end
     end
 
@@ -933,7 +866,6 @@ function holy_smokes:OnRender()
 
     RenderVsScreen()
 end
-holy_smokes.callbacks[ModCallbacks.MC_POST_RENDER] = holy_smokes.OnRender
 
 
 --ENTITY CALLBACKS
@@ -954,87 +886,93 @@ local function EndAllAttacks()
 end
 
 
-function holy_smokes:OnEntityDamage(tookDamage, damageAmount, _, _)
-    if tookDamage:ToPlayer() then
-        if MinigameTimers.IFramesTimer <= 0 and CurrentMinigameState ~= MinigameState.LOSING then
-            MinigameTimers.IFramesTimer = MinigameConstants.MAX_PLAYER_IFRAMES
-            PlayerPower = 0
-            PlayerHP = PlayerHP - 1
-            PlayerHealthUI:Play("Flash", true)
+function holy_smokes:OnPlayerDamage(player)
+    player = player:ToPlayer()
 
-            if PlayerHP == 0 then
-                CurrentMinigameState = MinigameState.LOSING
+    if MinigameTimers.IFramesTimer <= 0 and CurrentMinigameState ~= MinigameState.LOSING then
+        MinigameTimers.IFramesTimer = MinigameConstants.MAX_PLAYER_IFRAMES
+        PlayerPower = 0
+        PlayerHP = PlayerHP - 1
+        PlayerHealthUI:Play("Flash", true)
 
-                TransitionScreen:Play("Appear", true)
-                SFXManager:Play(MinigameSounds.LOSE)
+        if PlayerHP == 0 then
+            CurrentMinigameState = MinigameState.LOSING
 
-                local playerNum = game:GetNumPlayers()
-                for i = 0, playerNum - 1, 1 do
-                    local player = game:GetPlayer(i)
-                    player:PlayExtraAnimation("Sad")
-                    player.ControlsEnabled = false
-                end
-            else
-                SFXManager:Play(MinigameSounds.PLAYER_HIT)
-                tookDamage:ToPlayer():PlayExtraAnimation("Hit")
+            TransitionScreen:Play("Appear", true)
+            SFXManager:Play(MinigameSounds.LOSE)
+
+            local playerNum = game:GetNumPlayers()
+            for i = 0, playerNum - 1, 1 do
+                game:GetPlayer(i):PlayExtraAnimation("Sad")
+                game:GetPlayer(i).ControlsEnabled = false
             end
-        end
-
-        return false
-    elseif tookDamage.Type == MinigameEntityTypes.CUSTOM_ENTITY and tookDamage.Variant == MinigameEntityVariants.SATAN_HEAD then
-        MinigameTimers.BossHealthFlashTimer = MinigameConstants.MAX_BOSS_HEALTH_FLASH_FRAMES
-
-        if MinigameTimers.SpecialAttackTimer <= 0 then
-            PlayerPower = PlayerPower + damageAmount
-        end
-
-        if PlayerPower >= MinigameConstants.MAX_PLAYER_POWER and not PlayerPowerUI:IsPlaying("Flash")then
-            PlayerPowerUI:Play("Flash", true)
-            SFXManager:Play(MinigameSounds.CHARGED)
-        end
-
-        if tookDamage.HitPoints <= damageAmount then
-            tookDamage:Remove()
-
-            EndAllAttacks()
-
-            CurrentMinigameState = MinigameState.SATAN_DYING
-            Backdrop:GetSprite():Play("Die")
+        else
+            SFXManager:Play(MinigameSounds.PLAYER_HIT)
+            player:PlayExtraAnimation("Hit")
         end
     end
+
+    return false
 end
-holy_smokes.callbacks[ModCallbacks.MC_ENTITY_TAKE_DMG] = holy_smokes.OnEntityDamage
 
 
-function holy_smokes:OnEffectInit(effect)
-    if effect.Variant == EffectVariant.TEAR_POOF_A or effect.Variant == EffectVariant.TEAR_POOF_B then
-        SFXManager:Stop(SoundEffect.SOUND_TEARIMPACTS)
-        SFXManager:Stop(SoundEffect.SOUND_SPLATTER)
-        if effect.Position.Y >= SatanHead.Position.Y - 40 then
-            SFXManager:Play(MinigameSounds.TEAR_IMPACT)
-        end
+function holy_smokes:OnEntityDamage(tookDamage, damageAmount)
+    if tookDamage.Variant ~= MinigameEntityVariants.SATAN_HEAD then return end
 
-        effect:GetSprite():Load("gfx/hs_holy_tear_splash.anm2", true)
-        effect:GetSprite():Play("Poof", true)
-    elseif effect.Variant == EffectVariant.BULLET_POOF then
-        effect.Visible = false
-    elseif effect.Variant == EffectVariant.WATER_SPLASH then
-        effect:Remove()
+    MinigameTimers.BossHealthFlashTimer = MinigameConstants.MAX_BOSS_HEALTH_FLASH_FRAMES
+
+    if MinigameTimers.SpecialAttackTimer <= 0 then
+        PlayerPower = PlayerPower + damageAmount
+    end
+
+    if PlayerPower >= MinigameConstants.MAX_PLAYER_POWER and not PlayerPowerUI:IsPlaying("Flash")then
+        PlayerPowerUI:Play("Flash", true)
+        SFXManager:Play(MinigameSounds.CHARGED)
+    end
+
+    if tookDamage.HitPoints <= damageAmount then
+        tookDamage:Remove()
+
+        EndAllAttacks()
+
+        CurrentMinigameState = MinigameState.SATAN_DYING
+        Backdrop:GetSprite():Play("Die")
     end
 end
-holy_smokes.callbacks[ModCallbacks.MC_POST_EFFECT_INIT] = holy_smokes.OnEffectInit
 
 
-function holy_smokes:OnEffectUpdate(effect)
-    if effect.Variant == EffectVariant.BULLET_POOF then
-        --Remove this there because otherwise it doesnt stop the sound lmao
-        effect:Remove()
-        SFXManager:Stop(SoundEffect.SOUND_TEARIMPACTS)
-    elseif effect.Variant == EffectVariant.TINY_FLY then
-        effect:Remove()
+function holy_smokes:OnTearPoofInit(poof)
+    SFXManager:Stop(SoundEffect.SOUND_TEARIMPACTS)
+    SFXManager:Stop(SoundEffect.SOUND_SPLATTER)
+    if poof.Position.Y >= SatanHead.Position.Y - 40 then
+        SFXManager:Play(MinigameSounds.TEAR_IMPACT)
     end
+
+    poof:GetSprite():Load("gfx/hs_holy_tear_splash.anm2", true)
+    poof:GetSprite():Play("Poof", true)
 end
-holy_smokes.callbacks[ModCallbacks.MC_POST_EFFECT_UPDATE] = holy_smokes.OnEffectUpdate
+
+
+function holy_smokes:OnProjectilePoofInit(poof)
+    poof.Visible = false
+end
+
+
+function holy_smokes:OnWaterSplashInit(splash)
+    splash:Remove()
+end
+
+
+function holy_smokes:OnProjectilePoofUpdate(poof)
+    --Remove sound on update because other it doesnt
+    poof:Remove()
+    SFXManager:Stop(SoundEffect.SOUND_TEARIMPACTS)
+end
+
+
+function holy_smokes:OnTinyFlyUpdate(effect)
+    effect:Remove() --They should be removed but just in case
+end
 
 
 function holy_smokes:OnTearFire(tear)
@@ -1050,7 +988,6 @@ function holy_smokes:OnTearFire(tear)
         tear:GetSprite():Play("RegularTear6", true)
     end
 end
-holy_smokes.callbacks[ModCallbacks.MC_POST_FIRE_TEAR] = holy_smokes.OnTearFire
 
 
 function holy_smokes:OnTearCollision(_, collider)
@@ -1058,14 +995,12 @@ function holy_smokes:OnTearCollision(_, collider)
         return true
     end
 end
-holy_smokes.callbacks[ModCallbacks.MC_PRE_TEAR_COLLISION] = holy_smokes.OnTearCollision
 
 
 function holy_smokes:OnProjectileInit(projectile)
     projectile:GetSprite():Load("gfx/hs_satan_projectile.anm2", true)
     projectile:GetSprite():Play("Idle", true)
 end
-holy_smokes.callbacks[ModCallbacks.MC_POST_PROJECTILE_INIT] = holy_smokes.OnProjectileInit
 
 
 function holy_smokes:OnProjectileUpdate(projectile)
@@ -1076,10 +1011,11 @@ function holy_smokes:OnProjectileUpdate(projectile)
     projectile.FallingSpeed = 0
     projectile.FallingAccel = -0.1
 end
-holy_smokes.callbacks[ModCallbacks.MC_POST_PROJECTILE_UPDATE] = holy_smokes.OnProjectileUpdate
 
 
 function holy_smokes:OnCache(player, cacheFlags)
+    if CurrentMinigameState == MinigameState.WINNING or CurrentMinigameState == MinigameState.LOSING then return end
+
     if cacheFlags == CacheFlag.CACHE_DAMAGE then
         player.Damage = 2
     end
@@ -1096,26 +1032,103 @@ function holy_smokes:OnCache(player, cacheFlags)
         player.TearRange = 500
     end
 end
-holy_smokes.callbacks[ModCallbacks.MC_EVALUATE_CACHE] = holy_smokes.OnCache
 
 
-function holy_smokes:OnCmd(command, arg)
-	if command == "attack" then
-		print("Attack set to " .. arg)
-		CurrentSatanAttack = tonumber(arg)
-        CurrentMinigameState = MinigameState.BOSS_ATTACK
-
-        if CurrentSatanAttack == SatanAttack.FALLING_STALAGMITES then
-            InitStalagmiteAttack()
-        elseif CurrentSatanAttack == SatanAttack.DIAMOND_PROJECTILES then
-            InitDiamondProjectileAttack()
-        elseif CurrentSatanAttack == SatanAttack.FLOOR_CRACKING then
-            InitFloorCrackingAttack()
-        elseif CurrentSatanAttack == SatanAttack.NOSE_LASER then
-            InitNoseLaserAttack()
-        end
-	end
+-- INIT MINIGAME
+function holy_smokes:AddCallbacks(mod)
+    mod:AddCallback(ModCallbacks.MC_POST_UPDATE, holy_smokes.OnFrameUpdate)
+    mod:AddCallback(ModCallbacks.MC_POST_PEFFECT_UPDATE, holy_smokes.OnPlayerUpdate)
+    mod:AddCallback(ModCallbacks.MC_POST_RENDER, holy_smokes.OnRender)
+    mod:AddCallback(ModCallbacks.MC_ENTITY_TAKE_DMG, holy_smokes.OnPlayerDamage, EntityType.ENTITY_PLAYER)
+    mod:AddCallback(ModCallbacks.MC_ENTITY_TAKE_DMG, holy_smokes.OnEntityDamage, MinigameEntityTypes.CUSTOM_ENTITY)
+    mod:AddCallback(ModCallbacks.MC_POST_EFFECT_INIT, holy_smokes.OnTearPoofInit, EffectVariant.TEAR_POOF_A)
+    mod:AddCallback(ModCallbacks.MC_POST_EFFECT_INIT, holy_smokes.OnTearPoofInit, EffectVariant.TEAR_POOF_B)
+    mod:AddCallback(ModCallbacks.MC_POST_EFFECT_INIT, holy_smokes.OnProjectilePoofInit, EffectVariant.BULLET_POOF)
+    mod:AddCallback(ModCallbacks.MC_POST_EFFECT_INIT, holy_smokes.OnWaterSplashInit, EffectVariant.WATER_SPLASH)
+    mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, holy_smokes.OnProjectilePoofUpdate, EffectVariant.BULLET_POOF)
+    mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, holy_smokes.OnTinyFlyUpdate, EffectVariant.TINY_FLY)
+    mod:AddCallback(ModCallbacks.MC_POST_FIRE_TEAR, holy_smokes.OnTearFire)
+    mod:AddCallback(ModCallbacks.MC_PRE_TEAR_COLLISION, holy_smokes.OnTearCollision)
+    mod:AddCallback(ModCallbacks.MC_POST_PROJECTILE_INIT, holy_smokes.OnProjectileInit)
+    mod:AddCallback(ModCallbacks.MC_POST_PROJECTILE_UPDATE, holy_smokes.OnProjectileUpdate)
+    mod:AddCallback(ModCallbacks.MC_EVALUATE_CACHE, holy_smokes.OnCache)
 end
-holy_smokes.callbacks[ModCallbacks.MC_EXECUTE_CMD] = holy_smokes.OnCmd
+
+
+function holy_smokes:RemoveCallbacks(mod)
+    mod:RemoveCallback(ModCallbacks.MC_POST_UPDATE, holy_smokes.OnFrameUpdate)
+    mod:RemoveCallback(ModCallbacks.MC_POST_PEFFECT_UPDATE, holy_smokes.OnPlayerUpdate)
+    mod:RemoveCallback(ModCallbacks.MC_POST_RENDER, holy_smokes.OnRender)
+    mod:RemoveCallback(ModCallbacks.MC_ENTITY_TAKE_DMG, holy_smokes.OnPlayerDamage)
+    mod:RemoveCallback(ModCallbacks.MC_ENTITY_TAKE_DMG, holy_smokes.OnEntityDamage)
+    mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_INIT, holy_smokes.OnTearPoofInit)
+    mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_INIT, holy_smokes.OnTearPoofInit)
+    mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_INIT, holy_smokes.OnProjectilePoofInit)
+    mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_INIT, holy_smokes.OnWaterSplashInit)
+    mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, holy_smokes.OnProjectilePoofUpdate)
+    mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, holy_smokes.OnTinyFlyUpdate)
+    mod:RemoveCallback(ModCallbacks.MC_POST_FIRE_TEAR, holy_smokes.OnTearFire)
+    mod:RemoveCallback(ModCallbacks.MC_PRE_TEAR_COLLISION, holy_smokes.OnTearCollision)
+    mod:RemoveCallback(ModCallbacks.MC_POST_PROJECTILE_INIT, holy_smokes.OnProjectileInit)
+    mod:RemoveCallback(ModCallbacks.MC_POST_PROJECTILE_UPDATE, holy_smokes.OnProjectileUpdate)
+    mod:RemoveCallback(ModCallbacks.MC_EVALUATE_CACHE, holy_smokes.OnCache)
+end
+
+
+function holy_smokes:Init(mod, variables)
+    holy_smokes:AddCallbacks(mod)
+    ArcadeCabinetVariables = variables
+
+    -- Reset variables
+    holy_smokes.result = nil
+    PlayerHP = MinigameConstants.MAX_PLAYER_HEALTH
+    PlayerPower = 0
+
+    CurrentMinigameState = MinigameState.INTRO
+    CurrentSatanAttack = SatanAttack.FALLING_STALAGMITES
+
+    rng:SetSeed(game:GetSeeds():GetStartSeed(), 35)
+
+    --Set vs screen stuff
+    MinigameTimers.IntroTimer = MinigameConstants.MAX_INTRO_FRAMES
+    TransitionScreen:Play("Idle", true)
+    SFXManager:Play(MinigameSounds.SATAN_STALAGMITE_SCREAM)
+
+    -- Backdrop
+    Backdrop = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, ArcadeCabinetVariables.Backdrop1x2Variant, 0, game:GetRoom():GetCenterPos(), Vector.Zero, nil)
+    Backdrop:GetSprite():Load("gfx/backdrop/backdrop_hs.anm2", true)
+    Backdrop.DepthOffset = -9000
+
+    local platform = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.PLATFORM, 0, game:GetRoom():GetCenterPos() + MinigameConstants.PLATFORM_SPAWNING_OFFSET, Vector.Zero, nil)
+    platform.DepthOffset = -500
+
+    -- Boss
+    SatanHead = Isaac.Spawn(MinigameEntityTypes.CUSTOM_ENTITY, MinigameEntityVariants.SATAN_HEAD, 0, game:GetRoom():GetCenterPos() + MinigameConstants.SATAN_HEAD_SPAWNING_OFFSET, Vector.Zero, nil)
+    SatanHead:AddEntityFlags(EntityFlag.FLAG_NO_FLASH_ON_DAMAGE | EntityFlag.FLAG_NO_KNOCKBACK | EntityFlag.FLAG_NO_PHYSICS_KNOCKBACK)
+    SatanHead:ClearEntityFlags(EntityFlag.FLAG_APPEAR)
+
+    -- UI
+    PlayerHealthUI:Play("Idle", true)
+    PlayerPowerUI:Play("Idle", true)
+    BossHealthUI:Play("Idle", true)
+
+    -- Prepare players
+    local playerNum = game:GetNumPlayers()
+    for i = 0, playerNum - 1, 1 do
+        local player = game:GetPlayer(i)
+
+        --Set the spritesheets
+        local playerSprite = player:GetSprite()
+        playerSprite:Load("gfx/hs_isaac52.anm2", true)
+        playerSprite:ReplaceSpritesheet(1, "gfx/characters/isaac_hs.png")
+        playerSprite:ReplaceSpritesheet(4, "gfx/characters/isaac_hs.png")
+        playerSprite:ReplaceSpritesheet(12, "gfx/characters/isaac_hs.png")
+        playerSprite:LoadGraphics()
+
+        local costume = Isaac.GetCostumeIdByPath("gfx/costumes/hs_halo.anm2")
+        player:AddNullCostume(costume)
+    end
+end
+
 
 return holy_smokes

@@ -154,10 +154,6 @@ local function RestorePlayerFromMinigame(player)
     --Disable controls while the fade out is happening
     player.ControlsEnabled = false
 
-    for _, item in ipairs(ArcadeCabinetVariables.CurrentScript.startingItems) do
-        player:RemoveCollectible(item)
-    end
-
     --Transform them to their old player type
     player:ChangePlayerType(data.playerType)
 
@@ -249,10 +245,43 @@ local function RenderTransitionScreen()
 end
 
 
+local function DebugRender()
+    local itemsintheroom = Isaac.FindByType(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_COLLECTIBLE, -1)
+    for _, item in ipairs(itemsintheroom) do
+        local pos = Isaac.WorldToScreen(item.Position)
+
+        Isaac.RenderText(item.SubType, pos.X, pos.Y, 1, 1, 1, 255)
+        --Isaac.RenderText(Isaac.GetItemConfig():GetCollectible(item.SubType).ID, pos.X, pos.Y + 10, 1, 1, 1, 255)       
+    end
+
+    local playerNum = game:GetNumPlayers()
+    for i = 0, playerNum - 1, 1 do
+        local player = game:GetPlayer(i)
+        local data = player:GetData().ArcadeCabinet
+        local pos = Isaac.WorldToScreen(player.Position)
+
+        local a = "false"
+        if player.ControlsEnabled then a = "true" end
+        Isaac.RenderText(a, pos.X, pos.Y, 1, 1, 1, 255)
+        --Isaac.RenderText(dump(data.collectedItems), pos.X, pos.Y, 1, 1, 1, 255)
+        --Isaac.RenderText(dump(data.collectedItemsOrdered), pos.X, pos.Y + 10, 1, 1, 1, 255)
+    end
+
+    for _, entity in ipairs(Isaac.FindByType(889, 2, 0)) do
+        local pos = Isaac.WorldToScreen(entity.Position)
+        local color = entity:GetColor()
+
+        Isaac.RenderText(dump(color), pos.X, pos.Y, 1, 1, 1, 255)
+    end
+end
+
+
 ---@param shaderName string
 function CabinetManagement:GetShaderParams(shaderName)
     --Render transition (here so it renders on top of the hud)
     RenderTransitionScreen()
+
+    --DebugRender()
 
     --Shader stuff
 	if shaderName == 'MinigameShader' then
@@ -271,34 +300,6 @@ function CabinetManagement:GetShaderParams(shaderName)
             Enabled = isEnabled
         }
         return params;
-    end
-end
-
-
-local function DebugRender()
-    local itemsintheroom = Isaac.FindByType(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_COLLECTIBLE, -1)
-    for _, item in ipairs(itemsintheroom) do
-        local pos = Isaac.WorldToScreen(item.Position)
-
-        Isaac.RenderText(item.SubType, pos.X, pos.Y, 1, 1, 1, 255)
-        --Isaac.RenderText(Isaac.GetItemConfig():GetCollectible(item.SubType).ID, pos.X, pos.Y + 10, 1, 1, 1, 255)       
-    end
-
-    local playerNum = game:GetNumPlayers()
-    for i = 0, playerNum - 1, 1 do
-        local player = game:GetPlayer(i)
-        local data = player:GetData().ArcadeCabinet
-        local pos = Isaac.WorldToScreen(player.Position)
-
-        Isaac.RenderText(dump(data.collectedItems), pos.X, pos.Y, 1, 1, 1, 255)
-        Isaac.RenderText(dump(data.collectedItemsOrdered), pos.X, pos.Y + 10, 1, 1, 1, 255)
-    end
-
-    for _, entity in ipairs(Isaac.FindByType(889, 2, 0)) do
-        local pos = Isaac.WorldToScreen(entity.Position)
-        local color = entity:GetColor()
-
-        Isaac.RenderText(dump(color), pos.X, pos.Y, 1, 1, 1, 255)
     end
 end
 
@@ -410,6 +411,16 @@ function CabinetManagement:OnFrameUpdate()
     CheckIfStartMinigame()
 
     CheckIfEndMinigame()
+
+    if ArcadeCabinetVariables.CurrentGameState == ArcadeCabinetVariables.GameState.PLAYING then
+        local room = game:GetRoom()
+        for i = 0, 7, 1 do
+            local door = room:GetDoor(i)
+            if door then
+                door:Close(true)
+            end
+        end
+    end
 end
 
 
@@ -449,6 +460,11 @@ end
 ---@param player EntityPlayer
 function CabinetManagement:OnPeffectUpdate(player)
     CheckCollectedItems(player)
+
+    --If we're in transition and the player has controls enabled (because of moving to another room), disable them
+    if ArcadeCabinetVariables.CurrentGameState == ArcadeCabinetVariables.GameState.TRANSITION and player.ControlsEnabled then
+        player.ControlsEnabled = false
+    end
 end
 
 
