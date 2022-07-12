@@ -875,7 +875,8 @@ local function EndAllAttacks()
         (entity.Type == EntityType.ENTITY_GENERIC_PROP and entity.Variant == ArcadeCabinetVariables.Backdrop1x2Variant) or
         (entity.Type == EntityType.ENTITY_GENERIC_PROP and entity.Variant == MinigameEntityVariants.PLATFORM) or
         entity:ToTear() or
-        entity:ToEffect()) then
+        entity:ToEffect() or
+        (entity.Type == MinigameEntityTypes.CUSTOM_ENTITY and entity.Variant == MinigameEntityVariants.SATAN_HEAD)) then
             entity:Remove()
         end
     end
@@ -897,6 +898,8 @@ function holy_smokes:OnPlayerDamage(player)
 
         if PlayerHP == 0 then
             CurrentMinigameState = MinigameState.LOSING
+
+            EndAllAttacks()
 
             TransitionScreen:Play("Appear", true)
             SFXManager:Play(MinigameSounds.LOSE)

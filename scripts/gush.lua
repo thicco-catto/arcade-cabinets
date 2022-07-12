@@ -3,30 +3,9 @@ local game = Game()
 local rng = RNG()
 local SFXManager = SFXManager()
 local MusicManager = MusicManager()
-----------------------------------------------
---FANCY REQUIRE (Thanks manaphoenix <3)
-----------------------------------------------
-local function loadFile(loc, ...)
-    local _, err = pcall(require, "")
-    local modName = err:match("/mods/(.*)/%.lua")
-    local path = "mods/" .. modName .. "/"
-
-    return assert(loadfile(path .. loc .. ".lua"))(...)
-end
-local ArcadeCabinetVariables = loadFile("scripts/variables")
-
-gush.callbacks = {}
-gush.result = nil
-gush.startingItems = {
-}
+local ArcadeCabinetVariables
 
 --Sounds
-local BannedSounds = {
-}
-
-local ReplacementSounds = {
-}
-
 local MinigameSounds = {
     JUMP = Isaac.GetSoundIdByName("gush jump"),
     PLAYER_DEATH = Isaac.GetSoundIdByName("gush player death"),
@@ -89,7 +68,7 @@ local MinigameConstants = {
     DISTANCE_FROM_PLAYER_TO_WALL = 6,
     DISTANCE_FROM_PLAYER_TO_BUTTON = 2,
 
-    MAX_LEVEL = 5,
+    MAX_LEVEL = 3,
     ROOM_POOL = {
         --Easy rooms
         EASY = {
@@ -339,62 +318,6 @@ local function GetGridIndexUnder(room)
 end
 
 
---INIT
-function gush:Init()
-    local room = game:GetRoom()
-
-    --Reset variables
-    gush.result = nil
-    PlayerHP = 4
-    CurrentLevel = 1
-    CollapsingPlatforms = {}
-    VisitedRooms = {}
-    EndExplosionsCounter = 0
-
-    rng:SetSeed(game:GetSeeds():GetStartSeed(), 35)
-
-    GoToNextRoom()
-
-    --Reset timers
-    for _, timer in pairs(MinigameTimers) do
-        timer = 0
-    end
-
-    --Intro stuff
-    TransitionScreen:ReplaceSpritesheet(0, "gfx/effects/gush/gush_intro_screen.png")
-    TransitionScreen:LoadGraphics()
-    TransitionScreen:Play("Idle", true)
-    CurrentMinigameState = MinigameState.INTRO_SCREEN
-    MinigameTimers.IntroTimer = MinigameConstants.MAX_INTRO_SCREEN_TIMER
-
-    --Spawn the backdrop
-    Backdrop = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, ArcadeCabinetVariables.Backdrop2x2Variant, 0, room:GetCenterPos(), Vector.Zero, nil)
-    Backdrop:GetSprite():ReplaceSpritesheet(0, "gfx/backdrop/gush_backdrop1.png")
-    Backdrop:GetSprite():LoadGraphics()
-    Backdrop.Visible = false
-    Backdrop.DepthOffset = -500
-
-    --Play music
-    MusicManager:Play(MinigameMusic, 1)
-    MusicManager:UpdateVolume()
-    MusicManager:Pause()
-
-    --Set up players
-    local playerNum = game:GetNumPlayers()
-    for i = 0, playerNum - 1, 1 do
-        local player = game:GetPlayer(i)
-
-        player.ControlsEnabled = false
-        for _, item in ipairs(gush.startingItems) do
-            player:AddCollectible(item, 0, false)
-        end
-
-        player:GetData().IsGrounded = false
-        player:GetData().ExtraJumpFrames = 0
-    end
-end
-
-
 --UPDATE CALLBACKS
 function gush:OnInput(_, inputHook, buttonAction)
     if buttonAction == ButtonAction.ACTION_UP or buttonAction == ButtonAction.ACTION_DOWN or
@@ -407,7 +330,6 @@ function gush:OnInput(_, inputHook, buttonAction)
         end
     end
 end
-gush.callbacks[ModCallbacks.MC_INPUT_ACTION] = gush.OnInput
 
 
 local function TryCollapsePlatform(gridIndex)
@@ -743,6 +665,13 @@ function gush:OnPlayerUpdate(player)
         return
     end
 
+    --If the player is not moving left or right (not pressing left or right or pressing both) stop their x movement
+    if (not Input.IsActionPressed(ButtonAction.ACTION_LEFT, player.ControllerIndex) and not Input.IsActionPressed(ButtonAction.ACTION_RIGHT, player.ControllerIndex)) or
+    (Input.IsActionPressed(ButtonAction.ACTION_LEFT, player.ControllerIndex) and Input.IsActionPressed(ButtonAction.ACTION_RIGHT, player.ControllerIndex)) then
+        player.Velocity = Vector(0, player.Velocity.Y)
+    end
+
+
     if player:GetData().WasGrounded and not IsPlayerGrounded(player) and player.Velocity.Y >= 0 then
         player:GetData().CoyoteTime = MinigameConstants.COYOTE_TIME_FRAMES
     elseif not player:GetData().WasGrounded and IsPlayerGrounded(player) then
@@ -801,7 +730,6 @@ function gush:OnPlayerUpdate(player)
 
     ManageFakePlayer(player)
 end
-gush.callbacks[ModCallbacks.MC_POST_PLAYER_UPDATE] = gush.OnPlayerUpdate
 
 
 local function ManageCollapsings()
@@ -943,7 +871,6 @@ function gush:OnFrameUpdate()
         RemoveEndExplosions()
     end
 end
-gush.callbacks[ModCallbacks.MC_POST_UPDATE] = gush.OnFrameUpdate
 
 
 local function RenderUI()
@@ -983,9 +910,9 @@ local function RenderFadeOut()
         end
 
         if CurrentMinigameState == MinigameState.WINNING then
-            gush.result = ArcadeCabinetVariables.MinigameResult.WIN
+            ArcadeCabinetVariables.CurrentMinigameResult = ArcadeCabinetVariables.MinigameResult.WIN
         else
-            gush.result = ArcadeCabinetVariables.MinigameResult.LOSE
+            ArcadeCabinetVariables.CurrentMinigameResult = ArcadeCabinetVariables.MinigameResult.LOSE
         end
     end
 
@@ -1005,7 +932,6 @@ function gush:OnRender()
 
     RenderFadeOut()
 end
-gush.callbacks[ModCallbacks.MC_POST_RENDER] = gush.OnRender
 
 
 function gush:OnNewRoom()
@@ -1013,28 +939,26 @@ function gush:OnNewRoom()
     SFXManager:Stop(SoundEffect.SOUND_DOOR_HEAVY_OPEN)
     PrepareForRoom()
 end
-gush.callbacks[ModCallbacks.MC_POST_NEW_ROOM] = gush.OnNewRoom
 
 
-function gush:OnNPCInit(npc)
-    npc:ClearEntityFlags(EntityFlag.FLAG_APPEAR)
-
-    if npc.Type == EntityType.ENTITY_BRIMSTONE_HEAD then
-        npc:GetSprite():Load("gfx/gush_brimstone_head.anm2", true)
-    elseif npc.Type == EntityType.ENTITY_SPIKEBALL or npc.Type == EntityType.ENTITY_DEATHS_HEAD then
-        npc:GetSprite():Load("gfx/gush_saw.anm2", true)
-    elseif npc.Type == EntityType.ENTITY_NERVE_ENDING then
-        npc.Visible = false
-    end
+function gush:OnBrimstoneHeadInit(head)
+    head:GetSprite():Load("gfx/gush_brimstone_head.anm2", true)
 end
-gush.callbacks[ModCallbacks.MC_POST_NPC_INIT] = gush.OnNPCInit
 
 
-function gush:OnNPCUpdate(npc)
-    if npc.Type ~= EntityType.ENTITY_SPIKEBALL and npc.Type ~= EntityType.ENTITY_DEATHS_HEAD then return end
+function gush:OnNerveInit(nerve)
+    nerve.Visible = false
+end
 
-    local data = npc:GetData()
-    local currentVelocityAngle = npc.Velocity:GetAngleDegrees()
+
+function gush:OnSawInit(saw)
+    saw:GetSprite():Load("gfx/gush_saw.anm2", true)
+end
+
+
+function gush:OnSawUpdate(saw)
+    local data = saw:GetData()
+    local currentVelocityAngle = saw.Velocity:GetAngleDegrees()
 
     if data.LastVelocityAngle and math.abs(currentVelocityAngle - data.LastVelocityAngle) >= MinigameConstants.SAW_VELOCITY_ANGLE_THRESHOLD_TO_HIT then
         SFXManager:Play(MinigameSounds.SAW_WALL_HIT)
@@ -1042,16 +966,12 @@ function gush:OnNPCUpdate(npc)
 
     data.LastVelocityAngle = currentVelocityAngle
 end
-gush.callbacks[ModCallbacks.MC_NPC_UPDATE] = gush.OnNPCUpdate
 
 
-function gush:OnEntityDamage(tookDamage, _, _, _)
-    if tookDamage:ToPlayer() then
-        KillPlayers(tookDamage:ToPlayer())
-        return false
-    end
+function gush:OnPlayerDamage(player)
+    KillPlayers(player:ToPlayer())
+    return false
 end
-gush.callbacks[ModCallbacks.MC_ENTITY_TAKE_DMG] = gush.OnEntityDamage
 
 
 function gush:OnLaserInit(laser)
@@ -1064,7 +984,6 @@ function gush:OnLaserInit(laser)
     SFXManager:Stop(SoundEffect.SOUND_BLOOD_LASER)
     SFXManager:Stop(SoundEffect.SOUND_BLOOD_LASER_LARGE)
 end
-gush.callbacks[ModCallbacks.MC_POST_LASER_INIT] = gush.OnLaserInit
 
 
 function gush:OnLaserUpdate(laser)
@@ -1075,181 +994,123 @@ function gush:OnLaserUpdate(laser)
     SFXManager:Stop(SoundEffect.SOUND_BLOOD_LASER)
     SFXManager:Stop(SoundEffect.SOUND_BLOOD_LASER_LARGE)
 end
-gush.callbacks[ModCallbacks.MC_POST_LASER_UPDATE] = gush.OnLaserUpdate
 
 
-function gush:OnEffect(effect)
-    if effect.Variant == EffectVariant.TINY_FLY or effect.Variant == EffectVariant.LASER_IMPACT then
-        effect:Remove()
-    end
+function gush:OnRemovableEffect(effect)
+    effect:Remove()
 end
-gush.callbacks[ModCallbacks.MC_POST_EFFECT_INIT] = gush.OnEffect
-gush.callbacks[ModCallbacks.MC_POST_EFFECT_UPDATE] = gush.OnEffect
 
 
-function gush:OnEffectSpawn(entityType, entityVariant, _, _, _, _, seed)
+function gush:PreEntitySpawn(entityType, entityVariant, _, _, _, _, seed)
     if entityType == EntityType.ENTITY_EFFECT and 
     (entityVariant == EffectVariant.TINY_FLY or entityVariant == EffectVariant.LASER_IMPACT) then
         return {EntityType.ENTITY_EFFECT, EffectVariant.BLOOD_SPLAT, 0, seed}
     end
 end
-gush.callbacks[ModCallbacks.MC_PRE_ENTITY_SPAWN] = gush.OnEffectSpawn
 
 
-local function mysplit (inputstr, sep)
-    if sep == nil then
-            sep = "%s"
-    end
-    local t={}
-    for str in string.gmatch(inputstr, "([^"..sep.."]+)") do
-            table.insert(t, str)
-    end
-    return t
+--INIT
+function gush:AddCallbacks(mod)
+    mod:AddCallback(ModCallbacks.MC_INPUT_ACTION, gush.OnInput)
+    mod:AddCallback(ModCallbacks.MC_POST_PLAYER_UPDATE, gush.OnPlayerUpdate)
+    mod:AddCallback(ModCallbacks.MC_POST_UPDATE, gush.OnFrameUpdate)
+    mod:AddCallback(ModCallbacks.MC_POST_RENDER, gush.OnRender)
+    mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, gush.OnNewRoom)
+    mod:AddCallback(ModCallbacks.MC_POST_NPC_INIT, gush.OnBrimstoneHeadInit, EntityType.ENTITY_BRIMSTONE_HEAD)
+    mod:AddCallback(ModCallbacks.MC_POST_NPC_INIT, gush.OnNerveInit, EntityType.ENTITY_NERVE_ENDING)
+    mod:AddCallback(ModCallbacks.MC_POST_NPC_INIT, gush.OnSawInit, EntityType.ENTITY_SPIKEBALL)
+    mod:AddCallback(ModCallbacks.MC_POST_NPC_INIT, gush.OnSawInit, EntityType.ENTITY_DEATHS_HEAD)
+    mod:AddCallback(ModCallbacks.MC_NPC_UPDATE, gush.OnSawUpdate, EntityType.ENTITY_SPIKEBALL)
+    mod:AddCallback(ModCallbacks.MC_NPC_UPDATE, gush.OnSawUpdate, EntityType.ENTITY_DEATHS_HEAD)
+    mod:AddCallback(ModCallbacks.MC_ENTITY_TAKE_DMG, gush.OnPlayerDamage, EntityType.ENTITY_PLAYER)
+    mod:AddCallback(ModCallbacks.MC_POST_LASER_INIT, gush.OnLaserInit)
+    mod:AddCallback(ModCallbacks.MC_POST_LASER_UPDATE, gush.OnLaserUpdate)
+    mod:AddCallback(ModCallbacks.MC_POST_EFFECT_INIT, gush.OnRemovableEffect, EffectVariant.TINY_FLY)
+    mod:AddCallback(ModCallbacks.MC_POST_EFFECT_INIT, gush.OnRemovableEffect, EffectVariant.LASER_IMPACT)
+    mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, gush.OnRemovableEffect, EffectVariant.TINY_FLY)
+    mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, gush.OnRemovableEffect, EffectVariant.LASER_IMPACT)
+    mod:AddCallback(ModCallbacks.MC_PRE_ENTITY_SPAWN, gush.PreEntitySpawn)
 end
 
 
-function gush:OnCMD(command, args)
-    args = mysplit(args)
-    if command == "changejump" then
-        IsExtraJumpStrength = not IsExtraJumpStrength
+function gush:RemoveCallbacks(mod)
+    mod:RemoveCallback(ModCallbacks.MC_INPUT_ACTION, gush.OnInput)
+    mod:RemoveCallback(ModCallbacks.MC_POST_PLAYER_UPDATE, gush.OnPlayerUpdate)
+    mod:RemoveCallback(ModCallbacks.MC_POST_UPDATE, gush.OnFrameUpdate)
+    mod:RemoveCallback(ModCallbacks.MC_POST_RENDER, gush.OnRender)
+    mod:RemoveCallback(ModCallbacks.MC_POST_NEW_ROOM, gush.OnNewRoom)
+    mod:RemoveCallback(ModCallbacks.MC_POST_NPC_INIT, gush.OnBrimstoneHeadInit)
+    mod:RemoveCallback(ModCallbacks.MC_POST_NPC_INIT, gush.OnNerveInit)
+    mod:RemoveCallback(ModCallbacks.MC_POST_NPC_INIT, gush.OnSawInit)
+    mod:RemoveCallback(ModCallbacks.MC_POST_NPC_INIT, gush.OnSawInit)
+    mod:RemoveCallback(ModCallbacks.MC_NPC_UPDATE, gush.OnSawUpdate)
+    mod:RemoveCallback(ModCallbacks.MC_NPC_UPDATE, gush.OnSawUpdate)
+    mod:RemoveCallback(ModCallbacks.MC_ENTITY_TAKE_DMG, gush.OnPlayerDamage)
+    mod:RemoveCallback(ModCallbacks.MC_POST_LASER_INIT, gush.OnLaserInit)
+    mod:RemoveCallback(ModCallbacks.MC_POST_LASER_UPDATE, gush.OnLaserUpdate)
+    mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_INIT, gush.OnRemovableEffect)
+    mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_INIT, gush.OnRemovableEffect)
+    mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, gush.OnRemovableEffect)
+    mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, gush.OnRemovableEffect)
+    mod:RemoveCallback(ModCallbacks.MC_PRE_ENTITY_SPAWN, gush.PreEntitySpawn)
+end
 
-        if IsExtraJumpStrength then
-            print("Jumping mode changed to extra strength")
-        else
-            print("Jumping mode changed to reduced gravity")
+
+function gush:Init(mod, variables)
+    gush:AddCallbacks(mod)
+    ArcadeCabinetVariables = variables
+
+    --Reset variables
+    gush.result = nil
+    PlayerHP = 4
+    CurrentLevel = 1
+    CollapsingPlatforms = {}
+    VisitedRooms = {}
+    EndExplosionsCounter = 0
+
+    rng:SetSeed(game:GetSeeds():GetStartSeed(), 35)
+
+    GoToNextRoom()
+
+    --Reset timers
+    for _, timer in pairs(MinigameTimers) do
+        timer = 0
+    end
+
+    --Intro stuff
+    TransitionScreen:ReplaceSpritesheet(0, "gfx/effects/gush/gush_intro_screen.png")
+    TransitionScreen:LoadGraphics()
+    TransitionScreen:Play("Idle", true)
+    CurrentMinigameState = MinigameState.INTRO_SCREEN
+    MinigameTimers.IntroTimer = MinigameConstants.MAX_INTRO_SCREEN_TIMER
+
+    --Spawn the backdrop
+    local room = game:GetRoom()
+    Backdrop = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, ArcadeCabinetVariables.Backdrop2x2Variant, 0, room:GetCenterPos(), Vector.Zero, nil)
+    Backdrop:GetSprite():ReplaceSpritesheet(0, "gfx/backdrop/gush_backdrop1.png")
+    Backdrop:GetSprite():LoadGraphics()
+    Backdrop.Visible = false
+    Backdrop.DepthOffset = -500
+
+    --Play music
+    MusicManager:Play(MinigameMusic, 1)
+    MusicManager:UpdateVolume()
+    MusicManager:Pause()
+
+    --Set up players
+    local playerNum = game:GetNumPlayers()
+    for i = 0, playerNum - 1, 1 do
+        local player = game:GetPlayer(i)
+
+        player.ControlsEnabled = false
+        for _, item in ipairs(gush.startingItems) do
+            player:AddCollectible(item, 0, false)
         end
 
-    elseif command == "change" then
-
-        if args[1] == "js" then
-            MinigameConstants.JUMPING_STRENGTH = tonumber(args[2])
-            print("Changed jump strength to " .. MinigameConstants.JUMPING_STRENGTH)
-
-        elseif args[1] == "ejf" then
-            MinigameConstants.EXTRA_JUMP_FRAMES = tonumber(args[2])
-            print("Changed gravity strength to " .. MinigameConstants.EXTRA_JUMP_FRAMES)
-
-        elseif args[1] == "ejs" then
-            MinigameConstants.EXTRA_JUMP_STRENGTH = tonumber(args[2])
-            print("Changed extra jump strength to " .. MinigameConstants.EXTRA_JUMP_STRENGTH)
-
-        elseif args[1] == "ejrg" then
-            MinigameConstants.EXTRA_JUMP_REDUCED_GRAVITY = tonumber(args[2])
-            print("Changed extra jump reduced gravity to " .. MinigameConstants.EXTRA_JUMP_REDUCED_GRAVITY)
-
-        elseif args[1] == "gs" then
-            MinigameConstants.GRAVITY_STRENGTH = tonumber(args[2])
-            print("Changed gravity strength to " .. MinigameConstants.GRAVITY_STRENGTH)
-
-        elseif args[1] == "tv" then
-            MinigameConstants.TERMINAL_VELOCITY = tonumber(args[2])
-            print("Changed terminal velocity to " .. MinigameConstants.TERMINAL_VELOCITY)
-        end
-    elseif command == "floor" then
-        print(CollapsingPlatforms[tonumber(args)])
-
-        for key, value in pairs(CollapsingPlatforms) do
-            print(key .. " -> " .. value)
-        end
-    elseif command == "bg" then
-        if #args == 0 then
-            print("Changed visibility of backdrop")
-
-            for _, entity in ipairs(Isaac.FindByType(EntityType.ENTITY_GENERIC_PROP, -1, -1)) do
-                if entity.Variant ~= ArcadeCabinetVariables.Backdrop2x2Variant and entity.Variant ~= MinigameEntityVariants.COLLAPSING and 
-                entity.Variant ~= MinigameEntityVariants.BUTTON and entity.Variant ~= MinigameEntityVariants.EXIT then
-                    entity.Visible = not entity.Visible
-                end
-            end
-        end
+        player:GetData().IsGrounded = false
+        player:GetData().ExtraJumpFrames = 0
     end
 end
-gush.callbacks[ModCallbacks.MC_EXECUTE_CMD] = gush.OnCMD
 
-
-local function shallowCopy(tab)
-    return {table.unpack(tab)}
-  end
-  
-  local function includes(tab, val)
-    for _, v in pairs(tab) do
-      if val == v then return true end
-    end
-    return false
-  end
-  
-  function dump(o, depth, seen)
-    depth = depth or 0
-    seen = seen or {}
-  
-    if depth > 50 then return '' end -- prevent infloops
-  
-    if type(o) == 'userdata' then -- handle custom isaac types
-      if includes(seen, tostring(o)) then return '(circular)' end
-      if not getmetatable(o) then return tostring(o) end
-      local t = getmetatable(o).__type
-  
-      if t == 'Entity' or t == 'EntityBomb' or t == 'EntityEffect' or t == 'EntityFamiliar' or t == 'EntityKnife' or t == 'EntityLaser' or t == 'EntityNPC' or t == 'EntityPickup' or t == 'EntityPlayer' or t == 'EntityProjectile' or t == 'EntityTear' then
-        return t .. ': ' .. (o.Type or '0') .. '.' .. (o.Variant or '0') .. '.' .. (o.SubType or '0')
-      elseif t == 'EntityRef' then
-        return t .. ' -> ' .. dump(o.Ref, depth, seen)
-      elseif t == 'EntityPtr' then
-        return t .. ' -> ' .. dump(o.Entity, depth, seen)
-      elseif t == 'GridEntity' or t == 'GridEntityDoor' or t == 'GridEntityPit' or t == 'GridEntityPoop' or t == 'GridEntityPressurePlate' or t == 'GridEntityRock' or t == 'GridEntitySpikes' or t == 'GridEntityTNT' then
-        return t .. ': ' .. o:GetType() .. '.' .. o:GetVariant() .. '.' .. o.VarData .. ' at ' .. dump(o.Position, depth, seen)
-      elseif t == 'GridEntityDesc' then
-        return t .. ' -> ' .. o.Type .. '.' .. o.Variant .. '.' .. o.VarData
-      elseif t == 'Vector' then
-        return t .. '(' .. o.X .. ', ' .. o.Y .. ')'
-      elseif t == 'Color' or t == "const Color" then
-        return t .. '(' .. o.R .. ', ' .. o.G .. ', ' .. o.B .. ', ' .. o.RO .. ', ' .. o.GO .. ', ' .. o.BO .. ')'
-      elseif t == 'Level' then
-        return t .. ': ' .. o:GetName()
-      elseif t == 'RNG' then
-        return t .. ': ' .. o:GetSeed()
-      elseif t == 'Sprite' then
-        return t .. ': ' .. o:GetFilename() .. ' - ' .. (o:IsPlaying(o:GetAnimation()) and 'playing' or 'stopped at') .. ' ' .. o:GetAnimation() .. ' f' .. o:GetFrame()
-      elseif t == 'TemporaryEffects' then
-        local list = o:GetEffectsList()
-        local tab = {}
-        for i = 0, #list - 1 do
-          table.insert(tab, list:Get(i))
-        end
-        return dump(tab, depth, seen)
-      else
-        local newt = {}
-        for k,v in pairs(getmetatable(o)) do
-          if type(k) ~= 'userdata' and k:sub(1, 2) ~= '__' then newt[k] = v end
-        end
-  
-        return 'userdata ' .. dump(newt, depth, seen)
-      end
-    elseif type(o) == 'table' then -- handle tables
-      if includes(seen, tostring(o)) then return '(circular)' end
-      table.insert(seen, tostring(o))
-      local s = '{\n'
-      local first = true
-      for k,v in pairs(o) do
-        if not first then
-          s = s .. ',\n'
-        end
-        s = s .. string.rep('  ', depth + 1)
-  
-        if type(k) ~= 'number' then
-          table.insert(seen, tostring(v))
-          s = s .. dump(k, depth + 1, shallowCopy(seen)) .. ' = ' .. dump(v, depth + 1, shallowCopy(seen))
-        else
-          s = s .. dump(v, depth + 1, shallowCopy(seen))
-        end
-        first = false
-      end
-      if first then return '{}' end
-      return s .. '\n' .. string.rep('  ', depth) .. '}'
-    elseif type(o) == 'string' then -- anything else resolves pretty easily
-      return '"' .. o .. '"'
-    else
-      return tostring(o)
-    end
-  end
 
 return gush
