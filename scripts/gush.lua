@@ -462,14 +462,14 @@ local function MakePlayerHitWall(player)
     local playerGridIndex = room:GetClampedGridIndex(player.Position)
     local playerClampedPos = room:GetGridPosition(playerGridIndex)
 
-    if (RoomPlatforms[playerGridIndex + 1] or RoomCollapsings[playerGridIndex + 1]) and
+    if (RoomPlatforms[playerGridIndex + 1] or RoomCollapsings[playerGridIndex + 1] or room:GetGridCollision(playerGridIndex + 1) > 0) and
     player.Position.X - playerClampedPos.X >= MinigameConstants.DISTANCE_FROM_PLAYER_TO_WALL then
         TryCollapsePlatform(playerGridIndex + 1)
 
         player.Position = Vector(playerClampedPos.X + MinigameConstants.DISTANCE_FROM_PLAYER_TO_WALL, player.Position.Y)
     end
 
-    if (RoomPlatforms[playerGridIndex - 1] or RoomCollapsings[playerGridIndex - 1]) and
+    if (RoomPlatforms[playerGridIndex - 1] or RoomCollapsings[playerGridIndex - 1] or room:GetGridCollision(playerGridIndex - 1) > 0) and
     playerClampedPos.X - player.Position.X >= MinigameConstants.DISTANCE_FROM_PLAYER_TO_WALL then
         TryCollapsePlatform(playerGridIndex - 1)
 
@@ -689,6 +689,10 @@ function gush:OnPlayerUpdate(player)
     end
 
     if Input.IsActionPressed(ButtonAction.ACTION_ITEM, player.ControllerIndex) then
+        if not player:GetData().ExtraJumpFrames then
+            player:GetData().ExtraJumpFrames = 0
+        end
+
         if player:GetData().ExtraJumpFrames > 0 then
             ExtraJump(player)
             gravity = MinigameConstants.EXTRA_JUMP_REDUCED_GRAVITY
@@ -931,6 +935,11 @@ function gush:OnRender()
     RenderWaveTransition()
 
     RenderFadeOut()
+
+    -- for _, effect in ipairs(Isaac.FindByType(EntityType.ENTITY_EFFECT)) do
+    --     local pos = Isaac.WorldToScreen(effect.Position)
+    --     Isaac.RenderText(effect.Variant, pos.X, pos.Y, 1, 1, 1, 1)
+    -- end
 end
 
 
@@ -1027,8 +1036,10 @@ function gush:AddCallbacks(mod)
     mod:AddCallback(ModCallbacks.MC_POST_LASER_UPDATE, gush.OnLaserUpdate)
     mod:AddCallback(ModCallbacks.MC_POST_EFFECT_INIT, gush.OnRemovableEffect, EffectVariant.TINY_FLY)
     mod:AddCallback(ModCallbacks.MC_POST_EFFECT_INIT, gush.OnRemovableEffect, EffectVariant.LASER_IMPACT)
+    mod:AddCallback(ModCallbacks.MC_POST_EFFECT_INIT, gush.OnRemovableEffect, EffectVariant.WATER_SPLASH)
     mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, gush.OnRemovableEffect, EffectVariant.TINY_FLY)
     mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, gush.OnRemovableEffect, EffectVariant.LASER_IMPACT)
+    mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, gush.OnRemovableEffect, EffectVariant.WATER_SPLASH)
     mod:AddCallback(ModCallbacks.MC_PRE_ENTITY_SPAWN, gush.PreEntitySpawn)
 end
 
@@ -1061,7 +1072,6 @@ function gush:Init(mod, variables)
     ArcadeCabinetVariables = variables
 
     --Reset variables
-    gush.result = nil
     PlayerHP = 4
     CurrentLevel = 1
     CollapsingPlatforms = {}
@@ -1103,9 +1113,6 @@ function gush:Init(mod, variables)
         local player = game:GetPlayer(i)
 
         player.ControlsEnabled = false
-        for _, item in ipairs(gush.startingItems) do
-            player:AddCollectible(item, 0, false)
-        end
 
         player:GetData().IsGrounded = false
         player:GetData().ExtraJumpFrames = 0
