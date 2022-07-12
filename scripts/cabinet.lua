@@ -151,6 +151,9 @@ end
 local function RestorePlayerFromMinigame(player)
     local data = player:GetData().ArcadeCabinet
 
+    --Disable controls while the fade out is happening
+    player.ControlsEnabled = false
+
     for _, item in ipairs(ArcadeCabinetVariables.CurrentScript.startingItems) do
         player:RemoveCollectible(item)
     end
@@ -238,7 +241,6 @@ local function RenderTransitionScreen()
         FinishTransitionFadeIn()
     elseif ArcadeCabinetVariables.TransitionScreen:IsFinished("Disappear") then
         ArcadeCabinetVariables.CurrentGameState = ArcadeCabinetVariables.GameState.NOT_PLAYING
-        game:GetHUD():SetVisible(true)
         local playerNum = game:GetNumPlayers()
         for i = 0, playerNum - 1, 1 do
             game:GetPlayer(i).ControlsEnabled = true
@@ -353,10 +355,13 @@ local function CheckIfEndMinigame()
     --Set the state and transition screen
     ArcadeCabinetVariables.CurrentGameState = ArcadeCabinetVariables.GameState.FADE_OUT
     ArcadeCabinetVariables.TransitionScreen:Play("Disappear")
-    ArcadeCabinetVariables.FadeOutTimer = 20
+    ArcadeCabinetVariables.FadeOutTimer = 60
 
     --Remove the callbacks for the mod
     ArcadeCabinetVariables.CurrentScript:RemoveCallbacks(ArcadeCabinetMod)
+
+    --Set visible hud
+    game:GetHUD():SetVisible(true)
 
     --Teleport the players back through the door
     local room = game:GetRoom()

@@ -1,7 +1,5 @@
----@diagnostic disable: param-type-mismatch
 local ArcadeCabinetMod = RegisterMod("ArcadeCabinetMod", 1)
 local game = Game()
-local rng = RNG()
 
 ----------------------------------------------
 --FANCY REQUIRE (Thanks manaphoenix <3)
