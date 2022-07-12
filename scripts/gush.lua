@@ -40,6 +40,8 @@ local MinigameEntityVariants = {
     END_EXPLOSION = Isaac.GetEntityVariantByName("end explosion HS"),
 
     PLAYER = Isaac.GetEntityVariantByName("player GUSH"),
+
+    PUS_MAN = Isaac.GetEntityVariantByName("pus man GUSH")
 }
 
 --Constants
@@ -137,6 +139,43 @@ local MinigameConstants = {
 
     MAX_INTRO_SCREEN_TIMER = 45,
     MAX_TRANSITION_SCREEN_TIMER = 45,
+
+    --Glitched stuff
+    GLITCHED_INTRO_ROOM = 80,
+    GLITCHED_MAX_LEVEL = 4,
+    GLITCHED_ROOM_POOL = {
+        81,
+        82,
+        83,
+        84,
+        85,
+        86,
+        87,
+        88
+    },
+    GLITCHED_PUS_MAN_SPAWN_X = {
+        [80] = -190,
+        [81] = -160,
+        [82] = -160,
+        [83] = -160,
+        [84] = -160,
+        [85] = -160,
+        [86] = -160,
+        [87] = -160,
+        [88] = -160,
+    },
+    GLITCHED_PUS_MAN_VELOCITY = {
+        [80] = 3,
+        [81] = 2,
+        [82] = 2,
+        [83] = 2,
+        [84] = 2,
+        [85] = 2,
+        [86] = 2,
+        [87] = 2,
+        [88] = 2,
+    },
+    GLITCHED_PUS_MAN_SIZE = 200,
 }
 
 --Timers
@@ -235,6 +274,17 @@ end
 
 
 local function GoToNextRoom()
+    if ArcadeCabinetVariables.IsCurrentMinigameClitched then
+        if CurrentLevel == 1 then
+            Isaac.ExecuteCommand("goto s.isaacs." .. MinigameConstants.GLITCHED_INTRO_ROOM)
+            SFXManager:Stop(SoundEffect.SOUND_DOOR_HEAVY_CLOSE)
+            SFXManager:Stop(SoundEffect.SOUND_DOOR_HEAVY_OPEN)
+            return
+        end
+
+        local RoomPoolToChooseFrom = {}
+
+    end
     local RoomPoolToChooseFrom = {}
 
     if CurrentLevel == MinigameConstants.MAX_LEVEL + 1 then
@@ -243,7 +293,16 @@ local function GoToNextRoom()
         SFXManager:Stop(SoundEffect.SOUND_DOOR_HEAVY_OPEN)
         return
     elseif CurrentLevel == 1 then
+        if ArcadeCabinetVariables.IsCurrentMinigameClitched then
+            Isaac.ExecuteCommand("goto s.isaacs." .. MinigameConstants.GLITCHED_INTRO_ROOM)
+            SFXManager:Stop(SoundEffect.SOUND_DOOR_HEAVY_CLOSE)
+            SFXManager:Stop(SoundEffect.SOUND_DOOR_HEAVY_OPEN)
+            return
+        end
+
         RoomPoolToChooseFrom = MinigameConstants.ROOM_POOL.EASY
+    elseif ArcadeCabinetVariables.IsCurrentMinigameClitched then
+        RoomPoolToChooseFrom = MinigameConstants.GLITCHED_ROOM_POOL
     elseif CurrentLevel == MinigameConstants.MAX_LEVEL then
         RoomPoolToChooseFrom = MinigameConstants.ROOM_POOL.HARD
     else
@@ -504,6 +563,14 @@ local function KillPlayers(player)
 end
 
 
+local function SpawnGusMan()
+    local currentLevelId = game:GetLevel():GetCurrentRoomDesc().Data.Variant
+    local spawnPos = Vector(MinigameConstants.GLITCHED_PUS_MAN_SPAWN_X[currentLevelId], 280)
+    local pusman = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.PUS_MAN, 0, spawnPos, Vector(MinigameConstants.GLITCHED_PUS_MAN_VELOCITY[currentLevelId], 0), nil)
+    pusman.DepthOffset = 500
+end
+
+
 local function RespawnPlayers()
     local playerNum = game:GetNumPlayers()
     for i = 0, playerNum - 1, 1 do
@@ -536,6 +603,12 @@ local function RespawnPlayers()
     RoomCollapsings = {}
     FillGridList(RoomCollapsings, MinigameEntityVariants.COLLAPSING)
     CurrentMinigameState = MinigameState.PLAYING
+
+    if ArcadeCabinetVariables.IsCurrentMinigameClitched then
+        local currentLevelId = game:GetLevel():GetCurrentRoomDesc().Data.Variant
+        local pusman = Isaac.FindByType(EntityType.ENTITY_EFFECT, MinigameEntityVariants.PUS_MAN)[1]
+        pusman.Position = Vector(MinigameConstants.GLITCHED_PUS_MAN_SPAWN_X[currentLevelId], pusman.Position.Y)
+    end
 end
 
 
@@ -545,6 +618,16 @@ local function CheckIfPlayerHitSpike(player)
 
     if RoomSpikes[playerGridIndex] then
         KillPlayers(player)
+    end
+end
+
+
+---@param player EntityPlayer
+local function CheckIfPussyManAtePlayer(player)
+    for _, pusman in ipairs(Isaac.FindByType(EntityType.ENTITY_EFFECT, MinigameEntityVariants.PUS_MAN)) do
+        if player.Position:Distance(pusman.Position) <= MinigameConstants.GLITCHED_PUS_MAN_SIZE then
+            KillPlayers(player)
+        end
     end
 end
 
@@ -733,6 +816,8 @@ function gush:OnPlayerUpdate(player)
 
     CheckIfPlayerHitSpike(player)
 
+    CheckIfPussyManAtePlayer(player)
+
     ManageFakePlayer(player)
 end
 
@@ -856,6 +941,10 @@ function gush:OnFrameUpdate()
 
         if MinigameTimers.TransitionScreenTimer == 0 then
             CurrentMinigameState = MinigameState.PLAYING
+
+            if ArcadeCabinetVariables.IsCurrentMinigameClitched then
+                SpawnGusMan()
+            end
 
             local playerNum = game:GetNumPlayers()
             for i = 0, playerNum - 1, 1 do
