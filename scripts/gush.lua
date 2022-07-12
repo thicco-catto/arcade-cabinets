@@ -279,7 +279,7 @@ local function PrepareForRoom()
     if backdropVariant == MinigameConstants.MACHINE_ROOM then
         backdrop = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, ArcadeCabinetVariables.Backdrop1x1Variant, 0, room:GetCenterPos(), Vector(0, 0), nil)
 
-        local machine = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.MACHINE, 0, room:GetCenterPos() + MinigameConstants.MACHINE_SPAWN_OFFSET, Vector.Zero, nil)
+        local machine = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.MACHINE, 0, room:GetCenterPos() + MinigameConstants.MACHINE_SPAWN_OFFSET, Vector.Zero, nil)
         machine.DepthOffset = -200
     else
         backdrop = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, ArcadeCabinetVariables.Backdrop2x2Variant, 0, room:GetCenterPos(), Vector(0, 0), nil)
@@ -590,7 +590,7 @@ local function CheckIfPlayerIsPressingButton(player)
 
         CurrentMinigameState = MinigameState.MACHINE_DYING
 
-        Isaac.FindByType(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.MACHINE)[1]:GetSprite():Play("Dying", true)
+        Isaac.FindByType(EntityType.ENTITY_EFFECT, MinigameEntityVariants.MACHINE)[1]:GetSprite():Play("Dying", true)
         local playerNum = game:GetNumPlayers()
         for i = 0, playerNum - 1, 1 do
             local player = game:GetPlayer(i)
@@ -640,7 +640,7 @@ local function ManageFakePlayer(player)
     if CurrentMinigameState == MinigameState.MACHINE_DYING then
         if fakePlayerSprite:GetAnimation() == "Idle" then
             --Bit of a hack, but coz the player is still,
-            --they'll try to play the idle animation no stop so no need for setFrame
+            --they'll try to play the idle animation non stop so no need for setFrame
             fakePlayerSprite:Play("MoveRight", true)
         end
     end
@@ -667,7 +667,8 @@ function gush:OnPlayerUpdate(player)
 
     --If the player is not moving left or right (not pressing left or right or pressing both) stop their x movement
     if (not Input.IsActionPressed(ButtonAction.ACTION_LEFT, player.ControllerIndex) and not Input.IsActionPressed(ButtonAction.ACTION_RIGHT, player.ControllerIndex)) or
-    (Input.IsActionPressed(ButtonAction.ACTION_LEFT, player.ControllerIndex) and Input.IsActionPressed(ButtonAction.ACTION_RIGHT, player.ControllerIndex)) then
+    (Input.IsActionPressed(ButtonAction.ACTION_LEFT, player.ControllerIndex) and Input.IsActionPressed(ButtonAction.ACTION_RIGHT, player.ControllerIndex)) or 
+    CurrentMinigameState ~= MinigameState.PLAYING then
         player.Velocity = Vector(0, player.Velocity.Y)
     end
 
@@ -785,7 +786,7 @@ end
 
 
 local function SpawnExplosion()
-    local spawningPos = Isaac.FindByType(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.MACHINE)[1].Position
+    local spawningPos = Isaac.FindByType(EntityType.ENTITY_EFFECT, MinigameEntityVariants.MACHINE)[1].Position
     spawningPos = spawningPos + Vector(rng:RandomInt(100) - 50, rng:RandomInt(100) - 50)
 
     local explosion = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.END_EXPLOSION, 0, spawningPos, Vector.Zero, nil)
@@ -830,7 +831,7 @@ local function SpawnEndExplosions()
             end
 
             CurrentMinigameState = MinigameState.WINNING
-            local machine = Isaac.FindByType(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.MACHINE)[1]
+            local machine = Isaac.FindByType(EntityType.ENTITY_EFFECT, MinigameEntityVariants.MACHINE)[1]
             machine:GetSprite():Play("Destroyed", true)
         end
         SFXManager:Play(MinigameSounds.BIG_EXPLOSION)
@@ -935,11 +936,6 @@ function gush:OnRender()
     RenderWaveTransition()
 
     RenderFadeOut()
-
-    -- for _, effect in ipairs(Isaac.FindByType(EntityType.ENTITY_EFFECT)) do
-    --     local pos = Isaac.WorldToScreen(effect.Position)
-    --     Isaac.RenderText(effect.Variant, pos.X, pos.Y, 1, 1, 1, 1)
-    -- end
 end
 
 
@@ -1006,7 +1002,7 @@ end
 
 
 function gush:OnRemovableEffect(effect)
-    effect:Remove()
+    --effect:Remove()
 end
 
 
@@ -1061,6 +1057,8 @@ function gush:RemoveCallbacks(mod)
     mod:RemoveCallback(ModCallbacks.MC_POST_LASER_UPDATE, gush.OnLaserUpdate)
     mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_INIT, gush.OnRemovableEffect)
     mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_INIT, gush.OnRemovableEffect)
+    mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_INIT, gush.OnRemovableEffect)
+    mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, gush.OnRemovableEffect)
     mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, gush.OnRemovableEffect)
     mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, gush.OnRemovableEffect)
     mod:RemoveCallback(ModCallbacks.MC_PRE_ENTITY_SPAWN, gush.PreEntitySpawn)
