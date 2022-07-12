@@ -274,17 +274,6 @@ end
 
 
 local function GoToNextRoom()
-    if ArcadeCabinetVariables.IsCurrentMinigameClitched then
-        if CurrentLevel == 1 then
-            Isaac.ExecuteCommand("goto s.isaacs." .. MinigameConstants.GLITCHED_INTRO_ROOM)
-            SFXManager:Stop(SoundEffect.SOUND_DOOR_HEAVY_CLOSE)
-            SFXManager:Stop(SoundEffect.SOUND_DOOR_HEAVY_OPEN)
-            return
-        end
-
-        local RoomPoolToChooseFrom = {}
-
-    end
     local RoomPoolToChooseFrom = {}
 
     if CurrentLevel == MinigameConstants.MAX_LEVEL + 1 then
@@ -658,6 +647,24 @@ local function CheckIfPlayerIsInDoor(player)
 end
 
 
+---@param player EntityPlayer
+local function CheckIfPlayerIsTouchingExit(player)
+    if CurrentMinigameState ~= MinigameState.PLAYING or not RoomExit then return end
+
+    local room = game:GetRoom()
+    local playerGridIndex = room:GetClampedGridIndex(player.Position)
+    local exitGridIndex = room:GetClampedGridIndex(RoomExit.Position)
+
+    if playerGridIndex == exitGridIndex then
+        CurrentLevel = CurrentLevel + 1
+        StartTransitionScreen()
+        GoToNextRoom()
+
+        return true
+    end
+end
+
+
 local function CheckIfPlayerIsPressingButton(player)
     if not RoomButton or player.Velocity.Y < MinigameConstants.JUMPING_SPEED_THRESHOLD then return end
 
@@ -737,7 +744,11 @@ function gush:OnPlayerUpdate(player)
     player.Visible = false --Do this here because it sucks
 
     if RoomExit then
-        isInDoor = CheckIfPlayerIsInDoor(player)
+        if ArcadeCabinetVariables.IsCurrentMinigameClitched then
+            isInDoor = CheckIfPlayerIsTouchingExit(player)
+        else
+            isInDoor = CheckIfPlayerIsInDoor(player)
+        end
     else
         CheckIfPlayerIsPressingButton(player)
     end
