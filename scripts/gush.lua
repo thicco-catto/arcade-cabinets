@@ -157,26 +157,26 @@ local MinigameConstants = {
         88
     },
     GLITCH_PUS_MAN_SPAWN_X = {
-        [80] = -190,
-        [81] = -160,
-        [82] = -160,
-        [83] = -160,
-        [84] = -160,
-        [85] = -160,
-        [86] = -160,
-        [87] = -160,
-        [88] = -160,
+        [80] = -200,
+        [81] = -200,
+        [82] = -200,
+        [83] = -200,
+        [84] = -200,
+        [85] = -200,
+        [86] = -200,
+        [87] = -200,
+        [88] = -200,
     },
     GLITCH_PUS_MAN_VELOCITY = {
-        [80] = 3,
-        [81] = 2.5,
-        [82] = 2.5,
-        [83] = 2.5,
-        [84] = 2.5,
-        [85] = 2.5,
-        [86] = 2.5,
-        [87] = 2.5,
-        [88] = 2.5,
+        [80] = 4,
+        [81] = 4,
+        [82] = 4,
+        [83] = 4,
+        [84] = 4,
+        [85] = 4,
+        [86] = 4,
+        [87] = 4,
+        [88] = 4,
     },
     GLITCH_PUS_MAN_SIZE = 200,
     GLITCH_NUM_GLITCH_TILES = 35,
@@ -203,9 +203,10 @@ local MinigameState = {
     EXITING = 3,
     TRANSITION_SCREEN = 4,
     MACHINE_DYING = 5,
+    WAITING_FOR_PUS_MAN = 6,
 
-    WINNING = 6,
-    LOSING = 7
+    WINNING = 7,
+    LOSING = 8
 }
 local CurrentMinigameState = 0
 
@@ -339,12 +340,7 @@ end
 local function GoToNextRoom()
     local RoomPoolToChooseFrom = {}
 
-    if CurrentLevel == MinigameConstants.MAX_LEVEL + 1 then
-        Isaac.ExecuteCommand("goto s.isaacs." .. MinigameConstants.MACHINE_ROOM)
-        SFXManager:Stop(SoundEffect.SOUND_DOOR_HEAVY_CLOSE)
-        SFXManager:Stop(SoundEffect.SOUND_DOOR_HEAVY_OPEN)
-        return
-    elseif CurrentLevel == 1 then
+    if CurrentLevel == 1 then
         if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
             Isaac.ExecuteCommand("goto s.isaacs." .. MinigameConstants.GLITCH_INTRO_ROOM)
             SFXManager:Stop(SoundEffect.SOUND_DOOR_HEAVY_CLOSE)
@@ -355,6 +351,11 @@ local function GoToNextRoom()
         RoomPoolToChooseFrom = MinigameConstants.ROOM_POOL.EASY
     elseif ArcadeCabinetVariables.IsCurrentMinigameGlitched then
         RoomPoolToChooseFrom = MinigameConstants.GLITCH_ROOM_POOL
+    elseif CurrentLevel == MinigameConstants.MAX_LEVEL + 1 then
+        Isaac.ExecuteCommand("goto s.isaacs." .. MinigameConstants.MACHINE_ROOM)
+        SFXManager:Stop(SoundEffect.SOUND_DOOR_HEAVY_CLOSE)
+        SFXManager:Stop(SoundEffect.SOUND_DOOR_HEAVY_OPEN)
+        return
     elseif CurrentLevel == MinigameConstants.MAX_LEVEL then
         RoomPoolToChooseFrom = MinigameConstants.ROOM_POOL.HARD
     else
@@ -1139,6 +1140,11 @@ end
 
 
 function gush:OnSawUpdate(saw)
+    if CurrentMinigameState ~= MinigameState.PLAYING then
+        saw.Velocity = Vector.Zero
+        return
+    end
+
     local data = saw:GetData()
     local currentVelocityAngle = saw.Velocity:GetAngleDegrees()
 
