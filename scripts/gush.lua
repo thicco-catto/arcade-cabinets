@@ -683,7 +683,15 @@ end
 local function CheckIfPussyManAtePlayer(player)
     for _, pusman in ipairs(Isaac.FindByType(EntityType.ENTITY_EFFECT, MinigameEntityVariants.PUS_MAN)) do
         if player.Position:Distance(pusman.Position) <= MinigameConstants.GLITCH_PUS_MAN_SIZE then
-            KillPlayers(player)
+            if player:GetData().HasToBeEatenByPusMan and not CurrentMinigameState == MinigameState.WINNING then
+                pusman:GetSprite():Stop()
+                pusman.Velocity = Vector.Zero
+                CurrentMinigameState = MinigameState.WINNING
+                SFXManager:Play(MinigameSounds.WIN)
+                TransitionScreen:Play("Appear", true)
+            else
+                KillPlayers(player)
+            end
         end
     end
 end
@@ -725,6 +733,20 @@ local function CheckIfPlayerIsTouchingExit(player)
 
     if playerGridIndex == exitGridIndex then
         CurrentLevel = CurrentLevel + 1
+
+        if CurrentLevel == MinigameConstants.GLITCH_MAX_LEVEL + 1 then
+            CurrentMinigameState = MinigameState.WAITING_FOR_PUS_MAN
+            player:GetData().HasToBeEatenByPusMan = true
+
+            local playerNum = game:GetNumPlayers()
+            for i = 0, playerNum - 1, 1 do
+                game:GetPlayer(i).Velocity = Vector.Zero
+                game:GetPlayer(i).ControlsEnabled = false
+            end
+
+            return true
+        end
+
         StartTransitionScreen()
         GoToNextRoom()
 
@@ -1040,7 +1062,8 @@ function gush:OnFrameUpdate()
     elseif CurrentMinigameState == MinigameState.PLAYING then
         ManageCollapsings()
         PlayVroomSound()
-    elseif CurrentMinigameState == MinigameState.DYING or CurrentMinigameState == MinigameState.LOSING then
+    elseif CurrentMinigameState == MinigameState.DYING or CurrentMinigameState == MinigameState.LOSING or 
+    CurrentMinigameState == MinigameState.WAITING_FOR_PUS_MAN then
         ManageCollapsings()
     elseif CurrentMinigameState == MinigameState.MACHINE_DYING then
         RemoveEndExplosions()
