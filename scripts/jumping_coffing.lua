@@ -220,7 +220,7 @@ end
 local function CalculateTwitchyCorners()
     local twitchyCorners = {}
     local extraChance = 0
-    if ArcadeCabinetVariables.IsCurrentMinigameClitched then
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
         extraChance = MinigameConstants.GLITCH_EXTRA_TWITCHY_SPAWN_CHANCE
     end
 
@@ -310,7 +310,7 @@ local function SpawnEnemies()
         if twitchyCorners[i] then
             local enemy = Isaac.Spawn(EntityType.ENTITY_TWITCHY, 0, 0, MinigameConstants.SPAWNING_POSITIONS[i] + Vector(rng:RandomInt(101) - 50, rng:RandomInt(101) - 50), Vector(0, 0), nil)
             enemy:GetSprite():Load("gfx/jc_twitchy.anm2", false)
-            if ArcadeCabinetVariables.IsCurrentMinigameClitched then
+            if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
                 enemy:GetSprite():ReplaceSpritesheet(0, "gfx/enemies/jc_glitch_twitchy_body.png")
                 enemy:GetSprite():ReplaceSpritesheet(1, "gfx/enemies/jc_glitch_twitchy_head.png")
             end
@@ -327,15 +327,15 @@ local function SpawnEnemies()
             enemy:ClearEntityFlags(EntityFlag.FLAG_APPEAR)
             enemy:AddEntityFlags(EntityFlag.FLAG_NO_FLASH_ON_DAMAGE)
 
-            if ArcadeCabinetVariables.IsCurrentMinigameClitched and rng:RandomInt(100) < 5 then
+            if ArcadeCabinetVariables.IsCurrentMinigameGlitched and rng:RandomInt(100) < 5 then
                 enemy:GetData().HasInmunity = true
-            elseif ArcadeCabinetVariables.IsCurrentMinigameClitched and rng:RandomInt(100) < 5 then
+            elseif ArcadeCabinetVariables.IsCurrentMinigameGlitched and rng:RandomInt(100) < 5 then
                 enemy:ToNPC():MakeChampion(enemy.InitSeed, ChampionColor.YELLOW, false)
                 enemy:SetColor(Color(1, 1, 1), 500, -10, false, true)
             end
 
             enemy:GetSprite():Load("gfx/jc_rotten_gaper" .. enemy.SubType .. ".anm2", false)
-            if ArcadeCabinetVariables.IsCurrentMinigameClitched then
+            if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
                 enemy:GetSprite():ReplaceSpritesheet(0, "gfx/enemies/jc_glitch_rotten_gaper_body.png")
                 enemy:GetSprite():ReplaceSpritesheet(1, "gfx/enemies/jc_glitch_rotten_gaper_heads.png")
             end
@@ -349,7 +349,7 @@ local function SpawnBoss(chosenCorner)
     local boss = Isaac.Spawn(EntityType.ENTITY_GAPER_L2, 0, 0, MinigameConstants.SPAWNING_POSITIONS[chosenCorner] + Vector(rng:RandomInt(101) - 50, rng:RandomInt(101) - 50), Vector(0, 0), nil)
 
     boss:GetSprite():Load("gfx/jc_level_2_gaper.anm2", false)
-    if ArcadeCabinetVariables.IsCurrentMinigameClitched then
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
         boss:GetSprite():ReplaceSpritesheet(0, "gfx/enemies/jc_glitch_lv2_gaper.png")
         boss:GetSprite():ReplaceSpritesheet(1, "gfx/enemies/jc_glitch_lv2_gaper.png")
     end
@@ -415,7 +415,7 @@ local function UpdateWaiting()
         --The rest is over so start the next transition
         CurrentMinigameState = MinigameStates.WAVE_TRANSITION_SCREEN
         CurrentWave = CurrentWave + 1
-        if not ArcadeCabinetVariables.IsCurrentMinigameClitched then
+        if not ArcadeCabinetVariables.IsCurrentMinigameGlitched then
             WaveTransitionScreen:ReplaceSpritesheet(0, "gfx/effects/jumping coffing/transition" .. CurrentWave .. ".png")
             WaveTransitionScreen:LoadGraphics()
         end
@@ -462,7 +462,7 @@ function jumping_coffing:OnUpdate()
     ManageSFX()
 
     --Chargebar
-    if ArcadeCabinetVariables.IsCurrentMinigameClitched then
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
         if game:GetFrameCount() % MinigameConstants.GLITCH_CHARGE_CHANGE_FRAMES == 0 then
             local newFrame = rng:RandomInt(MinigameConstants.GLITCH_CHARGE_FRAMES - 1)
             if newFrame >= CurrentGlitchChargeBarFrame then
@@ -510,7 +510,7 @@ local function RenderUI()
     HeartsUI:Render(Vector(Isaac.GetScreenWidth() / 2, Isaac.GetScreenHeight() / 2) - Vector(190, 120), Vector.Zero, Vector.Zero)
 
     --Render charge bar
-    if ArcadeCabinetVariables.IsCurrentMinigameClitched then
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
         ChargeBarUI:SetFrame("Idle", CurrentGlitchChargeBarFrame)
     else
         local chargeRate = (ChargeFrames / MinigameConstants.MAX_SPIRIT_SWORD_CHARGE) * 10
@@ -598,7 +598,7 @@ function jumping_coffing:OnBossUpdate(boss)
             SFXManager:Play(MinigameSounds.SPECIAL_ATTACK)
             boss:SetColor(Color(1, 1, 1, 1, 0, 0, 0), 300, -1, false, false)
             boss:GetSprite():Load("gfx/jc_level_2_gaper_special_attack.anm2", false)
-            if ArcadeCabinetVariables.IsCurrentMinigameClitched then
+            if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
                 boss:GetSprite():ReplaceSpritesheet(0, "gfx/enemies/jc_glitch_lv2_gaper_champion.png")
                 boss:GetSprite():ReplaceSpritesheet(1, "gfx/enemies/jc_glitch_lv2_gaper_champion.png")
             end
@@ -612,7 +612,7 @@ function jumping_coffing:OnBossUpdate(boss)
 
             for _ = 1, 15, 1 do
                 local fly
-                if ArcadeCabinetVariables.IsCurrentMinigameClitched and rng:RandomInt(100) < 5 then
+                if ArcadeCabinetVariables.IsCurrentMinigameGlitched and rng:RandomInt(100) < 5 then
                     fly = Isaac.Spawn(EntityType.ENTITY_TWITCHY, 0, 0, MinigameConstants.SPAWNING_POSITIONS[flyCorner], Vector.Zero, nil)
                     fly:GetSprite():Load("gfx/jc_twitchy.anm2", false)
                     fly:GetSprite():ReplaceSpritesheet(0, "gfx/enemies/jc_glitch_twitchy_body.png")
@@ -622,7 +622,7 @@ function jumping_coffing:OnBossUpdate(boss)
                     fly = Isaac.Spawn(EntityType.ENTITY_ATTACKFLY, 0, 0, MinigameConstants.SPAWNING_POSITIONS[flyCorner], Vector.Zero, nil)
                     fly.Target = TargetEntity
 
-                    if ArcadeCabinetVariables.IsCurrentMinigameClitched then
+                    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
                         fly:GetSprite():ReplaceSpritesheet(0, "gfx/enemies/jc_glitch_fly.png")
                     else
                         fly:GetSprite():ReplaceSpritesheet(0, "gfx/enemies/jc_fly.png")
@@ -648,7 +648,7 @@ function jumping_coffing:OnBossUpdate(boss)
             local previousHP = boss.HitPoints
             local newEntity = Isaac.Spawn(boss.Type, boss.Variant, boss.SubType, boss.Position, boss.Velocity, nil)
             newEntity:GetSprite():Load("gfx/jc_level_2_gaper.anm2", false)
-            if ArcadeCabinetVariables.IsCurrentMinigameClitched then
+            if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
                 newEntity:GetSprite():ReplaceSpritesheet(0, "gfx/enemies/jc_glitch_lv2_gaper.png")
                 newEntity:GetSprite():ReplaceSpritesheet(1, "gfx/enemies/jc_glitch_lv2_gaper.png")
             end
@@ -688,7 +688,7 @@ end
 local function KillEnemy(entity)
     entity:Remove()
 
-    if ArcadeCabinetVariables.IsCurrentMinigameClitched then return end
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then return end
 
     local bloodsplat = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.BLOODSPLAT, 0, entity.Position, Vector.Zero, nil)
 
@@ -892,7 +892,7 @@ function jumping_coffing:Init(mod, variables)
     end
 
     --Set the transition screen
-    if ArcadeCabinetVariables.IsCurrentMinigameClitched then
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
         WaveTransitionScreen:ReplaceSpritesheet(0, "gfx/effects/jumping coffing/jc_glitch_transition.png")
         WaveTransitionScreen:ReplaceSpritesheet(1, "gfx/effects/jumping coffing/jc_glitch_transition.png")
     else
@@ -904,7 +904,7 @@ function jumping_coffing:Init(mod, variables)
     SFXManager:Play(MinigameSounds.NEW_WAVE)
 
     --UI
-    if ArcadeCabinetVariables.IsCurrentMinigameClitched then
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
         HeartsUI:ReplaceSpritesheet(0, "gfx/effects/jumping coffing/jc_glitch_hearts.png")
         ChargeBarUI:ReplaceSpritesheet(0, "gfx/effects/jumping coffing/jc_glitch_chargebar.png")
     else
@@ -918,7 +918,7 @@ function jumping_coffing:Init(mod, variables)
     local room = game:GetRoom()
     local backdrop = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, ArcadeCabinetVariables.Backdrop2x2Variant, 0, room:GetCenterPos(), Vector.Zero, nil)
 
-    if ArcadeCabinetVariables.IsCurrentMinigameClitched then
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
        backdrop:GetSprite():ReplaceSpritesheet(0, "gfx/backdrop/glitched_jc_backdrop.png")
     else
         backdrop:GetSprite():ReplaceSpritesheet(0, "gfx/backdrop/jc_backdrop.png")
@@ -930,13 +930,13 @@ function jumping_coffing:Init(mod, variables)
     --Spawn target
     TargetEntity = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.TARGET, 0, room:GetCenterPos(), Vector.Zero, nil)
     TargetEntity:GetSprite():Play("Idle", true)
-    if ArcadeCabinetVariables.IsCurrentMinigameClitched then
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
         TargetEntity:GetSprite():ReplaceSpritesheet(0, "gfx/effects/jumping coffing/jc_glitch_decoy.png")
         TargetEntity:GetSprite():LoadGraphics()
     end
 
     --Spawn glitch tiles
-    if ArcadeCabinetVariables.IsCurrentMinigameClitched then
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
         local leftToSpawn = MinigameConstants.GLITCH_NUM_GLITCH_TILES
         for gridIndex = 0, 447, 1 do
             if rng:RandomFloat() < leftToSpawn/447 then

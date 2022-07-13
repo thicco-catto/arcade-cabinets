@@ -50,11 +50,11 @@ local function UseMachine(slot)
     ArcadeCabinetVariables.CurrentMinigameResult = nil
     ArcadeCabinetVariables.CurrentMinigame = slot.Variant
     ArcadeCabinetVariables.CurrentScript = ArcadeCabinetVariables.ArcadeCabinetScripts[ArcadeCabinetVariables.CurrentMinigame]
-    ArcadeCabinetVariables.IsCurrentMinigameClitched = slot:GetData().IsGlitched
+    ArcadeCabinetVariables.IsCurrentMinigameGlitched = slot:GetData().IsGlitched
 
     --Set the transition screen graphics
     local path = "gfx/effects/"
-    if ArcadeCabinetVariables.IsCurrentMinigameClitched then
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
         path = path .. "glitched_"
     end
     path = path .. ArcadeCabinetVariables.ArcadeCabinetSprite[ArcadeCabinetVariables.CurrentMinigame]

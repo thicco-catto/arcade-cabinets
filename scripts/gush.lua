@@ -41,7 +41,8 @@ local MinigameEntityVariants = {
 
     PLAYER = Isaac.GetEntityVariantByName("player GUSH"),
 
-    PUS_MAN = Isaac.GetEntityVariantByName("pus man GUSH")
+    PUS_MAN = Isaac.GetEntityVariantByName("pus man GUSH"),
+    GLITCH_TILE = Isaac.GetEntityVariantByName("glitch tile GUSH")
 }
 
 --Constants
@@ -141,9 +142,9 @@ local MinigameConstants = {
     MAX_TRANSITION_SCREEN_TIMER = 45,
 
     --Glitched stuff
-    GLITCHED_INTRO_ROOM = 80,
-    GLITCHED_MAX_LEVEL = 4,
-    GLITCHED_ROOM_POOL = {
+    GLITCH_INTRO_ROOM = 80,
+    GLITCH_MAX_LEVEL = 4,
+    GLITCH_ROOM_POOL = {
         81,
         82,
         83,
@@ -153,7 +154,7 @@ local MinigameConstants = {
         87,
         88
     },
-    GLITCHED_PUS_MAN_SPAWN_X = {
+    GLITCH_PUS_MAN_SPAWN_X = {
         [80] = -190,
         [81] = -160,
         [82] = -160,
@@ -164,18 +165,26 @@ local MinigameConstants = {
         [87] = -160,
         [88] = -160,
     },
-    GLITCHED_PUS_MAN_VELOCITY = {
+    GLITCH_PUS_MAN_VELOCITY = {
         [80] = 3,
-        [81] = 2,
-        [82] = 2,
-        [83] = 2,
-        [84] = 2,
-        [85] = 2,
-        [86] = 2,
-        [87] = 2,
-        [88] = 2,
+        [81] = 2.5,
+        [82] = 2.5,
+        [83] = 2.5,
+        [84] = 2.5,
+        [85] = 2.5,
+        [86] = 2.5,
+        [87] = 2.5,
+        [88] = 2.5,
     },
-    GLITCHED_PUS_MAN_SIZE = 200,
+    GLITCH_PUS_MAN_SIZE = 200,
+    GLITCH_NUM_GLITCH_TILES = 35,
+    GLITCH_TILE_FRAME_NUM = {
+        ["Platform"] = 8,
+        ["Spike"] = 4,
+        ["Idle"] = 7
+    },
+    GLITCH_TILE_CHANGE_FRAMES = 10,
+    GLITCH_TILE_CHANGING_CHANCE = 10,
 }
 
 --Timers
@@ -200,10 +209,7 @@ local CurrentMinigameState = 0
 
 --UI
 local TransitionScreen = Sprite()
-TransitionScreen:Load("gfx/minigame_transition.anm2", true)
-TransitionScreen:ReplaceSpritesheet(0, "gfx/effects/gush/gush_intro_screen.png")
-TransitionScreen:ReplaceSpritesheet(1, "gfx/effects/gush/gush_intro_screen.png")
-TransitionScreen:LoadGraphics()
+TransitionScreen:Load("gfx/minigame_transition.anm2", false)
 
 local HealthUI = Sprite()
 HealthUI:Load("gfx/gush_ui.anm2", true)
@@ -232,6 +238,10 @@ local EndExplosionsCounter = 0
 
 local function FillGridList(gridList, entityVariant)
     for _, grid in ipairs(Isaac.FindByType(EntityType.ENTITY_GENERIC_PROP, entityVariant, 0)) do
+        if ArcadeCabinetVariables.IsCurrentMinigameGlitched and entityVariant == MinigameEntityVariants.COLLAPSING then
+            grid:GetSprite():ReplaceSpritesheet(0, "gfx/grid/gush_glitch_collapsing.png")
+            grid:GetSprite():LoadGraphics()
+        end
         gridList[game:GetRoom():GetClampedGridIndex(grid.Position)] = grid
     end
 end
@@ -254,16 +264,56 @@ local function FindGrid()
     if RoomExit then
         RoomExit.DepthOffset = -200
         RoomExit:GetSprite():Play("Closed", true)
+
+        if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+            RoomExit:GetSprite():Load("gfx/gush_glitch_exit.anm2", true)
+            RoomExit:GetSprite():Play("Idle", true)
+        end
     end
 
     RoomButton = Isaac.FindByType(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.BUTTON, 0)[1]
 end
 
 
+local function PlaceGlitchTiles()
+    if not ArcadeCabinetVariables.IsCurrentMinigameGlitched then return end
+
+    local room = game:GetRoom()
+    local leftToSpawn = MinigameConstants.GLITCH_NUM_GLITCH_TILES
+    for gridIndex = 0, 251, 1 do
+        if rng:RandomFloat() < leftToSpawn/447 then
+            leftToSpawn = leftToSpawn - 1
+
+            local glitchTile = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.GLITCH_TILE, 0, room:GetGridPosition(gridIndex), Vector.Zero, nil)
+
+            local chosenAnimation = "Idle"
+            if RoomPlatforms[gridIndex] or RoomOneWays[gridIndex] then
+                chosenAnimation = "Platform"
+            elseif RoomSpikes[gridIndex] then
+                chosenAnimation = "Spike"
+            end
+
+            glitchTile:GetSprite():Play(chosenAnimation, true)
+            glitchTile:GetData().ChosenFrame = rng:RandomInt(MinigameConstants.GLITCH_TILE_FRAME_NUM[chosenAnimation])
+            glitchTile:GetSprite():SetFrame(glitchTile:GetData().ChosenFrame)
+            glitchTile:GetData().ChagingTile = rng:RandomInt(100) < MinigameConstants.GLITCH_TILE_CHANGING_CHANCE
+            glitchTile:GetData().RandomOffset = rng:RandomInt(MinigameConstants.GLITCH_TILE_CHANGE_FRAMES)
+            glitchTile.DepthOffset = -900
+
+            if leftToSpawn == 0 then break end
+        end
+    end
+end
+
+
 local function StartTransitionScreen()
     CurrentMinigameState = MinigameState.TRANSITION_SCREEN
     MinigameTimers.TransitionScreenTimer = MinigameConstants.MAX_TRANSITION_SCREEN_TIMER
-    TransitionScreen:ReplaceSpritesheet(0, "gfx/effects/gush/gush_transition" .. CurrentLevel .. ".png")
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+        TransitionScreen:ReplaceSpritesheet(0, "gfx/effects/gush/gush_glitch_transition.png")
+    else
+        TransitionScreen:ReplaceSpritesheet(0, "gfx/effects/gush/gush_transition" .. CurrentLevel .. ".png")
+    end
     TransitionScreen:LoadGraphics()
     local playerNum = game:GetNumPlayers()
     for i = 0, playerNum - 1, 1 do
@@ -282,16 +332,16 @@ local function GoToNextRoom()
         SFXManager:Stop(SoundEffect.SOUND_DOOR_HEAVY_OPEN)
         return
     elseif CurrentLevel == 1 then
-        if ArcadeCabinetVariables.IsCurrentMinigameClitched then
-            Isaac.ExecuteCommand("goto s.isaacs." .. MinigameConstants.GLITCHED_INTRO_ROOM)
+        if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+            Isaac.ExecuteCommand("goto s.isaacs." .. MinigameConstants.GLITCH_INTRO_ROOM)
             SFXManager:Stop(SoundEffect.SOUND_DOOR_HEAVY_CLOSE)
             SFXManager:Stop(SoundEffect.SOUND_DOOR_HEAVY_OPEN)
             return
         end
 
         RoomPoolToChooseFrom = MinigameConstants.ROOM_POOL.EASY
-    elseif ArcadeCabinetVariables.IsCurrentMinigameClitched then
-        RoomPoolToChooseFrom = MinigameConstants.GLITCHED_ROOM_POOL
+    elseif ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+        RoomPoolToChooseFrom = MinigameConstants.GLITCH_ROOM_POOL
     elseif CurrentLevel == MinigameConstants.MAX_LEVEL then
         RoomPoolToChooseFrom = MinigameConstants.ROOM_POOL.HARD
     else
@@ -320,11 +370,15 @@ local function PrepareForRoom()
 
     FindGrid()
 
+    PlaceGlitchTiles()
+
     local room = game:GetRoom()
     local backdropVariant = game:GetLevel():GetCurrentRoomDesc().Data.Variant
     local backdrop
 
-    if backdropVariant == MinigameConstants.MACHINE_ROOM then
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+        backdrop = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, ArcadeCabinetVariables.Backdrop2x1Variant, 0, room:GetCenterPos(), Vector(0, 0), nil)
+    elseif backdropVariant == MinigameConstants.MACHINE_ROOM then
         backdrop = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, ArcadeCabinetVariables.Backdrop1x1Variant, 0, room:GetCenterPos(), Vector(0, 0), nil)
 
         local machine = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.MACHINE, 0, room:GetCenterPos() + MinigameConstants.MACHINE_SPAWN_OFFSET, Vector.Zero, nil)
@@ -554,8 +608,8 @@ end
 
 local function SpawnGusMan()
     local currentLevelId = game:GetLevel():GetCurrentRoomDesc().Data.Variant
-    local spawnPos = Vector(MinigameConstants.GLITCHED_PUS_MAN_SPAWN_X[currentLevelId], 280)
-    local pusman = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.PUS_MAN, 0, spawnPos, Vector(MinigameConstants.GLITCHED_PUS_MAN_VELOCITY[currentLevelId], 0), nil)
+    local spawnPos = Vector(MinigameConstants.GLITCH_PUS_MAN_SPAWN_X[currentLevelId], 280)
+    local pusman = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.PUS_MAN, 0, spawnPos, Vector(MinigameConstants.GLITCH_PUS_MAN_VELOCITY[currentLevelId], 0), nil)
     pusman.DepthOffset = 500
 end
 
@@ -593,10 +647,10 @@ local function RespawnPlayers()
     FillGridList(RoomCollapsings, MinigameEntityVariants.COLLAPSING)
     CurrentMinigameState = MinigameState.PLAYING
 
-    if ArcadeCabinetVariables.IsCurrentMinigameClitched then
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
         local currentLevelId = game:GetLevel():GetCurrentRoomDesc().Data.Variant
         local pusman = Isaac.FindByType(EntityType.ENTITY_EFFECT, MinigameEntityVariants.PUS_MAN)[1]
-        pusman.Position = Vector(MinigameConstants.GLITCHED_PUS_MAN_SPAWN_X[currentLevelId], pusman.Position.Y)
+        pusman.Position = Vector(MinigameConstants.GLITCH_PUS_MAN_SPAWN_X[currentLevelId], pusman.Position.Y)
     end
 end
 
@@ -614,7 +668,7 @@ end
 ---@param player EntityPlayer
 local function CheckIfPussyManAtePlayer(player)
     for _, pusman in ipairs(Isaac.FindByType(EntityType.ENTITY_EFFECT, MinigameEntityVariants.PUS_MAN)) do
-        if player.Position:Distance(pusman.Position) <= MinigameConstants.GLITCHED_PUS_MAN_SIZE then
+        if player.Position:Distance(pusman.Position) <= MinigameConstants.GLITCH_PUS_MAN_SIZE then
             KillPlayers(player)
         end
     end
@@ -744,7 +798,7 @@ function gush:OnPlayerUpdate(player)
     player.Visible = false --Do this here because it sucks
 
     if RoomExit then
-        if ArcadeCabinetVariables.IsCurrentMinigameClitched then
+        if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
             isInDoor = CheckIfPlayerIsTouchingExit(player)
         else
             isInDoor = CheckIfPlayerIsInDoor(player)
@@ -761,7 +815,7 @@ function gush:OnPlayerUpdate(player)
 
     --If the player is not moving left or right (not pressing left or right or pressing both) stop their x movement
     if (not Input.IsActionPressed(ButtonAction.ACTION_LEFT, player.ControllerIndex) and not Input.IsActionPressed(ButtonAction.ACTION_RIGHT, player.ControllerIndex)) or
-    (Input.IsActionPressed(ButtonAction.ACTION_LEFT, player.ControllerIndex) and Input.IsActionPressed(ButtonAction.ACTION_RIGHT, player.ControllerIndex)) or 
+    (Input.IsActionPressed(ButtonAction.ACTION_LEFT, player.ControllerIndex) and Input.IsActionPressed(ButtonAction.ACTION_RIGHT, player.ControllerIndex)) or
     CurrentMinigameState ~= MinigameState.PLAYING then
         player.Velocity = Vector(0, player.Velocity.Y)
     end
@@ -940,6 +994,11 @@ end
 
 function gush:OnFrameUpdate()
     if CurrentMinigameState == MinigameState.INTRO_SCREEN then
+        local playerNum = game:GetNumPlayers()
+        for i = 0, playerNum - 1, 1 do
+            game:GetPlayer(i).ControlsEnabled = false
+        end
+
         MinigameTimers.IntroTimer = MinigameTimers.IntroTimer - 1
 
         if MinigameTimers.IntroTimer == 0 then
@@ -953,7 +1012,7 @@ function gush:OnFrameUpdate()
         if MinigameTimers.TransitionScreenTimer == 0 then
             CurrentMinigameState = MinigameState.PLAYING
 
-            if ArcadeCabinetVariables.IsCurrentMinigameClitched then
+            if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
                 SpawnGusMan()
             end
 
@@ -1057,7 +1116,12 @@ end
 
 
 function gush:OnSawInit(saw)
-    saw:GetSprite():Load("gfx/gush_saw.anm2", true)
+    saw:ClearEntityFlags(EntityFlag.FLAG_APPEAR)
+    saw:GetSprite():Load("gfx/gush_saw.anm2", false)
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+        saw:GetSprite():ReplaceSpritesheet(0, "gfx/enemies/gush_glitch_saw.png")
+    end
+    saw:GetSprite():LoadGraphics()
 end
 
 
@@ -1102,7 +1166,23 @@ end
 
 
 function gush:OnRemovableEffect(effect)
-    --effect:Remove()
+    effect:Remove()
+end
+
+
+---@param tile EntityEffect
+function gush:OnGlitchTileUpdate(tile)
+    local data = tile:GetData()
+    if (game:GetFrameCount() + data.RandomOffset) % MinigameConstants.GLITCH_TILE_CHANGE_FRAMES == 0 and data.ChagingTile then
+        local maxFrames = MinigameConstants.GLITCH_TILE_FRAME_NUM[tile:GetSprite():GetAnimation()]
+        local newFrame = rng:RandomInt(maxFrames - 1)
+        if newFrame >= data.ChosenFrame then
+            newFrame = newFrame + 1
+        end
+        data.ChosenFrame = newFrame
+    end
+
+    tile:GetSprite():SetFrame(data.ChosenFrame)
 end
 
 
@@ -1136,6 +1216,7 @@ function gush:AddCallbacks(mod)
     mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, gush.OnRemovableEffect, EffectVariant.TINY_FLY)
     mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, gush.OnRemovableEffect, EffectVariant.LASER_IMPACT)
     mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, gush.OnRemovableEffect, EffectVariant.WATER_SPLASH)
+    mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, gush.OnGlitchTileUpdate, MinigameEntityVariants.GLITCH_TILE)
     mod:AddCallback(ModCallbacks.MC_PRE_ENTITY_SPAWN, gush.PreEntitySpawn)
 end
 
@@ -1186,19 +1267,16 @@ function gush:Init(mod, variables)
     end
 
     --Intro stuff
-    TransitionScreen:ReplaceSpritesheet(0, "gfx/effects/gush/gush_intro_screen.png")
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+        TransitionScreen:ReplaceSpritesheet(0, "gfx/effects/gush/gush_glitch_intro_screen.png")
+    else
+        TransitionScreen:ReplaceSpritesheet(0, "gfx/effects/gush/gush_intro_screen.png")
+        TransitionScreen:ReplaceSpritesheet(1, "gfx/effects/gush/gush_intro_screen.png")
+    end
     TransitionScreen:LoadGraphics()
     TransitionScreen:Play("Idle", true)
     CurrentMinigameState = MinigameState.INTRO_SCREEN
     MinigameTimers.IntroTimer = MinigameConstants.MAX_INTRO_SCREEN_TIMER
-
-    --Spawn the backdrop
-    local room = game:GetRoom()
-    Backdrop = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, ArcadeCabinetVariables.Backdrop2x2Variant, 0, room:GetCenterPos(), Vector.Zero, nil)
-    Backdrop:GetSprite():ReplaceSpritesheet(0, "gfx/backdrop/gush_backdrop1.png")
-    Backdrop:GetSprite():LoadGraphics()
-    Backdrop.Visible = false
-    Backdrop.DepthOffset = -500
 
     --Play music
     MusicManager:Play(MinigameMusic, 1)

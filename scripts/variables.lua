@@ -55,7 +55,7 @@ ArcadeCabinetVariables.CabinetRadius = 20
 ArcadeCabinetVariables.MinigameDoor = nil
 ArcadeCabinetVariables.CurrentMinigame = nil
 ArcadeCabinetVariables.CurrentScript = nil
-ArcadeCabinetVariables.IsCurrentMinigameClitched = nil
+ArcadeCabinetVariables.IsCurrentMinigameGlitched = nil
 ArcadeCabinetVariables.LevelCurses = nil
 ArcadeCabinetVariables.OptionsChargeBar = nil
 ArcadeCabinetVariables.OptionsActiveCam = nil
@@ -70,6 +70,7 @@ ArcadeCabinetVariables.FadeOutTimer = nil
 ArcadeCabinetVariables.BackdropVariant = Isaac.GetEntityVariantByName("minigame backdrop")
 ArcadeCabinetVariables.Backdrop1x1Variant = Isaac.GetEntityVariantByName("minigame backdrop 1x1")
 ArcadeCabinetVariables.Backdrop1x2Variant = Isaac.GetEntityVariantByName("minigame backdrop 1x2")
+ArcadeCabinetVariables.Backdrop2x1Variant = Isaac.GetEntityVariantByName("minigame backdrop 2x1")
 ArcadeCabinetVariables.Backdrop2x2Variant = Isaac.GetEntityVariantByName("minigame backdrop 2x2")
 
 return ArcadeCabinetVariables
