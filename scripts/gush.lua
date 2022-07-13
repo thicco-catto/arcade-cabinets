@@ -280,28 +280,39 @@ local function PlaceGlitchTiles()
 
     local room = game:GetRoom()
     local leftToSpawn = MinigameConstants.GLITCH_NUM_GLITCH_TILES
-    for gridIndex = 0, 251, 1 do
-        if rng:RandomFloat() < leftToSpawn/447 then
-            leftToSpawn = leftToSpawn - 1
 
-            local glitchTile = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.GLITCH_TILE, 0, room:GetGridPosition(gridIndex), Vector.Zero, nil)
+    local numOneWays = 0
+    for _, _ in ipairs(RoomOneWays) do
+        numOneWays = numOneWays + 1
+    end
 
-            local chosenAnimation = "Idle"
-            if RoomPlatforms[gridIndex] or RoomOneWays[gridIndex] then
-                chosenAnimation = "Platform"
-            elseif RoomSpikes[gridIndex] then
-                chosenAnimation = "Spike"
-            end
-
-            glitchTile:GetSprite():Play(chosenAnimation, true)
-            glitchTile:GetData().ChosenFrame = rng:RandomInt(MinigameConstants.GLITCH_TILE_FRAME_NUM[chosenAnimation])
-            glitchTile:GetSprite():SetFrame(glitchTile:GetData().ChosenFrame)
-            glitchTile:GetData().ChagingTile = rng:RandomInt(100) < MinigameConstants.GLITCH_TILE_CHANGING_CHANCE
-            glitchTile:GetData().RandomOffset = rng:RandomInt(MinigameConstants.GLITCH_TILE_CHANGE_FRAMES)
-            glitchTile.DepthOffset = -900
-
-            if leftToSpawn == 0 then break end
+    local possibleGlitchTiles = {}
+    for i = 0, 251, 1 do
+        if not RoomOneWays[i] then
+            table.insert(possibleGlitchTiles, i)
         end
+    end
+
+    for _ = 1, MinigameConstants.GLITCH_NUM_GLITCH_TILES, 1 do
+        local chosen = rng:RandomInt(#possibleGlitchTiles) + 1
+        local gridIndex = possibleGlitchTiles[chosen]
+        table.remove(possibleGlitchTiles, chosen)
+
+        local glitchTile = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.GLITCH_TILE, 0, room:GetGridPosition(gridIndex), Vector.Zero, nil)
+
+        local chosenAnimation = "Idle"
+        if RoomPlatforms[gridIndex] then
+            chosenAnimation = "Platform"
+        elseif RoomSpikes[gridIndex] then
+            chosenAnimation = "Spike"
+        end
+
+        glitchTile:GetSprite():Play(chosenAnimation, true)
+        glitchTile:GetData().ChosenFrame = rng:RandomInt(MinigameConstants.GLITCH_TILE_FRAME_NUM[chosenAnimation])
+        glitchTile:GetSprite():SetFrame(glitchTile:GetData().ChosenFrame)
+        glitchTile:GetData().ChagingTile = rng:RandomInt(100) < MinigameConstants.GLITCH_TILE_CHANGING_CHANCE
+        glitchTile:GetData().RandomOffset = rng:RandomInt(MinigameConstants.GLITCH_TILE_CHANGE_FRAMES)
+        glitchTile.DepthOffset = -200
     end
 end
 
@@ -395,7 +406,7 @@ local function PrepareForRoom()
 
     backdrop:GetSprite():ReplaceSpritesheet(0, "gfx/backdrop/gush_backdrop" .. backdropVariant .. ".png")
     backdrop:GetSprite():LoadGraphics()
-    backdrop.DepthOffset = -1000
+    backdrop.DepthOffset = -5000
 
     local playerNum = game:GetNumPlayers()
     for i = 0, playerNum - 1, 1 do
