@@ -20,6 +20,8 @@ local MinigameSounds = {
     END_EXPLOSION = Isaac.GetSoundIdByName("gush explosion"),
     BIG_EXPLOSION = Isaac.GetSoundIdByName("gush big explosion"),
 
+    PUS_MAN = Isaac.GetSoundIdByName("gush pus man"),
+
     WIN = Isaac.GetSoundIdByName("arcade cabinet win"),
     LOSE = Isaac.GetSoundIdByName("arcade cabinet lose")
 }
@@ -1197,6 +1199,14 @@ function gush:OnGlitchTileUpdate(tile)
 end
 
 
+---@param pusman EntityEffect
+function gush:OnPusManUpdate(pusman)
+    if pusman:GetSprite():IsEventTriggered("PlaySound") then
+        SFXManager:Play(MinigameSounds.PUS_MAN)
+    end
+end
+
+
 function gush:PreEntitySpawn(entityType, entityVariant, _, _, _, _, seed)
     if entityType == EntityType.ENTITY_EFFECT and 
     (entityVariant == EffectVariant.TINY_FLY or entityVariant == EffectVariant.LASER_IMPACT) then
@@ -1228,6 +1238,7 @@ function gush:AddCallbacks(mod)
     mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, gush.OnRemovableEffect, EffectVariant.LASER_IMPACT)
     mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, gush.OnRemovableEffect, EffectVariant.WATER_SPLASH)
     mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, gush.OnGlitchTileUpdate, MinigameEntityVariants.GLITCH_TILE)
+    mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, gush.OnPusManUpdate, MinigameEntityVariants.PUS_MAN)
     mod:AddCallback(ModCallbacks.MC_PRE_ENTITY_SPAWN, gush.PreEntitySpawn)
 end
 
@@ -1253,6 +1264,8 @@ function gush:RemoveCallbacks(mod)
     mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, gush.OnRemovableEffect)
     mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, gush.OnRemovableEffect)
     mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, gush.OnRemovableEffect)
+    mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, gush.OnGlitchTileUpdate)
+    mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, gush.OnPusManUpdate)
     mod:RemoveCallback(ModCallbacks.MC_PRE_ENTITY_SPAWN, gush.PreEntitySpawn)
 end
 

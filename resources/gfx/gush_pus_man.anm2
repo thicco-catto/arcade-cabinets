@@ -1,5 +1,5 @@
 <AnimatedActor>
-	<Info CreatedBy="Unknown" CreatedOn="12/07/2022 18:31:05" Version="33" Fps="30"/>
+	<Info CreatedBy="Unknown" CreatedOn="13/07/2022 16:36:49" Version="34" Fps="30"/>
 	<Content>
 		<Spritesheets>
 			<Spritesheet Path="enemies\gush_glitched_pus_man.png" Id="0"/>
@@ -8,7 +8,9 @@
 			<Layer Name="Main" Id="0" SpritesheetId="0"/>
 		</Layers>
 		<Nulls/>
-		<Events/>
+		<Events>
+			<Event Name="PlaySound" Id="0"/>
+		</Events>
 	</Content>
 	<Animations DefaultAnimation="Idle">
 		<Animation Name="Idle" FrameNum="12" Loop="true">
@@ -22,7 +24,9 @@
 				</LayerAnimation>
 			</LayerAnimations>
 			<NullAnimations/>
-			<Triggers/>
+			<Triggers>
+				<Trigger EventId="0" AtFrame="6"/>
+			</Triggers>
 		</Animation>
 	</Animations>
 </AnimatedActor>
