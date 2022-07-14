@@ -1140,8 +1140,6 @@ function gush:OnRender()
     RenderWaveTransition()
 
     RenderFadeOut()
-
-    Isaac.RenderText(CurrentMinigameState, 50, 50, 1, 1, 1, 1)
 end
 
 
@@ -1328,6 +1326,14 @@ function gush:Init(mod, variables)
     for _, timer in pairs(MinigameTimers) do
         timer = 0
     end
+
+    --UI
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+        HealthUI:ReplaceSpritesheet(1, "gfx/effects/gush/gush_glitch_hearts_ui.png")
+    else
+        HealthUI:ReplaceSpritesheet(1, "gfx/effects/gush/gush_hearts_ui.png")
+    end
+    HealthUI:LoadGraphics()
 
     --Intro stuff
     if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
