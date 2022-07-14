@@ -681,14 +681,22 @@ end
 
 ---@param player EntityPlayer
 local function CheckIfPussyManAtePlayer(player)
+    if CurrentMinigameState == MinigameState.WINNING then return end
+
     for _, pusman in ipairs(Isaac.FindByType(EntityType.ENTITY_EFFECT, MinigameEntityVariants.PUS_MAN)) do
         if player.Position:Distance(pusman.Position) <= MinigameConstants.GLITCH_PUS_MAN_SIZE then
-            if player:GetData().HasToBeEatenByPusMan and not CurrentMinigameState == MinigameState.WINNING then
+            if player:GetData().HasToBeEatenByPusMan then
                 pusman:GetSprite():Stop()
                 pusman.Velocity = Vector.Zero
                 CurrentMinigameState = MinigameState.WINNING
                 SFXManager:Play(MinigameSounds.WIN)
                 TransitionScreen:Play("Appear", true)
+
+                local playerNum = game:GetNumPlayers()
+                for i = 0, playerNum - 1, 1 do
+                    local player = game:GetPlayer(i)
+                    player:GetData().FakePlayer:GetSprite():Play("Win", true)
+                end
             else
                 KillPlayers(player)
             end
@@ -907,7 +915,7 @@ function gush:OnPlayerUpdate(player)
         player:GetData().ExtraJumpFrames = 0
     end
 
-    local shouldIgnoreGravity = MakePlayerStandOnFloor(player)
+    local shouldIgnoreGravity = MakePlayerStandOnFloor(player) or CurrentMinigameState == MinigameState.WAITING_FOR_PUS_MAN
 
     if not shouldIgnoreGravity then
         ApplyGravity(player, gravity)
@@ -1132,6 +1140,8 @@ function gush:OnRender()
     RenderWaveTransition()
 
     RenderFadeOut()
+
+    Isaac.RenderText(CurrentMinigameState, 50, 50, 1, 1, 1, 1)
 end
 
 

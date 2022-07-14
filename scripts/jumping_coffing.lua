@@ -925,7 +925,7 @@ function jumping_coffing:Init(mod, variables)
     end
 
     backdrop:GetSprite():LoadGraphics()
-    backdrop.DepthOffset = -1000
+    backdrop.DepthOffset = -2000
 
     --Spawn target
     TargetEntity = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.TARGET, 0, room:GetCenterPos(), Vector.Zero, nil)
@@ -947,7 +947,7 @@ function jumping_coffing:Init(mod, variables)
                 glitchTile:GetSprite():SetFrame("Idle", glitchTile:GetData().ChosenFrame)
                 glitchTile:GetData().ChagingTile = rng:RandomInt(100) < MinigameConstants.GLITCH_TILE_CHANGING_CHANCE
                 glitchTile:GetData().RandomOffset = rng:RandomInt(MinigameConstants.GLITCH_TILE_CHANGE_FRAMES)
-                glitchTile.DepthOffset = -900
+                glitchTile.DepthOffset = -200
 
                 if leftToSpawn == 0 then break end
             end
