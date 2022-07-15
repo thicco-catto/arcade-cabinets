@@ -196,7 +196,7 @@ local function UpdateIntroScreen()
         local boneguy = Isaac.Spawn(EntityType.ENTITY_CLICKETY_CLACK, MinigameEntityVariants.BONE_GUY, 0, pos, Vector.Zero, nil)
         if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
             boneguy:GetSprite():ReplaceSpritesheet(0, "gfx/enemies/tug_glitch_boneguy.png")
-            boneguy:GetSprite():ReplaceSpritesheet(1, "gfx/enemies/tug_glitch_boneguy.png")
+            --boneguy:GetSprite():ReplaceSpritesheet(1, "gfx/enemies/tug_glitch_boneguy.png")
             boneguy:GetSprite():LoadGraphics()
         end
         BoneGuysPositions[#BoneGuysPositions] = nil
@@ -362,7 +362,12 @@ end
 
 --NPC CALLBACKS
 function too_underground:OnTNTInit(tnt)
-    tnt:GetSprite():ReplaceSpritesheet(0, "gfx/grid/tug_movable_tnt.png")
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+        tnt:GetSprite():ReplaceSpritesheet(0, "gfx/grid/tug_glitch_movable_tnt.png")
+    else
+        tnt:GetSprite():ReplaceSpritesheet(0, "gfx/grid/tug_movable_tnt.png")
+    end
+
     tnt:GetSprite():LoadGraphics()
 end
 
@@ -469,10 +474,15 @@ end
 
 --EFFECT CALLBACKS
 function too_underground:OnBombExplosionInit(explosion)
-    explosion:GetSprite():ReplaceSpritesheet(0, "gfx/effects/too underground/tug_explosion.png")
-    explosion:GetSprite():ReplaceSpritesheet(1, "")
-    explosion:GetSprite():ReplaceSpritesheet(2, "")
-    explosion:GetSprite():LoadGraphics()
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+        explosion:GetSprite():Load("gfx/tug_glitch_explosion.anm2", true)
+        explosion:GetSprite():Play("Explosion", true)
+    else
+        explosion:GetSprite():ReplaceSpritesheet(0, "gfx/effects/too underground/tug_explosion.png")
+        explosion:GetSprite():ReplaceSpritesheet(1, "")
+        explosion:GetSprite():ReplaceSpritesheet(2, "")
+        explosion:GetSprite():LoadGraphics()
+    end
 end
 
 
@@ -489,7 +499,11 @@ end
 
 
 function too_underground:OnRockExplosionInit(explosion)
-    explosion:GetSprite():Load("gfx/tug_shockwave.anm2", true)
+    explosion:GetSprite():Load("gfx/tug_shockwave.anm2", false)
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+        explosion:GetSprite():ReplaceSpritesheet(0, "gfx/effects/too underground/tug_glitch_shockwave.png")
+    end
+    explosion:GetSprite():LoadGraphics()
     explosion:GetSprite():Play("Break", true)
 end
 
@@ -684,9 +698,28 @@ function too_underground:Init(mod, variables)
 
     --Intro screen
     MinigameTimers.IntroScreenTimer = MinigameConstants.INTRO_SCREEN_MAX_FRAMES
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+       WaveTransitionScreen:ReplaceSpritesheet(0, "gfx/effects/too underground/tug_glitch_intro.png")
+       WaveTransitionScreen:ReplaceSpritesheet(1, "gfx/effects/too underground/tug_glitch_intro.png")
+    else
+        WaveTransitionScreen:ReplaceSpritesheet(0, "gfx/effects/too underground/tug_intro.png")
+        WaveTransitionScreen:ReplaceSpritesheet(1, "gfx/effects/too underground/tug_intro.png")
+    end
+    WaveTransitionScreen:LoadGraphics()
     WaveTransitionScreen:Play("Idle", true)
     WaveTransitionScreen:SetFrame(0)
     SFXManager:Play(MinigameSounds.INTRO)
+
+    --UI
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+        MinecraferUI:ReplaceSpritesheet(0, "gfx/effects/too underground/tug_glitch_minecrafter.png")
+        StoneMeterUI:ReplaceSpritesheet(0, "gfx/effects/too underground/tug_glitch_rockmeter.png")
+    else
+        MinecraferUI:ReplaceSpritesheet(0, "gfx/effects/too underground/tug_minecrafter.png")
+        StoneMeterUI:ReplaceSpritesheet(0, "gfx/effects/too underground/tug_rockmeter.png")
+    end
+    MinecraferUI:LoadGraphics()
+    StoneMeterUI:LoadGraphics()
 
     --Music
     MusicManager:Play(MinigameMusic, 1)
