@@ -3,23 +3,7 @@ local game = Game()
 local rng = RNG()
 local SFXManager = SFXManager()
 local MusicManager = MusicManager()
-----------------------------------------------
---FANCY REQUIRE (Thanks manaphoenix <3)
-----------------------------------------------
-local function loadFile(loc, ...)
-    local _, err = pcall(require, "")
-    local modName = err:match("/mods/(.*)/%.lua")
-    local path = "mods/" .. modName .. "/"
-
-    return assert(loadfile(path .. loc .. ".lua"))(...)
-end
-local ArcadeCabinetVariables = loadFile("scripts/variables")
-
-too_underground.callbacks = {}
-too_underground.result = nil
-too_underground.startingItems = {
-    Isaac.GetItemIdByName("TUG minecrafter")
-}
+local ArcadeCabinetVariables
 
 --Sounds
 local BannedSounds = {
@@ -69,10 +53,11 @@ local MinigameEntityVariants = {
 
 --Constants
 local MinigameConstants = {
+    CUSTOM_TNT_ACTIVE = Isaac.GetItemIdByName("TUG minecrafter"),
+
     ROCK_TYPES = {
         DEFAULT = 1,
         HARDENED = 2,
-        BARREL = 3
     },
 
     INTRO_SCREEN_MAX_FRAMES = 120,
@@ -166,83 +151,6 @@ local function BreakRock(index, rock)
 end
 
 
---INIT MINIGAME
-function too_underground:Init()
-    local room = game:GetRoom()
-
-    --Reset variables
-    too_underground.result = nil
-    RocksInRoom = {}
-    BrokenRocks = 0
-    RemoveBoneGuys = false
-    BoneGuysPositions = {}
-    BatteriesPositions = {}
-    CurrentMinigameState = MinigameState.INTRO_SCREEN
-
-    rng:SetSeed(game:GetSeeds():GetStartSeed(), 35)
-
-    --Intro screen
-    MinigameTimers.IntroScreenTimer = MinigameConstants.INTRO_SCREEN_MAX_FRAMES
-    WaveTransitionScreen:Play("Idle", true)
-    WaveTransitionScreen:SetFrame(0)
-    SFXManager:Play(MinigameSounds.INTRO)
-
-    --Music
-    MusicManager:Play(MinigameMusic, 1)
-    MusicManager:UpdateVolume()
-    MusicManager:Pause()
-
-    --Save bone guys positions
-    for _, entity in ipairs(Isaac.FindByType(EntityType.ENTITY_CLICKETY_CLACK, -1, -1)) do
-        BoneGuysPositions[#BoneGuysPositions+1] = entity.Position
-        entity:Remove()
-    end
-
-    --Save batteries positions
-    for _, entity in ipairs(Isaac.FindByType(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_LIL_BATTERY, -1)) do
-        BatteriesPositions[#BatteriesPositions+1] = entity.Position
-        entity:Remove()
-    end
-
-    --Spawn invinvible bone guy
-    InmortalBoneGuy = Isaac.Spawn(EntityType.ENTITY_CLICKETY_CLACK, 0, 0, Vector(-99999999, -99999999), Vector.Zero, nil)
-    InmortalBoneGuy:GetSprite():ReplaceSpritesheet(0, "a")
-    InmortalBoneGuy:GetSprite():ReplaceSpritesheet(1, "a")
-    InmortalBoneGuy:GetSprite():LoadGraphics()
-
-    --Spawn backdrop
-    local backdrop = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, ArcadeCabinetVariables.Backdrop1x2Variant, 0, game:GetRoom():GetCenterPos(), Vector.Zero, nil)
-    backdrop:GetSprite():ReplaceSpritesheet(0, "gfx/backdrop/tug_backdrop.png")
-    backdrop:GetSprite():LoadGraphics()
-    backdrop.DepthOffset = -1000
-
-    --Add rocks to the list
-    for i = 16, 223, 1 do
-        local gridEntity = room:GetGridEntity(i)
-        if gridEntity and gridEntity:ToRock() then AddRock(gridEntity, i) end
-    end
-
-    --Set players
-    local playerNum = game:GetNumPlayers()
-    for i = 0, playerNum - 1, 1 do
-        local player = game:GetPlayer(i)
-
-        --Items
-        for _, item in ipairs(too_underground.startingItems) do
-            player:AddCollectible(item, 0, false)
-        end
-
-        player.ControlsEnabled = false
-
-        --Set spritesheet
-        local playerSprite = player:GetSprite()
-        playerSprite:Load("gfx/tug_isaac52.anm2", true)
-        playerSprite:ReplaceSpritesheet(4, "a") --Empty head xd
-        playerSprite:LoadGraphics()
-    end
-end
-
-
 --UPDATE CALLBACKS
 local function ManageSFX()
     --Completely stop banned sounds
@@ -330,7 +238,7 @@ local function RemoveBoneGuysWin()
 end
 
 
-function too_underground:FrameUpdate()
+function too_underground:OnFrameUpdate()
     --Remove poofs
     for _, entity in ipairs(Isaac.FindByType(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.TEAR_POOF, 0)) do
         if entity:GetSprite():IsFinished("Poof") then entity:Remove() end
@@ -346,7 +254,6 @@ function too_underground:FrameUpdate()
 
     CheckForWin()
 end
-too_underground.callbacks[ModCallbacks.MC_POST_UPDATE] = too_underground.FrameUpdate
 
 
 local function FlipPlayer(player)
@@ -383,7 +290,7 @@ local function CheckIfPickUpBattery(player)
 end
 
 
-function too_underground:PlayerUpdate(player)
+function too_underground:OnPlayerUpdate(player)
     FlipPlayer(player)
 
     CheckIfPickUpBattery(player)
@@ -392,7 +299,6 @@ function too_underground:PlayerUpdate(player)
         player:GetSprite():SetFrame(5)
     end
 end
-too_underground.callbacks[ModCallbacks.MC_POST_PEFFECT_UPDATE] = too_underground.PlayerUpdate
 
 
 local function RenderIntro()
@@ -422,10 +328,15 @@ local function RenderFadeOut()
     if CurrentMinigameState == MinigameState.INTRO_SCREEN or CurrentMinigameState == MinigameState.MINING then return end
 
     if WaveTransitionScreen:IsFinished("Appear") then
+        for i = 0, game:GetNumPlayers() - 1, 1 do
+            local player = game:GetPlayer(i)
+            player:RemoveCollectible(MinigameConstants.CUSTOM_TNT_ACTIVE)
+        end
+
         if CurrentMinigameState == MinigameState.WINNING then
-            too_underground.result = ArcadeCabinetVariables.MinigameResult.WIN
+            ArcadeCabinetVariables.CurrentMinigameResult = ArcadeCabinetVariables.MinigameResult.WIN
         else
-            too_underground.result = ArcadeCabinetVariables.MinigameResult.LOSE
+            ArcadeCabinetVariables.CurrentMinigameResult = ArcadeCabinetVariables.MinigameResult.LOSE
         end
     end
 
@@ -447,73 +358,76 @@ function too_underground:OnRender()
 
     RenderFadeOut()
 end
-too_underground.callbacks[ModCallbacks.MC_POST_RENDER] = too_underground.OnRender
 
 
 --NPC CALLBACKS
-function too_underground:NPCInit(entity)
-    if entity.Type == EntityType.ENTITY_MOVABLE_TNT then
-        entity:GetSprite():ReplaceSpritesheet(0, "gfx/grid/tug_movable_tnt.png")
-        entity:GetSprite():LoadGraphics()
-    elseif entity.Type == EntityType.ENTITY_SPIDER then
-        entity:Remove()
+function too_underground:OnTNTInit(tnt)
+    tnt:GetSprite():ReplaceSpritesheet(0, "gfx/grid/tug_movable_tnt.png")
+    tnt:GetSprite():LoadGraphics()
+end
+
+
+function too_underground:OnSpiderInit(spider)
+    spider:Remove()
+end
+
+
+function too_underground:OnTNTUpdate(tnt)
+    if tnt:GetData().hasExploded or tnt.State ~= NpcState.STATE_SPECIAL then return end
+
+    tnt:GetData().hasExploded = true
+
+    for index, rock in pairs(RocksInRoom) do
+        if tnt.Position:Distance(rock.gridEntity.Position) < 110 then
+            BreakRock(index, rock)
+        end
     end
 end
-too_underground.callbacks[ModCallbacks.MC_POST_NPC_INIT] = too_underground.NPCInit
 
 
-function too_underground:NPCUpdate(entity)
-    if entity.Type == EntityType.ENTITY_MOVABLE_TNT and not entity:GetData().hasExploded and entity.State == 16 then
-        entity:GetData().hasExploded = true
+function too_underground:OnBoneGuyUpdate(boneGuy)
+    local data = boneGuy:GetData()
 
-        for index, rock in pairs(RocksInRoom) do
-            if entity.Position:Distance(rock.gridEntity.Position) < 110 then
-                BreakRock(index, rock)
-            end
-        end
-    elseif entity.Type == EntityType.ENTITY_CLICKETY_CLACK then
-        local data = entity:GetData()
-
-        if data.LastState and data.LastState == 13 and data.LastState ~= entity.State then
-            SFXManager:Play(MinigameSounds.BONE_GUY_RISE_DEAD)
-        end
-        entity:GetData().LastState = entity.State
+    if data.LastState and data.LastState == 13 and data.LastState ~= boneGuy.State then
+        SFXManager:Play(MinigameSounds.BONE_GUY_RISE_DEAD)
     end
+
+    data.LastState = boneGuy.State
 end
-too_underground.callbacks[ModCallbacks.MC_NPC_UPDATE] = too_underground.NPCUpdate
 
 
-function too_underground:OnEntityDamage(tookDamage, _, damageflags, _)
-    if tookDamage:ToPlayer() then return false end
+function too_underground:OnPlayerDamage()
+    return false
+end
 
-    if damageflags == DamageFlag.DAMAGE_CRUSH then
+
+function too_underground:OnBoneGuyDamage(tookDamage, _, damageFlags)
+    if damageFlags == DamageFlag.DAMAGE_CRUSH then
         return false
     end
 
-    if tookDamage.Type == EntityType.ENTITY_CLICKETY_CLACK and tookDamage:ToNPC().State == 4 then
+    if tookDamage:ToNPC().State == 4 then
         tookDamage.HitPoints = 0
         SFXManager:Play(MinigameSounds.BONE_GUY_RISE_DEAD)
     end
 end
-too_underground.callbacks[ModCallbacks.MC_ENTITY_TAKE_DMG] = too_underground.OnEntityDamage
 
 
 function too_underground:OnNPCCollision(entity, collider)
-    if entity.Type == EntityType.ENTITY_CLICKETY_CLACK and entity:ToNPC().State == 4 and collider:ToPlayer() and CurrentMinigameState == MinigameState.MINING then
-        CurrentMinigameState = MinigameState.LOSING
-        MusicManager:VolumeSlide(0, 1)
-        SFXManager:Play(MinigameSounds.LOSE)
-        WaveTransitionScreen:Play("Appear")
+    if entity:ToNPC().State ~= 4 or not collider:ToPlayer() or CurrentMinigameState ~= MinigameState.MINING then return end
 
-        local playerNum = game:GetNumPlayers()
-        for i = 0, playerNum - 1, 1 do
-            local player = game:GetPlayer(i)
-            player.ControlsEnabled = false
-            player:PlayExtraAnimation("Sad")
-        end
+    CurrentMinigameState = MinigameState.LOSING
+    MusicManager:VolumeSlide(0, 1)
+    SFXManager:Play(MinigameSounds.LOSE)
+    WaveTransitionScreen:Play("Appear")
+
+    local playerNum = game:GetNumPlayers()
+    for i = 0, playerNum - 1, 1 do
+        local player = game:GetPlayer(i)
+        player.ControlsEnabled = false
+        player:PlayExtraAnimation("Sad")
     end
 end
-too_underground.callbacks[ModCallbacks.MC_PRE_NPC_COLLISION] = too_underground.OnNPCCollision
 
 
 --TEAR CALLBACKS
@@ -521,7 +435,6 @@ function too_underground:TearInit(tear)
     tear:GetSprite():ReplaceSpritesheet(0, "gfx/effects/too underground/tug_tears.png")
     tear:GetSprite():LoadGraphics()
 end
-too_underground.callbacks[ModCallbacks.MC_POST_TEAR_INIT] = too_underground.TearInit
 
 
 function too_underground:TearUpdate(tear)
@@ -551,89 +464,76 @@ function too_underground:TearUpdate(tear)
         end
     end
 end
-too_underground.callbacks[ModCallbacks.MC_POST_TEAR_UPDATE] = too_underground.TearUpdate
 
 
 function too_underground:TearCollision(_, collider)
     if collider.Type == EntityType.ENTITY_GENERIC_PROP then return true end
 end
-too_underground.callbacks[ModCallbacks.MC_PRE_TEAR_COLLISION] = too_underground.TearCollision
 
 
 --EFFECT CALLBACKS
-function too_underground:EffectInit(effect)
-    if effect.Variant == EffectVariant.BOMB_EXPLOSION then
-        effect:GetSprite():ReplaceSpritesheet(0, "gfx/effects/too underground/tug_explosion.png")
-        effect:GetSprite():ReplaceSpritesheet(1, "a")
-        effect:GetSprite():ReplaceSpritesheet(2, "a")
-        effect:GetSprite():LoadGraphics()
-    elseif effect.Variant == EffectVariant.TEAR_POOF_A or effect.Variant == EffectVariant.TEAR_POOF_B then
-        effect:Remove()
-        SFXManager:Play(MinigameSounds.TEAR_SPLASH)
-
-        local newPoof = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.TEAR_POOF, 0, effect.Position, Vector.Zero, nil)
-        newPoof:GetSprite():Play("Poof", true)
-
-        SFXManager:Stop(SoundEffect.SOUND_TEARIMPACTS)
-        SFXManager:Stop(SoundEffect.SOUND_SPLATTER)
-    elseif effect.Variant == EffectVariant.ROCK_EXPLOSION then
-        effect:GetSprite():Load("gfx/tug_shockwave.anm2", true)
-        effect:GetSprite():Play("Break", true)
-    end
+function too_underground:OnBombExplosionInit(explosion)
+    explosion:GetSprite():ReplaceSpritesheet(0, "gfx/effects/too underground/tug_explosion.png")
+    explosion:GetSprite():ReplaceSpritesheet(1, "")
+    explosion:GetSprite():ReplaceSpritesheet(2, "")
+    explosion:GetSprite():LoadGraphics()
 end
-too_underground.callbacks[ModCallbacks.MC_POST_EFFECT_INIT] = too_underground.EffectInit
 
 
-function too_underground:EffectUpdate(effect)
-    if effect.Variant == EffectVariant.ROCK_EXPLOSION then
-        for index, rock in pairs(RocksInRoom) do
-            if rock.gridEntity.Position:Distance(effect.Position) < 45 then
-                BreakRock(index, rock)
-            end
+function too_underground:OnTearPoofInit(poof)
+    poof:Remove()
+    SFXManager:Play(MinigameSounds.TEAR_SPLASH)
+
+    local newPoof = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.TEAR_POOF, 0, poof.Position, Vector.Zero, nil)
+    newPoof:GetSprite():Play("Poof", true)
+
+    SFXManager:Stop(SoundEffect.SOUND_TEARIMPACTS)
+    SFXManager:Stop(SoundEffect.SOUND_SPLATTER)
+end
+
+
+function too_underground:OnRockExplosionInit(explosion)
+    explosion:GetSprite():Load("gfx/tug_shockwave.anm2", true)
+    explosion:GetSprite():Play("Break", true)
+end
+
+
+function too_underground:OnRockExplosionUpdate(explosion)
+    for index, rock in pairs(RocksInRoom) do
+        if rock.gridEntity.Position:Distance(explosion.Position) < 45 then
+            BreakRock(index, rock)
         end
-    elseif effect.Variant == EffectVariant.TINY_FLY then
-        effect:Remove() --They should be removed but just in case
     end
 end
-too_underground.callbacks[ModCallbacks.MC_POST_EFFECT_UPDATE] = too_underground.EffectUpdate
+
+
+function too_underground:OnTinyFlyUpdate(fly)
+    fly:Remove()
+end
 
 
 --PICKUP CALLBACKS
-function too_underground:PickupInit(pickup)
-    if pickup.Variant == PickupVariant.PICKUP_COIN or pickup.Variant == PickupVariant.PICKUP_COLLECTIBLE or
-    pickup.Variant == PickupVariant.PICKUP_TRINKET then
-        pickup:Remove()
-    end
+function too_underground:OnRemovablePickup(pickup)
+    pickup:Remove()
 end
-too_underground.callbacks[ModCallbacks.MC_POST_PICKUP_INIT] = too_underground.PickupInit
-
-
-function too_underground:PickupUpdate(pickup)
-    if pickup.Variant == PickupVariant.PICKUP_COIN or pickup.Variant == PickupVariant.PICKUP_COLLECTIBLE or
-    pickup.Variant == PickupVariant.PICKUP_TRINKET then
-        pickup:Remove()
-    end
-end
-too_underground.callbacks[ModCallbacks.MC_POST_PICKUP_UPDATE] = too_underground.PickupUpdate
 
 
 function too_underground:PickupCollision(pickup, collider)
-    if pickup.Variant == MinigameEntityVariants.CHEST and collider:ToPlayer() then
-        pickup:GetSprite():Play("Open", true)
-        CurrentMinigameState = MinigameState.WINNING
-        MusicManager:VolumeSlide(0, 1)
-        SFXManager:Play(MinigameSounds.WIN)
-        WaveTransitionScreen:Play("Appear")
+    if not collider:ToPlayer() then return end
 
-        local playerNum = game:GetNumPlayers()
-        for i = 0, playerNum - 1, 1 do
-            local player = game:GetPlayer(i)
-            player.ControlsEnabled = false
-            player:PlayExtraAnimation("Happy")
-        end
+    pickup:GetSprite():Play("Open", true)
+    CurrentMinigameState = MinigameState.WINNING
+    MusicManager:VolumeSlide(0, 1)
+    SFXManager:Play(MinigameSounds.WIN)
+    WaveTransitionScreen:Play("Appear")
+
+    local playerNum = game:GetNumPlayers()
+    for i = 0, playerNum - 1, 1 do
+        local player = game:GetPlayer(i)
+        player.ControlsEnabled = false
+        player:PlayExtraAnimation("Happy")
     end
 end
-too_underground.callbacks[ModCallbacks.MC_PRE_PICKUP_COLLISION] = too_underground.PickupCollision
 
 
 --OTHER CALLBACKS
@@ -643,14 +543,192 @@ function too_underground:OnEntitySpawn(entityType, entityVariant, _, _, _, _, se
         return {EntityType.ENTITY_EFFECT, EffectVariant.BLOOD_SPLAT, 0, seed}
     end
 end
-too_underground.callbacks[ModCallbacks.MC_PRE_ENTITY_SPAWN] = too_underground.OnEntitySpawn
 
 
 function too_underground:OnActiveUse(_, _, player)
-    Isaac.Spawn(EntityType.ENTITY_MOVABLE_TNT, 0, 0, player.Position, Vector.Zero, nil)
+    local tnt = Isaac.Spawn(EntityType.ENTITY_MOVABLE_TNT, 0, 0, player.Position, Vector.Zero, nil)
+    tnt:ClearEntityFlags(EntityFlag.FLAG_APPEAR)
     return false
 end
-too_underground.callbacks[ModCallbacks.MC_USE_ITEM] = too_underground.OnActiveUse
+
+
+--INIT MINIGAME
+function too_underground:AddCallbacks(mod)
+    --Generic updates
+    mod:AddCallback(ModCallbacks.MC_POST_UPDATE, too_underground.OnFrameUpdate)
+    mod:AddCallback(ModCallbacks.MC_POST_PEFFECT_UPDATE, too_underground.OnPlayerUpdate)
+    mod:AddCallback(ModCallbacks.MC_POST_RENDER, too_underground.OnRender)
+
+    --Npc callbacks
+    mod:AddCallback(ModCallbacks.MC_POST_NPC_INIT, too_underground.OnTNTInit, EntityType.ENTITY_MOVABLE_TNT)
+    mod:AddCallback(ModCallbacks.MC_POST_NPC_INIT, too_underground.OnSpiderInit, EntityType.ENTITY_SPIDER)
+
+    mod:AddCallback(ModCallbacks.MC_NPC_UPDATE, too_underground.OnTNTUpdate, EntityType.ENTITY_MOVABLE_TNT)
+    mod:AddCallback(ModCallbacks.MC_NPC_UPDATE, too_underground.OnBoneGuyUpdate, EntityType.ENTITY_CLICKETY_CLACK)
+
+    mod:AddCallback(ModCallbacks.MC_PRE_NPC_COLLISION, too_underground.OnNPCCollision, EntityType.ENTITY_CLICKETY_CLACK)
+
+    --Damage callback
+    mod:AddCallback(ModCallbacks.MC_ENTITY_TAKE_DMG, too_underground.OnPlayerDamage, EntityType.ENTITY_PLAYER)
+    mod:AddCallback(ModCallbacks.MC_ENTITY_TAKE_DMG, too_underground.OnBoneGuyDamage, EntityType.ENTITY_CLICKETY_CLACK)
+
+    --Tear callbacks
+    mod:AddCallback(ModCallbacks.MC_POST_TEAR_INIT, too_underground.TearInit)
+    mod:AddCallback(ModCallbacks.MC_POST_TEAR_UPDATE, too_underground.TearUpdate)
+    mod:AddCallback(ModCallbacks.MC_PRE_TEAR_COLLISION, too_underground.TearCollision)
+
+    --Effect callbacks
+    mod:AddCallback(ModCallbacks.MC_POST_EFFECT_INIT, too_underground.OnBombExplosionInit, EffectVariant.BOMB_EXPLOSION)
+    mod:AddCallback(ModCallbacks.MC_POST_EFFECT_INIT, too_underground.OnTearPoofInit, EffectVariant.TEAR_POOF_A)
+    mod:AddCallback(ModCallbacks.MC_POST_EFFECT_INIT, too_underground.OnTearPoofInit, EffectVariant.TEAR_POOF_B)
+    mod:AddCallback(ModCallbacks.MC_POST_EFFECT_INIT, too_underground.OnRockExplosionInit, EffectVariant.ROCK_EXPLOSION)
+
+    mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, too_underground.OnRockExplosionUpdate, EffectVariant.ROCK_EXPLOSION)
+    mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, too_underground.OnTinyFlyUpdate, EffectVariant.TINY_FLY)
+
+    --Pickup callbacks
+    mod:AddCallback(ModCallbacks.MC_POST_PICKUP_INIT, too_underground.OnRemovablePickup, PickupVariant.PICKUP_COIN)
+    mod:AddCallback(ModCallbacks.MC_POST_PICKUP_INIT, too_underground.OnRemovablePickup, PickupVariant.PICKUP_COLLECTIBLE)
+    mod:AddCallback(ModCallbacks.MC_POST_PICKUP_INIT, too_underground.OnRemovablePickup, PickupVariant.PICKUP_TRINKET)
+
+    mod:AddCallback(ModCallbacks.MC_POST_PICKUP_UPDATE, too_underground.OnRemovablePickup, PickupVariant.PICKUP_COIN)
+    mod:AddCallback(ModCallbacks.MC_POST_PICKUP_UPDATE, too_underground.OnRemovablePickup, PickupVariant.PICKUP_COLLECTIBLE)
+    mod:AddCallback(ModCallbacks.MC_POST_PICKUP_UPDATE, too_underground.OnRemovablePickup, PickupVariant.PICKUP_TRINKET)
+
+    mod:AddCallback(ModCallbacks.MC_PRE_PICKUP_COLLISION, too_underground.PickupCollision, MinigameEntityVariants.CHEST)
+
+    --Other callbacks
+    mod:AddCallback(ModCallbacks.MC_PRE_ENTITY_SPAWN, too_underground.OnEntitySpawn)
+    mod:AddCallback(ModCallbacks.MC_USE_ITEM, too_underground.OnActiveUse)
+end
+
+
+function too_underground:RemoveCallbacks(mod)
+    --Generic updates
+    mod:RemoveCallback(ModCallbacks.MC_POST_UPDATE, too_underground.OnFrameUpdate)
+    mod:RemoveCallback(ModCallbacks.MC_POST_PEFFECT_UPDATE, too_underground.OnPlayerUpdate)
+    mod:RemoveCallback(ModCallbacks.MC_POST_RENDER, too_underground.OnRender)
+
+    --Npc callbacks
+    mod:RemoveCallback(ModCallbacks.MC_POST_NPC_INIT, too_underground.OnTNTInit, EntityType.ENTITY_MOVABLE_TNT)
+    mod:RemoveCallback(ModCallbacks.MC_POST_NPC_INIT, too_underground.OnSpiderInit, EntityType.ENTITY_SPIDER)
+
+    mod:RemoveCallback(ModCallbacks.MC_NPC_UPDATE, too_underground.OnTNTUpdate, EntityType.ENTITY_MOVABLE_TNT)
+    mod:RemoveCallback(ModCallbacks.MC_NPC_UPDATE, too_underground.OnBoneGuyUpdate, EntityType.ENTITY_CLICKETY_CLACK)
+
+    mod:RemoveCallback(ModCallbacks.MC_PRE_NPC_COLLISION, too_underground.OnNPCCollision, EntityType.ENTITY_CLICKETY_CLACK)
+
+    --Damage callback
+    mod:RemoveCallback(ModCallbacks.MC_ENTITY_TAKE_DMG, too_underground.OnPlayerDamage, EntityType.ENTITY_PLAYER)
+    mod:RemoveCallback(ModCallbacks.MC_ENTITY_TAKE_DMG, too_underground.OnBoneGuyDamage, EntityType.ENTITY_CLICKETY_CLACK)
+
+    --Tear callbacks
+    mod:RemoveCallback(ModCallbacks.MC_POST_TEAR_INIT, too_underground.TearInit)
+    mod:RemoveCallback(ModCallbacks.MC_POST_TEAR_UPDATE, too_underground.TearUpdate)
+    mod:RemoveCallback(ModCallbacks.MC_PRE_TEAR_COLLISION, too_underground.TearCollision)
+
+    --Effect callbacks
+    mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_INIT, too_underground.OnBombExplosionInit, EffectVariant.BOMB_EXPLOSION)
+    mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_INIT, too_underground.OnTearPoofInit, EffectVariant.TEAR_POOF_A)
+    mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_INIT, too_underground.OnTearPoofInit, EffectVariant.TEAR_POOF_B)
+    mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_INIT, too_underground.OnRockExplosionInit, EffectVariant.ROCK_EXPLOSION)
+
+    mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, too_underground.OnRockExplosionUpdate, EffectVariant.ROCK_EXPLOSION)
+    mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, too_underground.OnTinyFlyUpdate, EffectVariant.TINY_FLY)
+
+    --Pickup callbacks
+    mod:RemoveCallback(ModCallbacks.MC_POST_PICKUP_INIT, too_underground.OnRemovablePickup, PickupVariant.PICKUP_COIN)
+    mod:RemoveCallback(ModCallbacks.MC_POST_PICKUP_INIT, too_underground.OnRemovablePickup, PickupVariant.PICKUP_COLLECTIBLE)
+    mod:RemoveCallback(ModCallbacks.MC_POST_PICKUP_INIT, too_underground.OnRemovablePickup, PickupVariant.PICKUP_TRINKET)
+
+    mod:RemoveCallback(ModCallbacks.MC_POST_PICKUP_UPDATE, too_underground.OnRemovablePickup, PickupVariant.PICKUP_COIN)
+    mod:RemoveCallback(ModCallbacks.MC_POST_PICKUP_UPDATE, too_underground.OnRemovablePickup, PickupVariant.PICKUP_COLLECTIBLE)
+    mod:RemoveCallback(ModCallbacks.MC_POST_PICKUP_UPDATE, too_underground.OnRemovablePickup, PickupVariant.PICKUP_TRINKET)
+
+    mod:RemoveCallback(ModCallbacks.MC_PRE_PICKUP_COLLISION, too_underground.PickupCollision, MinigameEntityVariants.CHEST)
+
+    --Other callbacks
+    mod:RemoveCallback(ModCallbacks.MC_PRE_ENTITY_SPAWN, too_underground.OnEntitySpawn)
+    mod:RemoveCallback(ModCallbacks.MC_USE_ITEM, too_underground.OnActiveUse)
+end
+
+
+function too_underground:Init(mod, variables)
+    ArcadeCabinetVariables = variables
+    too_underground:AddCallbacks(mod)
+
+    local room = game:GetRoom()
+
+    --Reset variables
+    too_underground.result = nil
+    RocksInRoom = {}
+    BrokenRocks = 0
+    RemoveBoneGuys = false
+    BoneGuysPositions = {}
+    BatteriesPositions = {}
+    CurrentMinigameState = MinigameState.INTRO_SCREEN
+
+    rng:SetSeed(game:GetSeeds():GetStartSeed(), 35)
+
+    --Intro screen
+    MinigameTimers.IntroScreenTimer = MinigameConstants.INTRO_SCREEN_MAX_FRAMES
+    WaveTransitionScreen:Play("Idle", true)
+    WaveTransitionScreen:SetFrame(0)
+    SFXManager:Play(MinigameSounds.INTRO)
+
+    --Music
+    MusicManager:Play(MinigameMusic, 1)
+    MusicManager:UpdateVolume()
+    MusicManager:Pause()
+
+    --Save bone guys positions
+    for _, entity in ipairs(Isaac.FindByType(EntityType.ENTITY_CLICKETY_CLACK, -1, -1)) do
+        BoneGuysPositions[#BoneGuysPositions+1] = entity.Position
+        entity:Remove()
+    end
+
+    --Save batteries positions
+    for _, entity in ipairs(Isaac.FindByType(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_LIL_BATTERY, -1)) do
+        BatteriesPositions[#BatteriesPositions+1] = entity.Position
+        entity:Remove()
+    end
+
+    --Spawn invinvible bone guy
+    InmortalBoneGuy = Isaac.Spawn(EntityType.ENTITY_CLICKETY_CLACK, 0, 0, Vector(-99999999, -99999999), Vector.Zero, nil)
+    InmortalBoneGuy:GetSprite():ReplaceSpritesheet(0, "a")
+    InmortalBoneGuy:GetSprite():ReplaceSpritesheet(1, "a")
+    InmortalBoneGuy:GetSprite():LoadGraphics()
+
+    --Spawn backdrop
+    local backdrop = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, ArcadeCabinetVariables.Backdrop1x2Variant, 0, game:GetRoom():GetCenterPos(), Vector.Zero, nil)
+    backdrop:GetSprite():ReplaceSpritesheet(0, "gfx/backdrop/tug_backdrop.png")
+    backdrop:GetSprite():LoadGraphics()
+    backdrop.DepthOffset = -1000
+
+    --Add rocks to the list
+    for i = 16, 223, 1 do
+        local gridEntity = room:GetGridEntity(i)
+        if gridEntity and gridEntity:ToRock() then AddRock(gridEntity, i) end
+    end
+
+    --Set players
+    local playerNum = game:GetNumPlayers()
+    for i = 0, playerNum - 1, 1 do
+        local player = game:GetPlayer(i)
+
+        --Items
+        player:AddCollectible(MinigameConstants.CUSTOM_TNT_ACTIVE, 0, false)
+
+        player.ControlsEnabled = false
+
+        --Set spritesheet
+        local playerSprite = player:GetSprite()
+        playerSprite:Load("gfx/tug_isaac52.anm2", true)
+        playerSprite:ReplaceSpritesheet(4, "a") --Empty head xd
+        playerSprite:LoadGraphics()
+    end
+end
+
 
 
 return too_underground

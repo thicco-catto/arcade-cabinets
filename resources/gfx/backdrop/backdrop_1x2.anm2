@@ -1,5 +1,5 @@
 <AnimatedActor>
-	<Info CreatedBy="Unknown" CreatedOn="03/04/2022 16:38:24" Version="15" Fps="30"/>
+	<Info CreatedBy="Unknown" CreatedOn="15/07/2022 13:54:24" Version="16" Fps="30"/>
 	<Content>
 		<Spritesheets>
 			<Spritesheet Path="tug_backdrop.png" Id="0"/>
