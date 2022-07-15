@@ -3,22 +3,7 @@ local game = Game()
 local rng = RNG()
 local SFXManager = SFXManager()
 local MusicManager = MusicManager()
-----------------------------------------------
---FANCY REQUIRE (Thanks manaphoenix <3)
-----------------------------------------------
-local function loadFile(loc, ...)
-    local _, err = pcall(require, "")
-    local modName = err:match("/mods/(.*)/%.lua")
-    local path = "mods/" .. modName .. "/"
-
-    return assert(loadfile(path .. loc .. ".lua"))(...)
-end
-local ArcadeCabinetVariables = loadFile("scripts/variables")
-
-black_stone_wielder.callbacks = {}
-black_stone_wielder.result = nil
-black_stone_wielder.startingItems = {
-}
+local ArcadeCabinetVariables
 
 --Sounds
 local BannedSounds = {
@@ -207,62 +192,6 @@ local function HitPlayer(player)
 end
 
 
---INIT MINIGAME
-function black_stone_wielder:Init()
-    --Restart stuff
-    black_stone_wielder.result = nil
-    LastRunePosition = game:GetPlayer(0).Position
-    CurrentLevel = 1
-    RuneCount = 0
-    CurrentMinigameState = MinigameState.TRANSITION
-    PlayerHP = 3
-
-    rng:SetSeed(game:GetSeeds():GetStartSeed(), 35)
-
-    --Reset timers
-    for _, timer in pairs(MinigameTimers) do
-        timer = 0
-    end
-
-    MusicManager:Play(MinigameMusic, 1)
-    MusicManager:UpdateVolume()
-
-    --Transition
-    PrepareTransition()
-
-    --Posible spawning positions
-    local room = game:GetRoom()
-    for i = 16, 119, 1 do
-        if not room:GetGridEntity(i) or room:GetGridEntity(i):GetType() == GridEntityType.GRID_SPIDERWEB then
-            PossibleSpawningPositions[#PossibleSpawningPositions+1] = room:GetGridPosition(i)
-        end
-    end
-
-    --Prepare players
-    local playerNum = game:GetNumPlayers()
-    for i = 0, playerNum - 1, 1 do
-        local player = game:GetPlayer(i)
-
-        for _, item in ipairs(black_stone_wielder.startingItems) do
-            player:AddCollectible(item, 0, false)
-        end
-
-        --Set the spritesheets
-        local playerSprite = player:GetSprite()
-        playerSprite:Load("gfx/isaac52.anm2", true)
-        playerSprite:ReplaceSpritesheet(1, "gfx/characters/isaac_bsw.png")
-        playerSprite:ReplaceSpritesheet(4, "gfx/characters/isaac_bsw.png")
-        playerSprite:ReplaceSpritesheet(12, "gfx/characters/isaac_bsw.png")
-        playerSprite:LoadGraphics()
-
-        player.Position = Vector(80, 290)
-
-        local costume = Isaac.GetCostumeIdByPath("gfx/costumes/bsw_robes.anm2")
-        player:AddNullCostume(costume)
-    end
-end
-
-
 --UPDATE CALLBACKS
 local function UpdateTransition()
     if MinigameTimers.TransitionTimer > 0 then
@@ -378,16 +307,6 @@ local function UpdateWaitForTransition()
 end
 
 
-local function CheckForEnemyAttack()
-    if not SFXManager:IsPlaying(SoundEffect.SOUND_WHIP_HIT) or MinigameTimers.IFramesTimer > 0 or
-    CurrentMinigameState ~= MinigameState.PLAYING then return end
-
-    --TODO: Find out who got hit
-    --Temporary solution: multiplayer doesnt exist
-    HitPlayer(game:GetPlayer(0))
-end
-
-
 local function ManageSFX()
     --Completely stop banned sounds
     for _, sound in ipairs(BannedSounds) do
@@ -413,8 +332,6 @@ end
 
 
 function black_stone_wielder:OnFrameUpdate()
-    CheckForEnemyAttack()
-
     ManageSFX()
 
     --Invincibility frames
@@ -438,7 +355,6 @@ function black_stone_wielder:OnFrameUpdate()
         UpdateFinishing()
     end
 end
-black_stone_wielder.callbacks[ModCallbacks.MC_POST_UPDATE] = black_stone_wielder.OnFrameUpdate
 
 
 local function RenderTransition()
@@ -469,9 +385,9 @@ local function RenderFadeOut()
         end
 
         if CurrentMinigameState == MinigameState.WINNING then
-            black_stone_wielder.result = ArcadeCabinetVariables.MinigameResult.WIN
+            ArcadeCabinetVariables.CurrentMinigameResult = ArcadeCabinetVariables.MinigameResult.WIN
         else
-            black_stone_wielder.result = ArcadeCabinetVariables.MinigameResult.LOSE
+            ArcadeCabinetVariables.CurrentMinigameResult = ArcadeCabinetVariables.MinigameResult.LOSE
         end
     end
 
@@ -530,13 +446,10 @@ function black_stone_wielder:OnRender()
 
     RenderTransition()
 end
-black_stone_wielder.callbacks[ModCallbacks.MC_POST_RENDER] = black_stone_wielder.OnRender
 
 
 --NPC CALLBACKS
 function black_stone_wielder:OnNPCInit(entity)
-    if entity.Type ~= EntityType.ENTITY_WHIPPER then return end
-
     if entity.Variant == 0 then
         entity:GetSprite():Load("gfx/bsw_whipper.anm2", true)
     elseif entity.Variant == 1 then
@@ -545,89 +458,56 @@ function black_stone_wielder:OnNPCInit(entity)
         entity:GetSprite():Load("gfx/bsw_lunatic.anm2", true)
     end
 end
-black_stone_wielder.callbacks[ModCallbacks.MC_POST_NPC_INIT] = black_stone_wielder.OnNPCInit
 
 
-function black_stone_wielder:OnNPCUpdate(entity)
-    if entity.Type ~= EntityType.ENTITY_WHIPPER then return end
-
-    local minDistance = 1000000
-    local closestPlayer = nil
-
-    local playerNum = game:GetNumPlayers()
-    for i = 0, playerNum - 1, 1 do
-        local player = game:GetPlayer(i)
-
-        if entity.Position:Distance(player.Position) < minDistance then
-            minDistance = entity.Position:Distance(player.Position)
-            closestPlayer = player
-        end
+function black_stone_wielder:OnPlayerDamage(player)
+    if MinigameTimers.IFramesTimer <= 0 then
+        HitPlayer(player:ToPlayer())
     end
-
-    --Leave this here just in case
-    -- if minDistance > 200 then
-    --     entity.Pathfinder:Reset()
-    --     entity.Pathfinder:FindGridPath(closestPlayer.Position, 1, 0, false)
-    -- end
+    return false
 end
-black_stone_wielder.callbacks[ModCallbacks.MC_NPC_UPDATE] = black_stone_wielder.OnNPCUpdate
 
 
-function black_stone_wielder:OnEntityDamage(tookDamage, _, damageflags, _)
-    if tookDamage:ToPlayer() then return false end
-end
-black_stone_wielder.callbacks[ModCallbacks.MC_ENTITY_TAKE_DMG] = black_stone_wielder.OnEntityDamage
-
-
-function black_stone_wielder:OnEntityCollision(entity, collider)
-    if entity.Type == EntityType.ENTITY_GENERIC_PROP then return end
-
+function black_stone_wielder:OnEntityCollision()
     if CurrentMinigameState == MinigameState.LOSING then
         return true
-    else
-        if not collider:ToPlayer() or MinigameTimers.IFramesTimer > 0 then return end
-
-        HitPlayer(collider:ToPlayer())
     end
 end
-black_stone_wielder.callbacks[ModCallbacks.MC_PRE_NPC_COLLISION] = black_stone_wielder.OnEntityCollision
 
 
 --PICKUP CALLBACKS
-function black_stone_wielder:OnPickupCollision(pickup, collider)
-    if pickup.Variant == MinigameEntityVariants.RUNE_SHARD and collider:ToPlayer() and CurrentMinigameState == MinigameState.PLAYING then
-        if CurrentRune:GetSprite():IsPlaying("Idle") or CurrentRune:GetSprite():IsPlaying("Flash") then
-            CurrentRune:GetSprite():Play("Disappear")
-            CurrentRune:GetSprite():SetFrame(8)
+function black_stone_wielder:OnPickupCollision(_, collider)
+    if not collider:ToPlayer() or CurrentMinigameState ~= MinigameState.PLAYING then return end
 
-            SFXManager:Play(MinigameSounds.RUNE_PICKUP)
+    if CurrentRune:GetSprite():IsPlaying("Idle") or CurrentRune:GetSprite():IsPlaying("Flash") then
+        CurrentRune:GetSprite():Play("Disappear")
+        CurrentRune:GetSprite():SetFrame(8)
 
-            --Reset timeout so new rune appears
-            MinigameTimers.RuneTimeoutTimer = 0
-            RuneCount = RuneCount + 1
+        SFXManager:Play(MinigameSounds.RUNE_PICKUP)
 
-            RuneUI:Play("Flash", true)
+        --Reset timeout so new rune appears
+        MinigameTimers.RuneTimeoutTimer = 0
+        RuneCount = RuneCount + 1
 
-            --If the player has collected all runes charge actives
-            local playerNum = game:GetNumPlayers()
-            for i = 0, playerNum - 1, 1 do
-                local player = game:GetPlayer(i)
-                player:SetActiveCharge(1)
-                player:SetActiveCharge(1, ActiveSlot.SLOT_POCKET)
-            end
+        RuneUI:Play("Flash", true)
+
+        --If the player has collected all runes charge actives
+        local playerNum = game:GetNumPlayers()
+        for i = 0, playerNum - 1, 1 do
+            local player = game:GetPlayer(i)
+            player:SetActiveCharge(1)
+            player:SetActiveCharge(1, ActiveSlot.SLOT_POCKET)
         end
-
-        return true
     end
+
+    return true
 end
-black_stone_wielder.callbacks[ModCallbacks.MC_PRE_PICKUP_COLLISION] = black_stone_wielder.OnPickupCollision
 
 
 --OTHER CALLBACKS
-function black_stone_wielder:OnTear(tear)
+function black_stone_wielder:OnTearUpdate(tear)
     tear:Remove()
 end
-black_stone_wielder.callbacks[ModCallbacks.MC_POST_TEAR_UPDATE] = black_stone_wielder.OnTear
 
 
 function black_stone_wielder:OnEntitySpawn(entityType, entityVariant, _, _, _, _, seed)
@@ -636,15 +516,92 @@ function black_stone_wielder:OnEntitySpawn(entityType, entityVariant, _, _, _, _
         return {EntityType.ENTITY_EFFECT, EffectVariant.BLOOD_SPLAT, 0, seed}
     end
 end
-black_stone_wielder.callbacks[ModCallbacks.MC_PRE_ENTITY_SPAWN] = black_stone_wielder.OnEntitySpawn
 
 
-function black_stone_wielder:EffectUpdate(effect)
-    if effect.Variant == EffectVariant.TINY_FLY then
-        effect:Remove() --They should be removed but just in case
+function black_stone_wielder:OnTinyFlyUpdate(effect)
+    effect:Remove() --They should be removed but just in case
+end
+
+
+--INIT MINIGAME
+function black_stone_wielder:AddCallbacks(mod)
+    mod:AddCallback(ModCallbacks.MC_POST_UPDATE, black_stone_wielder.OnFrameUpdate)
+    mod:AddCallback(ModCallbacks.MC_POST_RENDER, black_stone_wielder.OnRender)
+    mod:AddCallback(ModCallbacks.MC_POST_NPC_INIT, black_stone_wielder.OnNPCInit, EntityType.ENTITY_WHIPPER)
+    mod:AddCallback(ModCallbacks.MC_ENTITY_TAKE_DMG, black_stone_wielder.OnPlayerDamage, EntityType.ENTITY_PLAYER)
+    mod:AddCallback(ModCallbacks.MC_PRE_NPC_COLLISION, black_stone_wielder.OnEntityCollision)
+    mod:AddCallback(ModCallbacks.MC_PRE_PICKUP_COLLISION, black_stone_wielder.OnPickupCollision, MinigameEntityVariants.RUNE_SHARD)
+    mod:AddCallback(ModCallbacks.MC_POST_TEAR_UPDATE, black_stone_wielder.OnTearUpdate)
+    mod:AddCallback(ModCallbacks.MC_PRE_ENTITY_SPAWN, black_stone_wielder.OnEntitySpawn)
+    mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, black_stone_wielder.OnTinyFlyUpdate, EffectVariant.TINY_FLY)
+end
+
+
+function black_stone_wielder:RemoveCallbacks(mod)
+    mod:RemoveCallback(ModCallbacks.MC_POST_UPDATE, black_stone_wielder.OnFrameUpdate)
+    mod:RemoveCallback(ModCallbacks.MC_POST_RENDER, black_stone_wielder.OnRender)
+    mod:RemoveCallback(ModCallbacks.MC_POST_NPC_INIT, black_stone_wielder.OnNPCInit)
+    mod:RemoveCallback(ModCallbacks.MC_ENTITY_TAKE_DMG, black_stone_wielder.OnPlayerDamage)
+    mod:RemoveCallback(ModCallbacks.MC_PRE_NPC_COLLISION, black_stone_wielder.OnEntityCollision)
+    mod:RemoveCallback(ModCallbacks.MC_PRE_PICKUP_COLLISION, black_stone_wielder.OnPickupCollision)
+    mod:RemoveCallback(ModCallbacks.MC_POST_TEAR_UPDATE, black_stone_wielder.OnTearUpdate)
+    mod:RemoveCallback(ModCallbacks.MC_PRE_ENTITY_SPAWN, black_stone_wielder.OnEntitySpawn)
+    mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, black_stone_wielder.OnTinyFlyUpdate)
+end
+
+
+function black_stone_wielder:Init(mod, variables)
+    ArcadeCabinetVariables = variables
+    black_stone_wielder:AddCallbacks(mod)
+
+    --Restart stuff
+    black_stone_wielder.result = nil
+    LastRunePosition = game:GetPlayer(0).Position
+    CurrentLevel = 1
+    RuneCount = 0
+    CurrentMinigameState = MinigameState.TRANSITION
+    PlayerHP = 3
+
+    rng:SetSeed(game:GetSeeds():GetStartSeed(), 35)
+
+    --Reset timers
+    for _, timer in pairs(MinigameTimers) do
+        timer = 0
+    end
+
+    MusicManager:Play(MinigameMusic, 1)
+    MusicManager:UpdateVolume()
+
+    --Transition
+    PrepareTransition()
+
+    --Posible spawning positions
+    local room = game:GetRoom()
+    for i = 16, 119, 1 do
+        if not room:GetGridEntity(i) or room:GetGridEntity(i):GetType() == GridEntityType.GRID_SPIDERWEB then
+            PossibleSpawningPositions[#PossibleSpawningPositions+1] = room:GetGridPosition(i)
+        end
+    end
+
+    --Prepare players
+    local playerNum = game:GetNumPlayers()
+    for i = 0, playerNum - 1, 1 do
+        local player = game:GetPlayer(i)
+
+        --Set the spritesheets
+        local playerSprite = player:GetSprite()
+        playerSprite:Load("gfx/isaac52.anm2", true)
+        playerSprite:ReplaceSpritesheet(1, "gfx/characters/isaac_bsw.png")
+        playerSprite:ReplaceSpritesheet(4, "gfx/characters/isaac_bsw.png")
+        playerSprite:ReplaceSpritesheet(12, "gfx/characters/isaac_bsw.png")
+        playerSprite:LoadGraphics()
+
+        player.Position = Vector(80, 290)
+
+        local costume = Isaac.GetCostumeIdByPath("gfx/costumes/bsw_robes.anm2")
+        player:AddNullCostume(costume)
     end
 end
-black_stone_wielder.callbacks[ModCallbacks.MC_POST_EFFECT_UPDATE] = black_stone_wielder.EffectUpdate
 
 
 return black_stone_wielder
