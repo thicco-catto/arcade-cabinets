@@ -121,10 +121,21 @@ local function AddRock(gridEntity, index)
     if gridEntity:GetType() == GridEntityType.GRID_ROCK_ALT then
         rock.type = MinigameConstants.ROCK_TYPES.HARDENED
         rock.health = MinigameConstants.ROCK_MAX_HP[rock.type]
-        rock.rockEntity:GetSprite():ReplaceSpritesheet(0, "gfx/grid/tug_hardened_rock.png")
+
+        if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+            rock.rockEntity:GetSprite():ReplaceSpritesheet(0, "gfx/grid/tug_glitch_hardened_rock.png")
+        else
+            rock.rockEntity:GetSprite():ReplaceSpritesheet(0, "gfx/grid/tug_hardened_rock.png")
+        end
     else
         rock.type = MinigameConstants.ROCK_TYPES.DEFAULT
         rock.health = MinigameConstants.ROCK_MAX_HP[rock.type]
+
+        if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+            rock.rockEntity:GetSprite():ReplaceSpritesheet(0, "gfx/grid/tug_glitch_default_rock.png")
+        else
+            rock.rockEntity:GetSprite():ReplaceSpritesheet(0, "gfx/grid/tug_default_rock.png")
+        end
     end
 
     rock.rockEntity:GetSprite():LoadGraphics()
@@ -182,7 +193,12 @@ local function UpdateIntroScreen()
     --Spawn boneguys in waves
     if MinigameTimers.IntroScreenTimer % 6 == 0 and #BoneGuysPositions > 0 then
         local pos = BoneGuysPositions[#BoneGuysPositions]
-        Isaac.Spawn(EntityType.ENTITY_CLICKETY_CLACK, MinigameEntityVariants.BONE_GUY, 0, pos, Vector.Zero, nil)
+        local boneguy = Isaac.Spawn(EntityType.ENTITY_CLICKETY_CLACK, MinigameEntityVariants.BONE_GUY, 0, pos, Vector.Zero, nil)
+        if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+            boneguy:GetSprite():ReplaceSpritesheet(0, "gfx/enemies/tug_glitch_boneguy.png")
+            boneguy:GetSprite():ReplaceSpritesheet(1, "gfx/enemies/tug_glitch_boneguy.png")
+            boneguy:GetSprite():LoadGraphics()
+        end
         BoneGuysPositions[#BoneGuysPositions] = nil
     end
 
@@ -254,7 +270,7 @@ local function CheckIfPickUpBattery(player)
     local foundEntity = nil
 
     for _, entity in ipairs(Isaac.FindByType(EntityType.ENTITY_EFFECT, MinigameEntityVariants.DYNAMITE)) do
-        if (player.Position - entity.Position):Length() < 10 and not entity:GetSprite():IsPlaying("Collect") then
+        if (player.Position - entity.Position):Length() < 14 and not entity:GetSprite():IsPlaying("Collect") then
             foundEntity = entity
             break
         end
