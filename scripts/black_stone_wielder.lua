@@ -34,7 +34,9 @@ local MinigameMusic = Isaac.GetMusicIdByName("bsw black beat wielder")
 --Entities
 local MinigameEntityVariants = {
     RUNE_SHARD = Isaac.GetEntityVariantByName("rune BSW"),
-    WHIPPER_DEATH = Isaac.GetEntityVariantByName("whipper death BSW")
+    WHIPPER_DEATH = Isaac.GetEntityVariantByName("whipper death BSW"),
+
+    GLITCH_TILE = Isaac.GetEntityVariantByName("glitch tile BSW")
 }
 
 --Constants
@@ -74,6 +76,13 @@ local MinigameConstants = {
         "bsw_glitch_snapper_body.png",
         "bsw_glitch_lunatic_body.png"
     },
+    GLITCHED_CHANCE_OF_SHY_RUNE = 10,
+    GLITCHED_DISTANCE_FOR_SHY_RUNE = 120,
+
+    GLITCH_NUM_GLITCH_TILES = 20,
+    GLITCH_TILE_FRAME_NUM = 9,
+    GLITCH_TILE_CHANGE_FRAMES = 10,
+    GLITCH_TILE_CHANGING_CHANCE = 10,
 }
 
 --Timers
@@ -130,11 +139,17 @@ local function GetPositionForRune(playerPos)
 end
 
 
-local function SpawnRune()
+local function SpawnRune(wasShy)
     local position = GetPositionForRune(game:GetPlayer(0).Position)
     LastRunePosition = position
     CurrentRune = Isaac.Spawn(EntityType.ENTITY_PICKUP, MinigameEntityVariants.RUNE_SHARD, 0, position, Vector.Zero, nil)
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+        CurrentRune:GetSprite():Load("gfx/bsw_glitch_rune.anm2", true)
+    end
     CurrentRune:GetSprite():Play("Appear", true)
+
+    CurrentRune:GetData().IsShyRune = ArcadeCabinetVariables.IsCurrentMinigameGlitched and
+    MinigameConstants.GLITCHED_CHANCE_OF_SHY_RUNE >= rng:RandomInt(100) and not wasShy
 
     MinigameTimers.RuneTimeoutTimer = MinigameConstants.MAX_RUNE_TIMEOUT_FRAMES
 end
@@ -155,8 +170,9 @@ local function DespawnRune()
     if CurrentRune:GetSprite():IsPlaying("Flash") then
         CurrentRune:GetSprite():Play("Disappear", true)
     elseif CurrentRune:GetSprite():IsFinished("Disappear") then
+        local wasShy = CurrentRune:GetData().WasShyRune
         CurrentRune:Remove()
-        if RuneCount < 3 then SpawnRune() else CurrentRune = nil end
+        if RuneCount < 3 then SpawnRune(wasShy) else CurrentRune = nil end
     end
 end
 
@@ -210,6 +226,41 @@ local function HitPlayer(player)
 end
 
 
+local function SpawnGlitchTiles()
+    if not ArcadeCabinetVariables.IsCurrentMinigameGlitched then return end
+    local room = game:GetRoom()
+
+    local possibleGlitchTiles = {}
+    for i = 0, 134, 1 do
+        table.insert(possibleGlitchTiles, i)
+    end
+
+    for _ = 1, MinigameConstants.GLITCH_NUM_GLITCH_TILES, 1 do
+        local chosen = rng:RandomInt(#possibleGlitchTiles) + 1
+        local gridIndex = possibleGlitchTiles[chosen]
+        table.remove(possibleGlitchTiles, chosen)
+
+        local gridEntity = room:GetGridEntity(gridIndex)
+        local isPillar = gridEntity and gridEntity:GetType() == GridEntityType.GRID_ROCK_ALT
+
+        local glitchTile = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.GLITCH_TILE, 0, room:GetGridPosition(gridIndex), Vector.Zero, nil)
+
+        if isPillar then
+            glitchTile:GetSprite():Play("Pillar", true)
+            glitchTile:GetData().ChosenFrame = 0
+        else
+            glitchTile:GetSprite():Play("Idle", true)
+            glitchTile:GetData().ChosenFrame = rng:RandomInt(MinigameConstants.GLITCH_TILE_FRAME_NUM)
+            glitchTile:GetSprite():SetFrame(glitchTile:GetData().ChosenFrame)
+        end
+
+        glitchTile:GetData().ChagingTile = rng:RandomInt(100) < MinigameConstants.GLITCH_TILE_CHANGING_CHANCE and not isPillar
+        glitchTile:GetData().RandomOffset = rng:RandomInt(MinigameConstants.GLITCH_TILE_CHANGE_FRAMES)
+        glitchTile.DepthOffset = -200
+    end
+end
+
+
 --UPDATE CALLBACKS
 local function UpdateTransition()
     if MinigameTimers.TransitionTimer > 0 then
@@ -235,7 +286,9 @@ local function UpdateTransition()
             end
             backdrop:GetSprite():ReplaceSpritesheet(0, "gfx/backdrop/" .. isGlitchBackdrop .. "bsw_backdrop" .. CurrentLevel .. ".png")
             backdrop:GetSprite():LoadGraphics()
-            backdrop.DepthOffset = -2000
+            backdrop.DepthOffset = -3000
+
+            SpawnGlitchTiles()
 
             local numEnemies = MinigameConstants.ENEMIES_PER_LEVEL[CurrentLevel]
             for _ = 1, numEnemies, 1 do
@@ -526,6 +579,22 @@ end
 
 
 --PICKUP CALLBACKS
+function black_stone_wielder:OnPickupUpdate(pickup)
+    if not pickup:GetData().IsShyRune or pickup:GetSprite():IsPlaying("Disappear") then return end
+
+    for i = 0, game:GetNumPlayers(), 1 do
+        local player = game:GetPlayer(i)
+        if (player.Position - pickup.Position):Length() < MinigameConstants.GLITCHED_DISTANCE_FOR_SHY_RUNE then
+            MinigameTimers.RuneTimeoutTimer = 0
+            pickup:GetSprite():Play("Disappear", true)
+            pickup:GetData().IsShyRune = false
+            pickup:GetData().WasShyRune = true
+            break
+        end
+    end
+end
+
+
 function black_stone_wielder:OnPickupCollision(_, collider)
     if not collider:ToPlayer() or CurrentMinigameState ~= MinigameState.PLAYING then return end
 
@@ -603,6 +672,22 @@ function black_stone_wielder:OnWhipperDeathUpdate(effect)
 end
 
 
+---@param tile EntityEffect
+function black_stone_wielder:OnGlitchTileUpdate(tile)
+    local data = tile:GetData()
+    if (game:GetFrameCount() + data.RandomOffset) % MinigameConstants.GLITCH_TILE_CHANGE_FRAMES == 0 and data.ChagingTile then
+        local maxFrames = MinigameConstants.GLITCH_TILE_FRAME_NUM
+        local newFrame = rng:RandomInt(maxFrames - 1)
+        if newFrame >= data.ChosenFrame then
+            newFrame = newFrame + 1
+        end
+        data.ChosenFrame = newFrame
+    end
+
+    tile:GetSprite():SetFrame(data.ChosenFrame)
+end
+
+
 --INIT MINIGAME
 function black_stone_wielder:AddCallbacks(mod)
     mod:AddCallback(ModCallbacks.MC_POST_UPDATE, black_stone_wielder.OnFrameUpdate)
@@ -610,11 +695,13 @@ function black_stone_wielder:AddCallbacks(mod)
     mod:AddCallback(ModCallbacks.MC_POST_NPC_INIT, black_stone_wielder.OnNPCInit, EntityType.ENTITY_WHIPPER)
     mod:AddCallback(ModCallbacks.MC_ENTITY_TAKE_DMG, black_stone_wielder.OnPlayerDamage, EntityType.ENTITY_PLAYER)
     mod:AddCallback(ModCallbacks.MC_PRE_NPC_COLLISION, black_stone_wielder.OnEntityCollision)
+    mod:AddCallback(ModCallbacks.MC_POST_PICKUP_UPDATE, black_stone_wielder.OnPickupUpdate, MinigameEntityVariants.RUNE_SHARD)
     mod:AddCallback(ModCallbacks.MC_PRE_PICKUP_COLLISION, black_stone_wielder.OnPickupCollision, MinigameEntityVariants.RUNE_SHARD)
     mod:AddCallback(ModCallbacks.MC_POST_TEAR_UPDATE, black_stone_wielder.OnTearUpdate)
     mod:AddCallback(ModCallbacks.MC_PRE_ENTITY_SPAWN, black_stone_wielder.OnEntitySpawn)
     mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, black_stone_wielder.OnTinyFlyUpdate, EffectVariant.TINY_FLY)
     mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, black_stone_wielder.OnWhipperDeathUpdate, MinigameEntityVariants.WHIPPER_DEATH)
+    mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, black_stone_wielder.OnGlitchTileUpdate, MinigameEntityVariants.GLITCH_TILE)
 end
 
 
@@ -629,6 +716,7 @@ function black_stone_wielder:RemoveCallbacks(mod)
     mod:RemoveCallback(ModCallbacks.MC_PRE_ENTITY_SPAWN, black_stone_wielder.OnEntitySpawn)
     mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, black_stone_wielder.OnTinyFlyUpdate)
     mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, black_stone_wielder.OnWhipperDeathUpdate)
+    mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, black_stone_wielder.OnGlitchTileUpdate)
 end
 
 
@@ -656,14 +744,14 @@ function black_stone_wielder:Init(mod, variables)
 
     --UI
     if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
-        BgUI:ReplaceSpritesheet(0, "gfx/effects/black stone wielder/bsw_glitch_ui.png")
+        BgUI:ReplaceSpritesheet(0, "gfx/effects/black stone wielder/bsw_glitch_ui_bg.png")
         BgUI:ReplaceSpritesheet(1, "gfx/effects/black stone wielder/bsw_glitch_level_ui.png")
         BgUI:ReplaceSpritesheet(2, "gfx/effects/black stone wielder/bsw_glitch_level_ui.png")
 
         RuneUI:ReplaceSpritesheet(0, "gfx/effects/black stone wielder/bsw_glitch_rune_ui.png")
         HeartsUI:ReplaceSpritesheet(0, "gfx/effects/black stone wielder/bsw_glitch_hearts_ui.png")
     else
-        BgUI:ReplaceSpritesheet(0, "gfx/effects/black stone wielder/bsw_ui.png")
+        BgUI:ReplaceSpritesheet(0, "gfx/effects/black stone wielder/bsw_ui_bg.png")
         BgUI:ReplaceSpritesheet(1, "gfx/effects/black stone wielder/bsw_level_ui.png")
         BgUI:ReplaceSpritesheet(2, "gfx/effects/black stone wielder/bsw_level_ui.png")
 
