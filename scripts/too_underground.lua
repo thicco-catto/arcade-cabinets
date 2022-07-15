@@ -59,8 +59,16 @@ local MinigameConstants = {
         DEFAULT = 1,
         HARDENED = 2,
     },
+    ROCK_MAX_HP = {
+        2,
+        3
+    },
+    ROCK_SHOCKWAVE_CHANCE = {
+        7,
+        20
+    },
 
-    INTRO_SCREEN_MAX_FRAMES = 120,
+    INTRO_SCREEN_MAX_FRAMES = 70,
 
     MAX_ROCK_COUNT = 170
 }
@@ -105,18 +113,18 @@ local BatteriesPositions = {}
 
 local function AddRock(gridEntity, index)
     local rock = {}
-    rock.rockEntity = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.ROCK_ENTITY, 0, gridEntity.Position - Vector(26, 26), Vector.Zero, nil)
+    rock.rockEntity = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.ROCK_ENTITY, 0, gridEntity.Position - Vector(26, 26), Vector.Zero, nil)
     rock.gridEntity = gridEntity
     rock.gridEntity:GetSprite():ReplaceSpritesheet(0, "a")
     rock.gridEntity:GetSprite():LoadGraphics()
 
     if gridEntity:GetType() == GridEntityType.GRID_ROCK_ALT then
-        rock.health = 8
         rock.type = MinigameConstants.ROCK_TYPES.HARDENED
+        rock.health = MinigameConstants.ROCK_MAX_HP[rock.type]
         rock.rockEntity:GetSprite():ReplaceSpritesheet(0, "gfx/grid/tug_hardened_rock.png")
     else
-        rock.health = 4
         rock.type = MinigameConstants.ROCK_TYPES.DEFAULT
+        rock.health = MinigameConstants.ROCK_MAX_HP[rock.type]
     end
 
     rock.rockEntity:GetSprite():LoadGraphics()
@@ -131,7 +139,7 @@ local function BreakRock(index, rock)
     room:RemoveGridEntity(index, 0, false)
     RocksInRoom[index] = nil
     SFXManager:Play(MinigameSounds.ROCK_BREAK)
-    local rockBreak = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.TEAR_POOF, 0, rock.gridEntity.Position, Vector.Zero, nil)
+    local rockBreak = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.TEAR_POOF, 0, rock.gridEntity.Position, Vector.Zero, nil)
     rockBreak:GetSprite():Load("gfx/tug_rock_break.anm2", true)
     rockBreak:GetSprite():Play("Poof", true)
 
@@ -142,10 +150,8 @@ local function BreakRock(index, rock)
     end
 
     --Spawn shockwave
-    local chanceToSpawn = 7
-    if rock.type == MinigameConstants.ROCK_TYPES.HARDENED then chanceToSpawn = 20 end
-
-    if chanceToSpawn >= rng:RandomInt(100) then
+    local chanceToShockwave = MinigameConstants.ROCK_SHOCKWAVE_CHANCE[rock.type]
+    if chanceToShockwave >= rng:RandomInt(100) then
         Isaac.Spawn(EntityType.ENTITY_EFFECT, EffectVariant.SHOCKWAVE_RANDOM, 0, rock.gridEntity.Position, Vector.Zero, nil)
     end
 end
@@ -164,11 +170,6 @@ local function ManageSFX()
             SFXManager:Stop(originalSound)
             SFXManager:Play(replacement)
         end
-    end
-
-    --Play grunts
-    if #Isaac.FindByType(EntityType.ENTITY_GAPER, -1, -1) > 0 and not SFXManager:IsPlaying(MinigameSounds.GAPER_GRUNT) then
-        SFXManager:Play(MinigameSounds.GAPER_GRUNT)
     end
 end
 
@@ -195,7 +196,7 @@ local function UpdateIntroScreen()
 
         --Spawn batteries because they keep getting deleted????
         for _, pos in ipairs(BatteriesPositions) do
-            local battery = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.DYNAMITE, 0, pos, Vector.Zero, nil)
+            local battery = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.DYNAMITE, 0, pos, Vector.Zero, nil)
             battery:GetSprite():Play("Idle", true)
         end
 
@@ -216,39 +217,23 @@ local function CheckForWin()
 end
 
 
-local function RemovePickedBatteries()
-    for _, battery in ipairs(Isaac.FindByType(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.DYNAMITE, -1)) do
-        if battery:GetSprite():IsFinished("Collect") then
-            battery:Remove()
-        end
-    end
-end
-
-
 local function RemoveBoneGuysWin()
     if not RemoveBoneGuys or #Isaac.FindByType(EntityType.ENTITY_CLICKETY_CLACK, MinigameEntityVariants.BONE_GUY, -1) == 0 then return end
-    if game:GetFrameCount() % 3 ~= 0 then return end
+    if game:GetFrameCount() % 4 ~= 0 then return end
 
     local boneGuyToRemove = Isaac.FindByType(EntityType.ENTITY_CLICKETY_CLACK, MinigameEntityVariants.BONE_GUY, -1)[1]
     boneGuyToRemove:Remove()
 
-    local rockBreak = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.TEAR_POOF, 0, boneGuyToRemove.Position, Vector.Zero, nil)
+    local rockBreak = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.TEAR_POOF, 0, boneGuyToRemove.Position, Vector.Zero, nil)
     rockBreak:GetSprite():Load("gfx/tug_rock_break.anm2", true)
     rockBreak:GetSprite():Play("Poof", true)
 end
 
 
 function too_underground:OnFrameUpdate()
-    --Remove poofs
-    for _, entity in ipairs(Isaac.FindByType(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.TEAR_POOF, 0)) do
-        if entity:GetSprite():IsFinished("Poof") then entity:Remove() end
-    end
-
     InmortalBoneGuy.Position = Vector(-99999999, -99999999)
 
     UpdateIntroScreen()
-
-    RemovePickedBatteries()
 
     RemoveBoneGuysWin()
 
@@ -266,26 +251,25 @@ end
 local function CheckIfPickUpBattery(player)
     if player:GetActiveCharge() > 0 then return end
 
-    local entitiesInRadius = Isaac.FindInRadius(player.Position, 10)
     local foundEntity = nil
 
-    for _, entity in ipairs(entitiesInRadius) do
-        if entity.Type == EntityType.ENTITY_GENERIC_PROP and entity.Variant == MinigameEntityVariants.DYNAMITE and not entity:GetSprite():IsPlaying("Collect") then
+    for _, entity in ipairs(Isaac.FindByType(EntityType.ENTITY_EFFECT, MinigameEntityVariants.DYNAMITE)) do
+        if (player.Position - entity.Position):Length() < 10 and not entity:GetSprite():IsPlaying("Collect") then
             foundEntity = entity
             break
         end
     end
 
-    if foundEntity then
-        foundEntity:GetSprite():Play("Collect", true)
-        SFXManager:Play(MinigameSounds.DYNAMITE_PICKUP)
+    if not foundEntity then return end
 
-        local playerNum = game:GetNumPlayers()
-        for i = 0, playerNum - 1, 1 do
-            local player2 = game:GetPlayer(i)
+    foundEntity:GetSprite():Play("Collect", true)
+    SFXManager:Play(MinigameSounds.DYNAMITE_PICKUP)
 
-            player2:SetActiveCharge(1)
-        end
+    local playerNum = game:GetNumPlayers()
+    for i = 0, playerNum - 1, 1 do
+        local player2 = game:GetPlayer(i)
+
+        player2:SetActiveCharge(1)
     end
 end
 
@@ -388,7 +372,7 @@ end
 function too_underground:OnBoneGuyUpdate(boneGuy)
     local data = boneGuy:GetData()
 
-    if data.LastState and data.LastState == 13 and data.LastState ~= boneGuy.State then
+    if data.LastState and data.LastState == NpcState.STATE_SUMMON and data.LastState ~= boneGuy.State then
         SFXManager:Play(MinigameSounds.BONE_GUY_RISE_DEAD)
     end
 
@@ -414,7 +398,7 @@ end
 
 
 function too_underground:OnNPCCollision(entity, collider)
-    if entity:ToNPC().State ~= 4 or not collider:ToPlayer() or CurrentMinigameState ~= MinigameState.MINING then return end
+    if entity:ToNPC().State ~= NpcState.STATE_MOVE or not collider:ToPlayer() or CurrentMinigameState ~= MinigameState.MINING then return end
 
     CurrentMinigameState = MinigameState.LOSING
     MusicManager:VolumeSlide(0, 1)
@@ -447,7 +431,7 @@ function too_underground:TearUpdate(tear)
         rock.health = rock.health - 1
         SFXManager:Play(MinigameSounds.TEAR_SPLASH)
 
-        local newPoof = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.TEAR_POOF, 0, tear.Position + Vector(0, tear.Height), Vector.Zero, nil)
+        local newPoof = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.TEAR_POOF, 0, tear.Position + Vector(0, tear.Height), Vector.Zero, nil)
         newPoof:GetSprite():Play("Poof", true)
 
         --Remove if destroyed lmao
@@ -457,11 +441,7 @@ function too_underground:TearUpdate(tear)
         end
 
         --Set sprite
-        if rock.type == MinigameConstants.ROCK_TYPES.HARDENED then
-            rock.rockEntity:GetSprite():Play("Idle" .. math.ceil(rock.health/2))
-        else
-            rock.rockEntity:GetSprite():Play("Idle" .. rock.health)
-        end
+        rock.rockEntity:GetSprite():Play("Idle" .. math.ceil(4 * rock.health/MinigameConstants.ROCK_MAX_HP[rock.type]))
     end
 end
 
@@ -484,7 +464,7 @@ function too_underground:OnTearPoofInit(poof)
     poof:Remove()
     SFXManager:Play(MinigameSounds.TEAR_SPLASH)
 
-    local newPoof = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.TEAR_POOF, 0, poof.Position, Vector.Zero, nil)
+    local newPoof = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.TEAR_POOF, 0, poof.Position, Vector.Zero, nil)
     newPoof:GetSprite():Play("Poof", true)
 
     SFXManager:Stop(SoundEffect.SOUND_TEARIMPACTS)
@@ -509,6 +489,18 @@ end
 
 function too_underground:OnTinyFlyUpdate(fly)
     fly:Remove()
+end
+
+
+function too_underground:OnCustomPoofUpdate(effect)
+    if effect:GetSprite():IsFinished("Poof") then effect:Remove() end
+end
+
+
+function too_underground:OnDynamiteUpdate(dynamite)
+    if dynamite:GetSprite():IsFinished("Collect") then
+        dynamite:Remove()
+    end
 end
 
 
@@ -585,6 +577,8 @@ function too_underground:AddCallbacks(mod)
 
     mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, too_underground.OnRockExplosionUpdate, EffectVariant.ROCK_EXPLOSION)
     mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, too_underground.OnTinyFlyUpdate, EffectVariant.TINY_FLY)
+    mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, too_underground.OnCustomPoofUpdate, MinigameEntityVariants.TEAR_POOF)
+    mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, too_underground.OnDynamiteUpdate, MinigameEntityVariants.DYNAMITE)
 
     --Pickup callbacks
     mod:AddCallback(ModCallbacks.MC_POST_PICKUP_INIT, too_underground.OnRemovablePickup, PickupVariant.PICKUP_COIN)
