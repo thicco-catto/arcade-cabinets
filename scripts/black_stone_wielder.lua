@@ -154,8 +154,14 @@ local function PrepareTransition()
     MusicManager:Disable()
     SFXManager:Play(MinigameSounds.NEW_LEVEL)
 
-    TransitionScreen:ReplaceSpritesheet(0, "gfx/effects/black stone wielder/transition" .. CurrentLevel .. ".png")
-    TransitionScreen:ReplaceSpritesheet(1, "gfx/effects/black stone wielder/transition" .. CurrentLevel .. ".png")
+    local transitionSprite = "gfx/effects/black stone wielder/bsw_transition" .. CurrentLevel .. ".png"
+
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+        transitionSprite = "gfx/effects/black stone wielder/bsw_glitch_transition.png"
+    end
+
+    TransitionScreen:ReplaceSpritesheet(0, transitionSprite)
+    TransitionScreen:ReplaceSpritesheet(1, transitionSprite)
     TransitionScreen:LoadGraphics()
 
     MinigameTimers.TransitionTimer = MinigameConstants.MAX_TRANSITION_FRAMES
@@ -211,15 +217,20 @@ local function UpdateTransition()
         elseif MinigameTimers.TransitionTimer == 1 then
             --Backdrop
             local backdrop = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, ArcadeCabinetVariables.Backdrop1x1Variant, 0, game:GetRoom():GetCenterPos(), Vector.Zero, nil)
-            backdrop:GetSprite():ReplaceSpritesheet(0, "gfx/backdrop/bsw_backdrop" .. CurrentLevel .. ".png")
+            local isGlitchBackdrop = ""
+            if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+                isGlitchBackdrop = "glitched_"
+            end
+            backdrop:GetSprite():ReplaceSpritesheet(0, "gfx/backdrop/" .. isGlitchBackdrop .. "bsw_backdrop" .. CurrentLevel .. ".png")
             backdrop:GetSprite():LoadGraphics()
-            backdrop.DepthOffset = -1000
+            backdrop.DepthOffset = -2000
 
             local numEnemies = MinigameConstants.ENEMIES_PER_LEVEL[CurrentLevel]
             for _ = 1, numEnemies, 1 do
                 local room = game:GetRoom()
                 local pos = room:FindFreePickupSpawnPosition(room:GetCenterPos(), 0, true)
-                Isaac.Spawn(EntityType.ENTITY_WHIPPER, CurrentLevel - 1, 0, pos, Vector.Zero, nil)
+                local whipper = Isaac.Spawn(EntityType.ENTITY_WHIPPER, CurrentLevel - 1, 0, pos, Vector.Zero, nil)
+                whipper:ClearEntityFlags(EntityFlag.FLAG_APPEAR)
             end
         end
     else
@@ -451,11 +462,32 @@ end
 --NPC CALLBACKS
 function black_stone_wielder:OnNPCInit(entity)
     if entity.Variant == 0 then
-        entity:GetSprite():Load("gfx/bsw_whipper.anm2", true)
+        entity:GetSprite():Load("gfx/bsw_whipper.anm2", false)
+
+        if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+            entity:GetSprite():ReplaceSpritesheet(0, "gfx/enemies/bsw_glitch_whipper_body.png")
+            entity:GetSprite():ReplaceSpritesheet(1, "gfx/enemies/bsw_glitch_whipper_head.png")
+        end
+
+        entity:GetSprite():LoadGraphics()
     elseif entity.Variant == 1 then
-        entity:GetSprite():Load("gfx/bsw_snapper.anm2", true)
+        entity:GetSprite():Load("gfx/bsw_snapper.anm2", false)
+
+        if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+            entity:GetSprite():ReplaceSpritesheet(0, "gfx/enemies/bsw_glitch_snapper_body.png")
+            entity:GetSprite():ReplaceSpritesheet(1, "gfx/enemies/bsw_glitch_snapper_head.png")
+        end
+
+        entity:GetSprite():LoadGraphics()
     elseif entity.Variant == 2 then
-        entity:GetSprite():Load("gfx/bsw_lunatic.anm2", true)
+        entity:GetSprite():Load("gfx/bsw_lunatic.anm2", false)
+
+        if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+            entity:GetSprite():ReplaceSpritesheet(0, "gfx/enemies/bsw_glitch_lunatic_body.png")
+            entity:GetSprite():ReplaceSpritesheet(1, "gfx/enemies/bsw_glitch_lunatic_head.png")
+        end
+
+        entity:GetSprite():LoadGraphics()
     end
 end
 
@@ -571,6 +603,27 @@ function black_stone_wielder:Init(mod, variables)
 
     MusicManager:Play(MinigameMusic, 1)
     MusicManager:UpdateVolume()
+
+    --UI
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+        BgUI:ReplaceSpritesheet(0, "gfx/effects/black stone wielder/bsw_glitch_ui.png")
+        BgUI:ReplaceSpritesheet(1, "gfx/effects/black stone wielder/bsw_glitch_level_ui.png")
+        BgUI:ReplaceSpritesheet(2, "gfx/effects/black stone wielder/bsw_glitch_level_ui.png")
+
+        RuneUI:ReplaceSpritesheet(0, "gfx/effects/black stone wielder/bsw_glitch_rune_ui.png")
+        HeartsUI:ReplaceSpritesheet(0, "gfx/effects/black stone wielder/bsw_glitch_hearts_ui.png")
+    else
+        BgUI:ReplaceSpritesheet(0, "gfx/effects/black stone wielder/bsw_ui.png")
+        BgUI:ReplaceSpritesheet(1, "gfx/effects/black stone wielder/bsw_level_ui.png")
+        BgUI:ReplaceSpritesheet(2, "gfx/effects/black stone wielder/bsw_level_ui.png")
+
+        RuneUI:ReplaceSpritesheet(0, "gfx/effects/black stone wielder/bsw_rune_ui.png")
+        HeartsUI:ReplaceSpritesheet(0, "gfx/effects/black stone wielder/bsw_hearts_ui.png")
+    end
+    BgUI:LoadGraphics()
+    RuneUI:LoadGraphics()
+    HeartsUI:LoadGraphics()
+
 
     --Transition
     PrepareTransition()
