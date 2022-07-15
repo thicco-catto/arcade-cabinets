@@ -604,17 +604,17 @@ function too_underground:RemoveCallbacks(mod)
     mod:RemoveCallback(ModCallbacks.MC_POST_RENDER, too_underground.OnRender)
 
     --Npc callbacks
-    mod:RemoveCallback(ModCallbacks.MC_POST_NPC_INIT, too_underground.OnTNTInit, EntityType.ENTITY_MOVABLE_TNT)
-    mod:RemoveCallback(ModCallbacks.MC_POST_NPC_INIT, too_underground.OnSpiderInit, EntityType.ENTITY_SPIDER)
+    mod:RemoveCallback(ModCallbacks.MC_POST_NPC_INIT, too_underground.OnTNTInit)
+    mod:RemoveCallback(ModCallbacks.MC_POST_NPC_INIT, too_underground.OnSpiderInit)
 
-    mod:RemoveCallback(ModCallbacks.MC_NPC_UPDATE, too_underground.OnTNTUpdate, EntityType.ENTITY_MOVABLE_TNT)
-    mod:RemoveCallback(ModCallbacks.MC_NPC_UPDATE, too_underground.OnBoneGuyUpdate, EntityType.ENTITY_CLICKETY_CLACK)
+    mod:RemoveCallback(ModCallbacks.MC_NPC_UPDATE, too_underground.OnTNTUpdate)
+    mod:RemoveCallback(ModCallbacks.MC_NPC_UPDATE, too_underground.OnBoneGuyUpdate)
 
-    mod:RemoveCallback(ModCallbacks.MC_PRE_NPC_COLLISION, too_underground.OnNPCCollision, EntityType.ENTITY_CLICKETY_CLACK)
+    mod:RemoveCallback(ModCallbacks.MC_PRE_NPC_COLLISION, too_underground.OnNPCCollision)
 
     --Damage callback
-    mod:RemoveCallback(ModCallbacks.MC_ENTITY_TAKE_DMG, too_underground.OnPlayerDamage, EntityType.ENTITY_PLAYER)
-    mod:RemoveCallback(ModCallbacks.MC_ENTITY_TAKE_DMG, too_underground.OnBoneGuyDamage, EntityType.ENTITY_CLICKETY_CLACK)
+    mod:RemoveCallback(ModCallbacks.MC_ENTITY_TAKE_DMG, too_underground.OnPlayerDamage)
+    mod:RemoveCallback(ModCallbacks.MC_ENTITY_TAKE_DMG, too_underground.OnBoneGuyDamage)
 
     --Tear callbacks
     mod:RemoveCallback(ModCallbacks.MC_POST_TEAR_INIT, too_underground.TearInit)
@@ -622,24 +622,26 @@ function too_underground:RemoveCallbacks(mod)
     mod:RemoveCallback(ModCallbacks.MC_PRE_TEAR_COLLISION, too_underground.TearCollision)
 
     --Effect callbacks
-    mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_INIT, too_underground.OnBombExplosionInit, EffectVariant.BOMB_EXPLOSION)
-    mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_INIT, too_underground.OnTearPoofInit, EffectVariant.TEAR_POOF_A)
-    mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_INIT, too_underground.OnTearPoofInit, EffectVariant.TEAR_POOF_B)
-    mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_INIT, too_underground.OnRockExplosionInit, EffectVariant.ROCK_EXPLOSION)
+    mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_INIT, too_underground.OnBombExplosionInit)
+    mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_INIT, too_underground.OnTearPoofInit)
+    mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_INIT, too_underground.OnTearPoofInit)
+    mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_INIT, too_underground.OnRockExplosionInit)
 
-    mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, too_underground.OnRockExplosionUpdate, EffectVariant.ROCK_EXPLOSION)
-    mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, too_underground.OnTinyFlyUpdate, EffectVariant.TINY_FLY)
+    mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, too_underground.OnRockExplosionUpdate)
+    mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, too_underground.OnTinyFlyUpdate)
+    mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, too_underground.OnCustomPoofUpdate)
+    mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, too_underground.OnDynamiteUpdate)
 
     --Pickup callbacks
-    mod:RemoveCallback(ModCallbacks.MC_POST_PICKUP_INIT, too_underground.OnRemovablePickup, PickupVariant.PICKUP_COIN)
-    mod:RemoveCallback(ModCallbacks.MC_POST_PICKUP_INIT, too_underground.OnRemovablePickup, PickupVariant.PICKUP_COLLECTIBLE)
-    mod:RemoveCallback(ModCallbacks.MC_POST_PICKUP_INIT, too_underground.OnRemovablePickup, PickupVariant.PICKUP_TRINKET)
+    mod:RemoveCallback(ModCallbacks.MC_POST_PICKUP_INIT, too_underground.OnRemovablePickup)
+    mod:RemoveCallback(ModCallbacks.MC_POST_PICKUP_INIT, too_underground.OnRemovablePickup)
+    mod:RemoveCallback(ModCallbacks.MC_POST_PICKUP_INIT, too_underground.OnRemovablePickup)
 
-    mod:RemoveCallback(ModCallbacks.MC_POST_PICKUP_UPDATE, too_underground.OnRemovablePickup, PickupVariant.PICKUP_COIN)
-    mod:RemoveCallback(ModCallbacks.MC_POST_PICKUP_UPDATE, too_underground.OnRemovablePickup, PickupVariant.PICKUP_COLLECTIBLE)
-    mod:RemoveCallback(ModCallbacks.MC_POST_PICKUP_UPDATE, too_underground.OnRemovablePickup, PickupVariant.PICKUP_TRINKET)
+    mod:RemoveCallback(ModCallbacks.MC_POST_PICKUP_UPDATE, too_underground.OnRemovablePickup)
+    mod:RemoveCallback(ModCallbacks.MC_POST_PICKUP_UPDATE, too_underground.OnRemovablePickup)
+    mod:RemoveCallback(ModCallbacks.MC_POST_PICKUP_UPDATE, too_underground.OnRemovablePickup)
 
-    mod:RemoveCallback(ModCallbacks.MC_PRE_PICKUP_COLLISION, too_underground.PickupCollision, MinigameEntityVariants.CHEST)
+    mod:RemoveCallback(ModCallbacks.MC_PRE_PICKUP_COLLISION, too_underground.PickupCollision)
 
     --Other callbacks
     mod:RemoveCallback(ModCallbacks.MC_PRE_ENTITY_SPAWN, too_underground.OnEntitySpawn)
@@ -695,7 +697,12 @@ function too_underground:Init(mod, variables)
 
     --Spawn backdrop
     local backdrop = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, ArcadeCabinetVariables.Backdrop1x2Variant, 0, game:GetRoom():GetCenterPos(), Vector.Zero, nil)
-    backdrop:GetSprite():ReplaceSpritesheet(0, "gfx/backdrop/tug_backdrop.png")
+
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+        backdrop:GetSprite():ReplaceSpritesheet(0, "gfx/backdrop/glitched_tug_backdrop.png")
+    else
+        backdrop:GetSprite():ReplaceSpritesheet(0, "gfx/backdrop/tug_backdrop.png")
+    end
     backdrop:GetSprite():LoadGraphics()
     backdrop.DepthOffset = -1000
 
@@ -718,7 +725,7 @@ function too_underground:Init(mod, variables)
         --Set spritesheet
         local playerSprite = player:GetSprite()
         playerSprite:Load("gfx/tug_isaac52.anm2", true)
-        playerSprite:ReplaceSpritesheet(4, "a") --Empty head xd
+        playerSprite:ReplaceSpritesheet(4, "") --Empty head xd
         playerSprite:LoadGraphics()
     end
 end
