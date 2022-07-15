@@ -915,7 +915,7 @@ function gush:OnPlayerUpdate(player)
         player:GetData().ExtraJumpFrames = 0
     end
 
-    local shouldIgnoreGravity = MakePlayerStandOnFloor(player) or CurrentMinigameState == MinigameState.WAITING_FOR_PUS_MAN
+    local shouldIgnoreGravity = MakePlayerStandOnFloor(player) or CurrentMinigameState == MinigameState.WAITING_FOR_PUS_MAN or CurrentMinigameState == MinigameState.WINNING
 
     if not shouldIgnoreGravity then
         ApplyGravity(player, gravity)
