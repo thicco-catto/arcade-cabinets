@@ -573,7 +573,7 @@ end
 
 
 function too_underground:PickupCollision(pickup, collider)
-    if not collider:ToPlayer() and CurrentMinigameState ~= MinigameState.WINNING then return end
+    if not collider:ToPlayer() or CurrentMinigameState == MinigameState.WINNING then return end
 
     pickup:GetSprite():Play("Open", true)
     CurrentMinigameState = MinigameState.WINNING
