@@ -48,7 +48,9 @@ local MinigameEntityVariants = {
     ROCK_ENTITY = Isaac.GetEntityVariantByName("rock TUG"),
     BONE_GUY = Isaac.GetEntityVariantByName("bone guy TUG"),
     CHEST = Isaac.GetEntityVariantByName("chest TUG"),
-    DYNAMITE = Isaac.GetEntityVariantByName("dynamite TUG")
+    DYNAMITE = Isaac.GetEntityVariantByName("dynamite TUG"),
+
+    GLITCH_TILE = Isaac.GetEntityVariantByName("glitch tile TUG")
 }
 
 --Constants
@@ -73,7 +75,16 @@ local MinigameConstants = {
 
     --Glitch stuff
     GLITCH_METER_CHANGE_FRAMES = 7,
-    GLITCH_METER_FRAMES = 11
+    GLITCH_METER_FRAMES = 11,
+
+    GLITCH_BONE_GUY_CHANCE_FOR_SPECTRAL = 15,
+    GLITCH_BONE_GUY_CHANCE_FOR_YELLOW = 15,
+    GLITCH_BONE_GUY_CHANCE_FOR_EXPLODE = 5,
+
+    GLITCH_NUM_GLITCH_TILES = 35,
+    GLITCH_TILE_FRAME_NUM = 7,
+    GLITCH_TILE_CHANGE_FRAMES = 10,
+    GLITCH_TILE_CHANGING_CHANCE = 10,
 }
 
 --Timers
@@ -171,6 +182,11 @@ local function BreakRock(index, rock)
 
     --Spawn shockwave
     local chanceToShockwave = MinigameConstants.ROCK_SHOCKWAVE_CHANCE[rock.type]
+
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+        chanceToShockwave = math.ceil(chanceToShockwave / 4)
+    end
+
     if chanceToShockwave >= rng:RandomInt(100) then
         Isaac.Spawn(EntityType.ENTITY_EFFECT, EffectVariant.SHOCKWAVE_RANDOM, 0, rock.gridEntity.Position, Vector.Zero, nil)
     end
@@ -422,11 +438,57 @@ function too_underground:OnTNTUpdate(tnt)
 end
 
 
+---@param boneGuy EntityNPC
 function too_underground:OnBoneGuyUpdate(boneGuy)
+    if boneGuy:IsChampion() then
+        boneGuy.Scale = 1
+        boneGuy:SetColor(Color(1, 1, 1), 10, -10, false, true)
+    end
+
     local data = boneGuy:GetData()
 
     if data.LastState and data.LastState == NpcState.STATE_SUMMON and data.LastState ~= boneGuy.State then
         SFXManager:Play(MinigameSounds.BONE_GUY_RISE_DEAD)
+
+        if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+            --Chance for explode
+            if MinigameConstants.GLITCH_BONE_GUY_CHANCE_FOR_EXPLODE >= rng:RandomInt(100) then
+                Isaac.Explode(boneGuy.Position, boneGuy, 1)
+
+                for index, rock in pairs(RocksInRoom) do
+                    if boneGuy.Position:Distance(rock.gridEntity.Position) < 110 then
+                        BreakRock(index, rock)
+                    end
+                end
+            end
+
+            --Chance for champ
+            if boneGuy:IsChampion() then
+                local newBoneGuy = Isaac.Spawn(EntityType.ENTITY_CLICKETY_CLACK, MinigameEntityVariants.BONE_GUY, 0, boneGuy.Position, Vector.Zero, nil)
+                newBoneGuy:ClearEntityFlags(EntityFlag.FLAG_APPEAR)
+                newBoneGuy:GetSprite():ReplaceSpritesheet(0, "gfx/enemies/tug_glitch_boneguy.png")
+                newBoneGuy:GetSprite():LoadGraphics()
+                boneGuy:Remove()
+            else
+                local championChance = rng:RandomInt(100)
+                local isChampion = false
+
+                if MinigameConstants.GLITCH_BONE_GUY_CHANCE_FOR_SPECTRAL >= championChance then
+                    isChampion = true
+                    boneGuy:MakeChampion(boneGuy.InitSeed, ChampionColor.TRANSPARENT)
+                elseif MinigameConstants.GLITCH_BONE_GUY_CHANCE_FOR_SPECTRAL +
+                MinigameConstants.GLITCH_BONE_GUY_CHANCE_FOR_YELLOW >= championChance then
+                    isChampion = true
+                    boneGuy:MakeChampion(boneGuy.InitSeed, ChampionColor.YELLOW)
+                end
+
+                if isChampion then
+                    boneGuy:GetSprite():ReplaceSpritesheet(0, "gfx/enemies/tug_glitch_boneguy.png")
+                    boneGuy:GetSprite():LoadGraphics()
+                    boneGuy:SetColor(Color(1, 1, 1), 10, -10, false, true)
+                end
+            end
+        end
     end
 
     data.LastState = boneGuy.State
@@ -566,6 +628,22 @@ function too_underground:OnDynamiteUpdate(dynamite)
 end
 
 
+---@param tile EntityEffect
+function too_underground:OnGlitchTileUpdate(tile)
+    local data = tile:GetData()
+    if (game:GetFrameCount() + data.RandomOffset) % MinigameConstants.GLITCH_TILE_CHANGE_FRAMES == 0 and data.ChagingTile then
+        local maxFrames = MinigameConstants.GLITCH_TILE_FRAME_NUM
+        local newFrame = rng:RandomInt(maxFrames - 1)
+        if newFrame >= data.ChosenFrame then
+            newFrame = newFrame + 1
+        end
+        data.ChosenFrame = newFrame
+    end
+
+    tile:GetSprite():SetFrame(data.ChosenFrame)
+end
+
+
 --PICKUP CALLBACKS
 function too_underground:OnRemovablePickup(pickup)
     pickup:Remove()
@@ -607,6 +685,32 @@ end
 
 
 --INIT MINIGAME
+local function SpawnGlitchTiles()
+    if not ArcadeCabinetVariables.IsCurrentMinigameGlitched then return end
+    local room = game:GetRoom()
+
+    local possibleGlitchTiles = {}
+    for i = 0, 239, 1 do
+        table.insert(possibleGlitchTiles, i)
+    end
+
+    for _ = 1, MinigameConstants.GLITCH_NUM_GLITCH_TILES, 1 do
+        local chosen = rng:RandomInt(#possibleGlitchTiles) + 1
+        local gridIndex = possibleGlitchTiles[chosen]
+        table.remove(possibleGlitchTiles, chosen)
+
+        local glitchTile = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.GLITCH_TILE, 0, room:GetGridPosition(gridIndex), Vector.Zero, nil)
+
+        glitchTile:GetSprite():Play("Idle", true)
+        glitchTile:GetData().ChosenFrame = rng:RandomInt(MinigameConstants.GLITCH_TILE_FRAME_NUM)
+        glitchTile:GetSprite():SetFrame(glitchTile:GetData().ChosenFrame)
+        glitchTile:GetData().ChagingTile = rng:RandomInt(100) < MinigameConstants.GLITCH_TILE_CHANGING_CHANCE
+        glitchTile:GetData().RandomOffset = rng:RandomInt(MinigameConstants.GLITCH_TILE_CHANGE_FRAMES)
+        glitchTile.DepthOffset = -200
+    end
+end
+
+
 function too_underground:AddCallbacks(mod)
     --Generic updates
     mod:AddCallback(ModCallbacks.MC_POST_UPDATE, too_underground.OnFrameUpdate)
@@ -641,6 +745,7 @@ function too_underground:AddCallbacks(mod)
     mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, too_underground.OnTinyFlyUpdate, EffectVariant.TINY_FLY)
     mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, too_underground.OnCustomPoofUpdate, MinigameEntityVariants.TEAR_POOF)
     mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, too_underground.OnDynamiteUpdate, MinigameEntityVariants.DYNAMITE)
+    mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, too_underground.OnGlitchTileUpdate, MinigameEntityVariants.GLITCH_TILE)
 
     --Pickup callbacks
     mod:AddCallback(ModCallbacks.MC_POST_PICKUP_INIT, too_underground.OnRemovablePickup, PickupVariant.PICKUP_COIN)
@@ -693,6 +798,7 @@ function too_underground:RemoveCallbacks(mod)
     mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, too_underground.OnTinyFlyUpdate)
     mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, too_underground.OnCustomPoofUpdate)
     mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, too_underground.OnDynamiteUpdate)
+    mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, too_underground.OnGlitchTileUpdate)
 
     --Pickup callbacks
     mod:RemoveCallback(ModCallbacks.MC_POST_PICKUP_INIT, too_underground.OnRemovablePickup)
@@ -727,6 +833,9 @@ function too_underground:Init(mod, variables)
     CurrentMinigameState = MinigameState.INTRO_SCREEN
 
     rng:SetSeed(game:GetSeeds():GetStartSeed(), 35)
+
+    --Glitch tiles
+    SpawnGlitchTiles()
 
     --Intro screen
     MinigameTimers.IntroScreenTimer = MinigameConstants.INTRO_SCREEN_MAX_FRAMES
@@ -785,7 +894,7 @@ function too_underground:Init(mod, variables)
         backdrop:GetSprite():ReplaceSpritesheet(0, "gfx/backdrop/tug_backdrop.png")
     end
     backdrop:GetSprite():LoadGraphics()
-    backdrop.DepthOffset = -1000
+    backdrop.DepthOffset = -4000
 
     --Add rocks to the list
     for i = 16, 223, 1 do
@@ -810,7 +919,5 @@ function too_underground:Init(mod, variables)
         playerSprite:LoadGraphics()
     end
 end
-
-
 
 return too_underground

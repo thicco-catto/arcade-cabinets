@@ -282,7 +282,6 @@ local function PlaceGlitchTiles()
     if not ArcadeCabinetVariables.IsCurrentMinigameGlitched then return end
 
     local room = game:GetRoom()
-    local leftToSpawn = MinigameConstants.GLITCH_NUM_GLITCH_TILES
 
     local numOneWays = 0
     for _, _ in ipairs(RoomOneWays) do
