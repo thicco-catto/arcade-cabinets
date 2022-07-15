@@ -1,17 +1,14 @@
 <AnimatedActor>
-	<Info CreatedBy="Unknown" CreatedOn="28/02/2022 17:54:38" Version="19" Fps="30"/>
+	<Info CreatedBy="Unknown" CreatedOn="15/07/2022 17:46:08" Version="21" Fps="30"/>
 	<Content>
 		<Spritesheets>
-			<Spritesheet Path="effects\too underground\rockbreak.png" Id="0"/>
+			<Spritesheet Path="effects\too underground\tug_rockbreak.png" Id="0"/>
 		</Spritesheets>
 		<Layers>
 			<Layer Name="Main" Id="0" SpritesheetId="0"/>
 		</Layers>
 		<Nulls/>
-		<Events>
-			<Event Name="Prize" Id="0"/>
-			<Event Name="Explosion" Id="1"/>
-		</Events>
+		<Events/>
 	</Content>
 	<Animations DefaultAnimation="Poof">
 		<Animation Name="Poof" FrameNum="8" Loop="false">

@@ -69,8 +69,11 @@ local MinigameConstants = {
     },
 
     INTRO_SCREEN_MAX_FRAMES = 70,
+    MAX_ROCK_COUNT = 170,
 
-    MAX_ROCK_COUNT = 170
+    --Glitch stuff
+    GLITCH_METER_CHANGE_FRAMES = 7,
+    GLITCH_METER_FRAMES = 11
 }
 
 --Timers
@@ -109,6 +112,8 @@ local LastRockPosition = nil
 
 local BoneGuysPositions = {}
 local BatteriesPositions = {}
+
+local CurrentGlitchRockMeterFrame = 0
 
 
 local function AddRock(gridEntity, index)
@@ -151,7 +156,11 @@ local function BreakRock(index, rock)
     RocksInRoom[index] = nil
     SFXManager:Play(MinigameSounds.ROCK_BREAK)
     local rockBreak = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.TEAR_POOF, 0, rock.gridEntity.Position, Vector.Zero, nil)
-    rockBreak:GetSprite():Load("gfx/tug_rock_break.anm2", true)
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+        rockBreak:GetSprite():Load("gfx/tug_glitch_rock_break.anm2", true)
+    else
+        rockBreak:GetSprite():Load("gfx/tug_rock_break.anm2", true)
+    end
     rockBreak:GetSprite():Play("Poof", true)
 
     BrokenRocks = BrokenRocks + 1
@@ -196,7 +205,6 @@ local function UpdateIntroScreen()
         local boneguy = Isaac.Spawn(EntityType.ENTITY_CLICKETY_CLACK, MinigameEntityVariants.BONE_GUY, 0, pos, Vector.Zero, nil)
         if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
             boneguy:GetSprite():ReplaceSpritesheet(0, "gfx/enemies/tug_glitch_boneguy.png")
-            --boneguy:GetSprite():ReplaceSpritesheet(1, "gfx/enemies/tug_glitch_boneguy.png")
             boneguy:GetSprite():LoadGraphics()
         end
         BoneGuysPositions[#BoneGuysPositions] = nil
@@ -213,6 +221,10 @@ local function UpdateIntroScreen()
         --Spawn batteries because they keep getting deleted????
         for _, pos in ipairs(BatteriesPositions) do
             local battery = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.DYNAMITE, 0, pos, Vector.Zero, nil)
+            if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+                battery:GetSprite():ReplaceSpritesheet(0, "gfx/pick ups/tug_glitch_tnt.png")
+                battery:GetSprite():LoadGraphics()
+            end
             battery:GetSprite():Play("Idle", true)
         end
 
@@ -229,6 +241,12 @@ local function CheckForWin()
 
     RemoveBoneGuys = true
     local chest = Isaac.Spawn(EntityType.ENTITY_PICKUP, MinigameEntityVariants.CHEST, 0, LastRockPosition, Vector.Zero, nil)
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+        chest:GetSprite():ReplaceSpritesheet(0, "gfx/pick ups/tug_glitch_chest.png")
+        chest:GetSprite():ReplaceSpritesheet(1, "gfx/pick ups/tug_glitch_chest.png")
+        chest:GetSprite():ReplaceSpritesheet(2, "")
+        chest:GetSprite():LoadGraphics()
+    end
     chest:AddEntityFlags(EntityFlag.FLAG_NO_PHYSICS_KNOCKBACK | EntityFlag.FLAG_NO_KNOCKBACK)
 end
 
@@ -248,6 +266,15 @@ end
 
 function too_underground:OnFrameUpdate()
     InmortalBoneGuy.Position = Vector(-99999999, -99999999)
+
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched and
+    game:GetFrameCount() % MinigameConstants.GLITCH_METER_CHANGE_FRAMES == 0 then
+        local newFrame = rng:RandomInt(MinigameConstants.GLITCH_METER_FRAMES - 1)
+        if newFrame >= CurrentGlitchRockMeterFrame then
+            newFrame = newFrame + 1
+        end
+        CurrentGlitchRockMeterFrame = newFrame
+    end
 
     UpdateIntroScreen()
 
@@ -310,7 +337,12 @@ end
 
 local function RenderUI()
     --Rockmeter
-    local stonemeterFrame = math.floor((BrokenRocks / MinigameConstants.MAX_ROCK_COUNT) * 10)
+    local stonemeterFrame = 0
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+        stonemeterFrame = CurrentGlitchRockMeterFrame
+    else
+        stonemeterFrame = math.floor((BrokenRocks / MinigameConstants.MAX_ROCK_COUNT) * 10)
+    end
     StoneMeterUI:SetFrame(stonemeterFrame)
     StoneMeterUI:Render(Vector(Isaac.GetScreenWidth() / 2, Isaac.GetScreenHeight() / 2) - Vector(100, -120), Vector.Zero, Vector.Zero)
 
@@ -541,7 +573,7 @@ end
 
 
 function too_underground:PickupCollision(pickup, collider)
-    if not collider:ToPlayer() then return end
+    if not collider:ToPlayer() and CurrentMinigameState ~= MinigameState.WINNING then return end
 
     pickup:GetSprite():Play("Open", true)
     CurrentMinigameState = MinigameState.WINNING
