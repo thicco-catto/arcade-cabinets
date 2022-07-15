@@ -60,8 +60,20 @@ local MinigameConstants = {
     RUNE_ITEM = Isaac.GetItemIdByName("BSW rune"),
     MAX_PLAYER_IFRAMES = 30,
     MAX_RUNE_TIMEOUT_FRAMES = 200,
-    MAX_TRANSITION_FRAMES = 100,
-    MAX_WAITING_FRAMES = 100
+    MAX_TRANSITION_FRAMES = 70,
+    MAX_WAITING_FRAMES = 100,
+
+    --Glitch stuff
+    GLITCHED_HEAD_SPRITESHEETS = {
+        "bsw_glitch_whipper_head.png",
+        "bsw_glitch_snapper_head.png",
+        "bsw_glitch_lunatic_head.png"
+    },
+    GLITCHED_BODY_SPRITESHEETS = {
+        "bsw_glitch_whipper_body.png",
+        "bsw_glitch_snapper_body.png",
+        "bsw_glitch_lunatic_body.png"
+    },
 }
 
 --Timers
@@ -257,11 +269,17 @@ local function CheckUseRune()
         --Remove enemies
         for _, entity in ipairs(Isaac.FindByType(EntityType.ENTITY_WHIPPER, -1, -1)) do
             entity:Remove()
-            local deathEffect = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.WHIPPER_DEATH, 0, entity.Position, Vector.Zero, nil)
-            deathEffect:GetSprite():Play("Idle", true)
-            deathEffect:GetSprite():ReplaceSpritesheet(1, "gfx/enemies/" .. MinigameConstants.HEAD_SPRITESHEETS[CurrentLevel])
-            deathEffect:GetSprite():ReplaceSpritesheet(2, "gfx/enemies/" .. MinigameConstants.BODY_SPRITESHEETS[CurrentLevel])
+            local deathEffect = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.WHIPPER_DEATH, 0, entity.Position, Vector.Zero, nil)
+            if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+                deathEffect:GetSprite():Load("gfx/bsw_glitch_whipper_death.anm2", true)
+                deathEffect:GetSprite():ReplaceSpritesheet(1, "gfx/enemies/" .. MinigameConstants.GLITCHED_HEAD_SPRITESHEETS[CurrentLevel])
+                deathEffect:GetSprite():ReplaceSpritesheet(2, "gfx/enemies/" .. MinigameConstants.GLITCHED_BODY_SPRITESHEETS[CurrentLevel])
+            else
+                deathEffect:GetSprite():ReplaceSpritesheet(1, "gfx/enemies/" .. MinigameConstants.HEAD_SPRITESHEETS[CurrentLevel])
+                deathEffect:GetSprite():ReplaceSpritesheet(2, "gfx/enemies/" .. MinigameConstants.BODY_SPRITESHEETS[CurrentLevel])
+            end
             deathEffect:GetSprite():LoadGraphics()
+            deathEffect:GetSprite():Play("Idle", true)
         end
 
         RuneCount = 0
@@ -555,6 +573,36 @@ function black_stone_wielder:OnTinyFlyUpdate(effect)
 end
 
 
+---@param effect EntityEffect
+function black_stone_wielder:OnWhipperDeathUpdate(effect)
+    --Only player 1 can use the rune
+    local UsePlayer = game:GetPlayer(0)
+
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+        if effect:GetSprite():IsFinished("Idle") then
+            effect:GetSprite():Play("Loop", true)
+        end
+
+        if MinigameState ~= MinigameState.WINNING then
+            UsePlayer:GetSprite():SetFrame(10)
+            UsePlayer.Velocity = Vector.Zero
+        end
+    else
+        if effect:GetSprite():IsFinished("Idle") then
+            effect:Remove()
+
+            --The skull animation has ended
+            UsePlayer.ControlsEnabled = true
+            UsePlayer:StopExtraAnimation("Pickup")
+        else
+            --The skull animation is going
+            UsePlayer:GetSprite():SetFrame(10)
+            UsePlayer.Velocity = Vector.Zero
+        end
+    end
+end
+
+
 --INIT MINIGAME
 function black_stone_wielder:AddCallbacks(mod)
     mod:AddCallback(ModCallbacks.MC_POST_UPDATE, black_stone_wielder.OnFrameUpdate)
@@ -566,6 +614,7 @@ function black_stone_wielder:AddCallbacks(mod)
     mod:AddCallback(ModCallbacks.MC_POST_TEAR_UPDATE, black_stone_wielder.OnTearUpdate)
     mod:AddCallback(ModCallbacks.MC_PRE_ENTITY_SPAWN, black_stone_wielder.OnEntitySpawn)
     mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, black_stone_wielder.OnTinyFlyUpdate, EffectVariant.TINY_FLY)
+    mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, black_stone_wielder.OnWhipperDeathUpdate, MinigameEntityVariants.WHIPPER_DEATH)
 end
 
 
@@ -579,6 +628,7 @@ function black_stone_wielder:RemoveCallbacks(mod)
     mod:RemoveCallback(ModCallbacks.MC_POST_TEAR_UPDATE, black_stone_wielder.OnTearUpdate)
     mod:RemoveCallback(ModCallbacks.MC_PRE_ENTITY_SPAWN, black_stone_wielder.OnEntitySpawn)
     mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, black_stone_wielder.OnTinyFlyUpdate)
+    mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, black_stone_wielder.OnWhipperDeathUpdate)
 end
 
 
