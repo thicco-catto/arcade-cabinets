@@ -218,10 +218,11 @@ local function UpdateIntroScreen()
     --Spawn boneguys in waves
     if MinigameTimers.IntroScreenTimer % 6 == 0 and #BoneGuysPositions > 0 then
         local pos = BoneGuysPositions[#BoneGuysPositions]
-        local boneguy = Isaac.Spawn(EntityType.ENTITY_CLICKETY_CLACK, MinigameEntityVariants.BONE_GUY, 0, pos, Vector.Zero, nil)
+        local boneGuy = Isaac.Spawn(EntityType.ENTITY_CLICKETY_CLACK, MinigameEntityVariants.BONE_GUY, 0, pos, Vector.Zero, nil)
+        boneGuy:AddEntityFlags(EntityFlag.FLAG_NO_FLASH_ON_DAMAGE)
         if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
-            boneguy:GetSprite():ReplaceSpritesheet(0, "gfx/enemies/tug_glitch_boneguy.png")
-            boneguy:GetSprite():LoadGraphics()
+            boneGuy:GetSprite():ReplaceSpritesheet(0, "gfx/enemies/tug_glitch_boneguy.png")
+            boneGuy:GetSprite():LoadGraphics()
         end
         BoneGuysPositions[#BoneGuysPositions] = nil
     end
@@ -468,6 +469,7 @@ function too_underground:OnBoneGuyUpdate(boneGuy)
                 newBoneGuy:ClearEntityFlags(EntityFlag.FLAG_APPEAR)
                 newBoneGuy:GetSprite():ReplaceSpritesheet(0, "gfx/enemies/tug_glitch_boneguy.png")
                 newBoneGuy:GetSprite():LoadGraphics()
+                newBoneGuy:AddEntityFlags(EntityFlag.FLAG_NO_FLASH_ON_DAMAGE)
                 boneGuy:Remove()
             else
                 local championChance = rng:RandomInt(100)
