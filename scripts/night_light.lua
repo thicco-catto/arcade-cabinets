@@ -862,7 +862,7 @@ function night_light:Init(mod, variables)
         HeartsUI:ReplaceSpritesheet(0, "gfx/effects/night light/nl_hearts_ui.png")
         ClockUI:ReplaceSpritesheet(0, "gfx/effects/night light/nl_clock_ui.png")
         FuckyWarning:Load("gfx/nl_fucky_warning.anm2", true)
-        FinalCutsceneScreen:Load("gfx/nl_final_cutsence.anm2", true)
+        FinalCutsceneScreen:Load("gfx/nl_final_cutscene.anm2", true)
     end
 
     InitialCutsceneScreen:LoadGraphics()

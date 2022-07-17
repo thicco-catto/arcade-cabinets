@@ -108,9 +108,10 @@ local MinigameConstants = {
     END_EXPLOSION_SPAWNING_OFFSET = Vector(0, 75),
 
     --Glitch stuff
-    GLITCH_CHANCE_FOR_INTERRUPT = 33,
+    GLITCH_CHANCE_FOR_INTERRUPT = 50,
     GLITCH_MINIMUM_INTERRUPT_FRAMES = 100,
     GLITCH_INTERRUP_FRAMES_RANDOM_OFFSET = 100,
+    GLITCH_MAX_PLAYER_NOT_MOVING_FRAMES = 60,
 }
 
 -- Timers
@@ -852,6 +853,30 @@ function holy_smokes:OnPlayerUpdate(player)
             player:GetSprite():SetFrame(10)
         end
     end
+
+    if not ArcadeCabinetVariables.IsCurrentMinigameGlitched then return end
+
+    if not SatanHead:GetSprite():IsPlaying("ShootDoubleLaserProjectiles") then
+        player:GetData().FramesNotMoving = 0
+        return
+    end
+
+    if player.Velocity:Length() < 0.1 then
+        player:GetData().FramesNotMoving = player:GetData().FramesNotMoving + 1
+
+        if player:GetData().FramesNotMoving == MinigameConstants.GLITCH_MAX_PLAYER_NOT_MOVING_FRAMES then
+            local antiCheatFlame = Isaac.Spawn(MinigameEntityTypes.CUSTOM_ENTITY, MinigameEntityVariants.FIRE_GEYSER, 0, player.Position, Vector.Zero, nil)
+            antiCheatFlame:AddEntityFlags(EntityFlag.FLAG_NO_FLASH_ON_DAMAGE | EntityFlag.FLAG_NO_KNOCKBACK | EntityFlag.FLAG_NO_PHYSICS_KNOCKBACK)
+            antiCheatFlame:ClearEntityFlags(EntityFlag.FLAG_APPEAR)
+            antiCheatFlame:GetSprite():ReplaceSpritesheet(0, "gfx/effects/holy smokes/hs_glitch_flat_fire.png")
+            antiCheatFlame:GetSprite():LoadGraphics()
+            antiCheatFlame:GetSprite():Play("Idle", true)
+            antiCheatFlame:GetData().IsAntiCheatFlame = true
+        end
+    else
+        player:GetData().FramesNotMoving = 0
+    end
+
 end
 
 
@@ -994,6 +1019,13 @@ function holy_smokes:OnEntityDamage(tookDamage, damageAmount)
 end
 
 
+function holy_smokes:OnNPCUpdate(entity)
+    if entity.Variant == MinigameEntityVariants.FIRE_GEYSER and entity:GetData().IsAntiCheatFlame and entity.FrameCount == 15 then
+        entity:Remove()
+    end
+end
+
+
 function holy_smokes:OnTearPoofInit(poof)
     SFXManager:Stop(SoundEffect.SOUND_TEARIMPACTS)
     SFXManager:Stop(SoundEffect.SOUND_SPLATTER)
@@ -1107,6 +1139,7 @@ function holy_smokes:AddCallbacks(mod)
     mod:AddCallback(ModCallbacks.MC_POST_RENDER, holy_smokes.OnRender)
     mod:AddCallback(ModCallbacks.MC_ENTITY_TAKE_DMG, holy_smokes.OnPlayerDamage, EntityType.ENTITY_PLAYER)
     mod:AddCallback(ModCallbacks.MC_ENTITY_TAKE_DMG, holy_smokes.OnEntityDamage, MinigameEntityTypes.CUSTOM_ENTITY)
+    mod:AddCallback(ModCallbacks.MC_NPC_UPDATE, holy_smokes.OnNPCUpdate, MinigameEntityTypes.CUSTOM_ENTITY)
     mod:AddCallback(ModCallbacks.MC_POST_EFFECT_INIT, holy_smokes.OnTearPoofInit, EffectVariant.TEAR_POOF_A)
     mod:AddCallback(ModCallbacks.MC_POST_EFFECT_INIT, holy_smokes.OnTearPoofInit, EffectVariant.TEAR_POOF_B)
     mod:AddCallback(ModCallbacks.MC_POST_EFFECT_INIT, holy_smokes.OnProjectilePoofInit, EffectVariant.BULLET_POOF)
@@ -1128,12 +1161,14 @@ function holy_smokes:RemoveCallbacks(mod)
     mod:RemoveCallback(ModCallbacks.MC_POST_RENDER, holy_smokes.OnRender)
     mod:RemoveCallback(ModCallbacks.MC_ENTITY_TAKE_DMG, holy_smokes.OnPlayerDamage)
     mod:RemoveCallback(ModCallbacks.MC_ENTITY_TAKE_DMG, holy_smokes.OnEntityDamage)
+    mod:RemoveCallback(ModCallbacks.MC_NPC_UPDATE, holy_smokes.OnNPCUpdate)
     mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_INIT, holy_smokes.OnTearPoofInit)
     mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_INIT, holy_smokes.OnTearPoofInit)
     mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_INIT, holy_smokes.OnProjectilePoofInit)
     mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_INIT, holy_smokes.OnWaterSplashInit)
     mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, holy_smokes.OnProjectilePoofUpdate)
     mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, holy_smokes.OnTinyFlyUpdate)
+    mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, holy_smokes.OnFinalExplosionUpdate)
     mod:RemoveCallback(ModCallbacks.MC_POST_FIRE_TEAR, holy_smokes.OnTearFire)
     mod:RemoveCallback(ModCallbacks.MC_PRE_TEAR_COLLISION, holy_smokes.OnTearCollision)
     mod:RemoveCallback(ModCallbacks.MC_POST_PROJECTILE_INIT, holy_smokes.OnProjectileInit)
