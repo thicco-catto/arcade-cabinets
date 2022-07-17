@@ -3,22 +3,7 @@ local game = Game()
 local rng = RNG()
 local SFXManager = SFXManager()
 local MusicManager = MusicManager()
-----------------------------------------------
---FANCY REQUIRE (Thanks manaphoenix <3)
-----------------------------------------------
-local function loadFile(loc, ...)
-    local _, err = pcall(require, "")
-    local modName = err:match("/mods/(.*)/%.lua")
-    local path = "mods/" .. modName .. "/"
-
-    return assert(loadfile(path .. loc .. ".lua"))(...)
-end
-local ArcadeCabinetVariables = loadFile("scripts/variables")
-
-night_light.callbacks = {}
-night_light.result = nil
-night_light.startingItems = {
-}
+local ArcadeCabinetVariables
 
 --Sounds
 local BannedSounds = {
@@ -81,7 +66,7 @@ local MinigameConstants = {
     DUST_SPEED = 4,
     FUCKY_SPEED = 10,
     MORNINGSTAR_CHASE_SPEED = 4.2,
-    MORNINGSTAR_RETREAT_SPEED = 0.6,
+    MORNINGSTAR_RETREAT_SPEED = 1.2,
 
     MAX_CHEATING_COUNTER = 100
 }
@@ -117,7 +102,7 @@ HeartsUI:Load("gfx/nl_hearts_ui.anm2", true)
 local ClockUI = Sprite()
 ClockUI:Load("gfx/nl_clock_ui.anm2", true)
 local FuckyWarning = Sprite()
-FuckyWarning:Load("gfx/nl_fucky.anm2", true)
+FuckyWarning:Load("gfx/nl_fucky_warning.anm2", true)
 local ConfusionEffectOverlay = Sprite()
 ConfusionEffectOverlay:Load("gfx/nl_confusion_effect.anm2", true)
 
@@ -133,72 +118,6 @@ local MorningStar = nil
 local CheatingCounter = 0
 local FuckySpawnAxis = 0
 local AlarmSoundTimes = 10
-
-
---INIT MINIGAME
-function night_light:Init()
-    local room = game:GetRoom()
-
-    --Reset stuff
-    night_light.result = nil
-    CurrentHour = 0
-    IsPlayerConfused = false
-    PlayerHP = 3
-    CheatingCounter = 0
-    MorningStar = nil
-    CurrentMinigameState = MinigameState.START_CUTSCENCE
-
-    rng:SetSeed(game:GetSeeds():GetStartSeed(), 35)
-
-    --Reset timers
-    for _, timer in pairs(MinigameTimers) do
-        timer = 0
-    end
-
-    MinigameTimers.HourTimer = MinigameConstants.SECONDS_PER_HOUR * 30
-    MinigameTimers.InitialCutsceneTimer = MinigameConstants.INTIAL_CUTSCENE_MAX_FRAMES
-
-    --UI
-    InitialCutsceneScreen:Play("Idle", true)
-    HeartsUI:Play("Idle", true)
-    ClockUI:Play("Idle", true)
-    ConfusionEffectOverlay:Play("Idle", true)
-
-    --Transition
-    SFXManager:Play(MinigameSounds.TRANSITION)
-
-    --Backdrop
-    local backdrop = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, ArcadeCabinetVariables.Backdrop2x2Variant, 0, room:GetCenterPos(), Vector.Zero, nil)
-    backdrop:GetSprite():ReplaceSpritesheet(0, "gfx/backdrop/nl_backdrop.png")
-    backdrop:GetSprite():LoadGraphics()
-    backdrop.DepthOffset = -500
-
-    --Fake player
-    FakePlayer = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.FAKE_PLAYER, 0, room:GetCenterPos(), Vector.Zero, nil)
-    LightBeam = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.FAKE_PLAYER, 0, room:GetCenterPos(), Vector.Zero, nil)
-    LightBeam:GetSprite():Load("gfx/nl_light_beam.anm2", true)
-    LightBeam.DepthOffset = -200
-
-
-    --Prepare players
-    local playerNum = game:GetNumPlayers()
-    for i = 0, playerNum - 1, 1 do
-        local player = game:GetPlayer(i)
-
-        player.Position = room:GetCenterPos()
-        player.ControlsEnabled = false
-
-        for _, item in ipairs(night_light.startingItems) do
-            player:AddCollectible(item, 0, false)
-        end
-
-        local playerSprite = player:GetSprite()
-        for o = 0, playerSprite:GetLayerCount() - 1, 1 do
-            playerSprite:ReplaceSpritesheet(o, "cant find this?? skill issue")
-        end
-        playerSprite:LoadGraphics()
-    end
-end
 
 
 --UPDATE CALLBACKS
@@ -395,6 +314,12 @@ local function ManageSpawningFucky()
         local enemy = Isaac.Spawn(MinigameEntityTypes.CUSTOM_ENEMY, MinigameEntityVariants.FUCKY, 0, game:GetRoom():GetCenterPos() + spawningOffset, Vector.Zero, nil)
         enemy:GetSprite():Play(animationToPlay, true)
         enemy.DepthOffset = 100
+
+        if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+            enemy:GetSprite():ReplaceSpritesheet(0, "gfx/enemies/nl_glitch_fucky.png")
+            enemy:GetSprite():ReplaceSpritesheet(1, "gfx/enemies/nl_glitch_dust.png")
+            enemy:GetSprite():LoadGraphics()
+        end
     end
 
     MinigameTimers.FuckySpawnTimer = MinigameTimers.FuckySpawnTimer - 1
@@ -435,6 +360,12 @@ local function SpawnGhost(ChosenAxis)
     enemy:GetData().ShouldPlayAnimation = animationToPlay
     enemy.FlipX = isFlip
     enemy.Visible = false
+
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+        enemy:GetSprite():ReplaceSpritesheet(0, "gfx/enemies/nl_glitch_dust.png")
+        enemy:GetSprite():ReplaceSpritesheet(1, "gfx/enemies/nl_glitch_dush_fadein_overlay.png")
+        enemy:GetSprite():LoadGraphics()
+    end
 end
 
 
@@ -465,6 +396,11 @@ local function SpawnMorningStar()
     MorningStar = Isaac.Spawn(MinigameEntityTypes.CUSTOM_ENEMY, MinigameEntityVariants.CUSTOM_MORNINGSTAR, 0, cornerPos, Vector.Zero, nil):ToNPC()
     MorningStar:GetData().TargetFrame = 0
     MorningStar.State = 3
+
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+        MorningStar:GetSprite():ReplaceSpritesheet(0, "gfx/enemies/nl_glitch_morningstar.png")
+        MorningStar:GetSprite():LoadGraphics()
+    end
 end
 
 
@@ -552,7 +488,6 @@ function night_light:OnFrameUpdate()
         UpdateWaitingForWin()
     end
 end
-night_light.callbacks[ModCallbacks.MC_POST_UPDATE] = night_light.OnFrameUpdate
 
 
 local function RenderInitialCutscene()
@@ -574,7 +509,7 @@ local function RenderFinalCutscene()
     end
 
     if FinalCutsceneScreen:IsFinished("FadeIn") then
-        night_light.result = ArcadeCabinetVariables.MinigameResult.WIN
+        ArcadeCabinetVariables.CurrentMinigameResult = ArcadeCabinetVariables.MinigameResult.WIN
     end
 
     FinalCutsceneScreen:Render(Vector(Isaac.GetScreenWidth(), Isaac.GetScreenHeight()) / 2, Vector.Zero, Vector.Zero)
@@ -586,7 +521,7 @@ local function RenderFadeOut()
     if CurrentMinigameState ~= MinigameState.LOSING then return end
 
     if FadeOutScreen:IsFinished("Appear") then
-        night_light.result = ArcadeCabinetVariables.MinigameResult.LOSE
+        ArcadeCabinetVariables.CurrentMinigameResult = ArcadeCabinetVariables.MinigameResult.LOSE
     end
 
     FadeOutScreen:Render(Vector(Isaac.GetScreenWidth(), Isaac.GetScreenHeight()) / 2, Vector.Zero, Vector.Zero)
@@ -661,7 +596,6 @@ function night_light:OnRender()
 
     RenderFadeOut()
 end
-night_light.callbacks[ModCallbacks.MC_POST_RENDER] = night_light.OnRender
 
 
 --NPC CALLBACKS
@@ -784,20 +718,17 @@ end
 
 
 function night_light:OnNPCUpdate(entity)
-    if entity.Type ~= MinigameEntityTypes.CUSTOM_ENEMY then return end
-
-    if entity.Variant == MinigameEntityVariants.CUSTOM_DUST then UpdateDust(entity); return end
-
-    if entity.Variant == MinigameEntityVariants.CUSTOM_MORNINGSTAR then UpdateMorningStar(entity); return end
-
-    if entity.Variant == MinigameEntityVariants.FUCKY then UpdateFucky(entity); return end
+    if entity.Variant == MinigameEntityVariants.CUSTOM_DUST then
+        UpdateDust(entity)
+    elseif entity.Variant == MinigameEntityVariants.CUSTOM_MORNINGSTAR then
+        UpdateMorningStar(entity)
+    elseif entity.Variant == MinigameEntityVariants.FUCKY then
+        UpdateFucky(entity)
+    end
 end
-night_light.callbacks[ModCallbacks.MC_NPC_UPDATE] = night_light.OnNPCUpdate
 
 
 function night_light:OnNPCCollision(entity, collider)
-    if entity.Type ~= MinigameEntityTypes.CUSTOM_ENEMY then return end
-
     --If its not the playing state dont execute the other code
     if CurrentMinigameState ~= MinigameState.PLAYING then return true end
 
@@ -832,13 +763,11 @@ function night_light:OnNPCCollision(entity, collider)
 
     return true
 end
-night_light.callbacks[ModCallbacks.MC_PRE_NPC_COLLISION] = night_light.OnNPCCollision
 
 
-function night_light:OnEntityDamage(tookDamage, _, damageflags, _)
-    if tookDamage:ToPlayer() then return false end
+function night_light:OnPlayerDamage()
+    return false
 end
-night_light.callbacks[ModCallbacks.MC_ENTITY_TAKE_DMG] = night_light.OnEntityDamage
 
 
 --OTHER CALLBACKS
@@ -848,14 +777,114 @@ function night_light:OnEntitySpawn(entityType, entityVariant, _, _, _, _, seed)
         return {EntityType.ENTITY_EFFECT, EffectVariant.BLOOD_SPLAT, 0, seed}
     end
 end
-night_light.callbacks[ModCallbacks.MC_PRE_ENTITY_SPAWN] = night_light.OnEntitySpawn
 
 
-function night_light:EffectUpdate(effect)
-    if effect.Variant == EffectVariant.TINY_FLY then
-        effect:Remove() --They should be removed but just in case
+function night_light:OnTinyFlyUpdate(effect)
+    effect:Remove() --They should be removed but just in case
+end
+
+
+--INIT MINIGAME
+function night_light:AddCallbacks(mod)
+    mod:AddCallback(ModCallbacks.MC_POST_UPDATE, night_light.OnFrameUpdate)
+    mod:AddCallback(ModCallbacks.MC_POST_RENDER, night_light.OnRender)
+    mod:AddCallback(ModCallbacks.MC_NPC_UPDATE, night_light.OnNPCUpdate, MinigameEntityTypes.CUSTOM_ENEMY)
+    mod:AddCallback(ModCallbacks.MC_PRE_NPC_COLLISION, night_light.OnNPCCollision, MinigameEntityTypes.CUSTOM_ENEMY)
+    mod:AddCallback(ModCallbacks.MC_ENTITY_TAKE_DMG, night_light.OnPlayerDamage, EntityType.ENTITY_PLAYER)
+    mod:AddCallback(ModCallbacks.MC_PRE_ENTITY_SPAWN, night_light.OnEntitySpawn)
+    mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, night_light.OnTinyFlyUpdate, EffectVariant.TINY_FLY)
+end
+
+
+function night_light:RemoveCallbacks(mod)
+    mod:RemoveCallback(ModCallbacks.MC_POST_UPDATE, night_light.OnFrameUpdate)
+    mod:RemoveCallback(ModCallbacks.MC_POST_RENDER, night_light.OnRender)
+    mod:RemoveCallback(ModCallbacks.MC_NPC_UPDATE, night_light.OnNPCUpdate)
+    mod:RemoveCallback(ModCallbacks.MC_PRE_NPC_COLLISION, night_light.OnNPCCollision)
+    mod:RemoveCallback(ModCallbacks.MC_ENTITY_TAKE_DMG, night_light.OnPlayerDamage)
+    mod:RemoveCallback(ModCallbacks.MC_PRE_ENTITY_SPAWN, night_light.OnEntitySpawn)
+    mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, night_light.OnTinyFlyUpdate)
+end
+
+
+function night_light:Init(mod, variables)
+    ArcadeCabinetVariables = variables
+    night_light:AddCallbacks(mod)
+
+    local room = game:GetRoom()
+
+    --Reset stuff
+    CurrentHour = 0
+    IsPlayerConfused = false
+    PlayerHP = 3
+    CheatingCounter = 0
+    MorningStar = nil
+    CurrentMinigameState = MinigameState.START_CUTSCENCE
+
+    rng:SetSeed(game:GetSeeds():GetStartSeed(), 35)
+
+    --Reset timers
+    for _, timer in pairs(MinigameTimers) do
+        timer = 0
+    end
+
+    MinigameTimers.HourTimer = MinigameConstants.SECONDS_PER_HOUR * 30
+    MinigameTimers.InitialCutsceneTimer = MinigameConstants.INTIAL_CUTSCENE_MAX_FRAMES
+
+    --UI
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+        HeartsUI:ReplaceSpritesheet(0, "gfx/effects/night light/nl_glitch_hearts_ui.png")
+        ClockUI:ReplaceSpritesheet(0, "gfx/effects/night light/nl_glitch_clock_ui.png")
+        FuckyWarning:Load("gfx/nl_glitch_fucky_warning.anm2", true)
+    else
+        HeartsUI:ReplaceSpritesheet(0, "gfx/effects/night light/nl_hearts_ui.png")
+        ClockUI:ReplaceSpritesheet(0, "gfx/effects/night light/nl_clock_ui.png")
+        FuckyWarning:Load("gfx/nl_fucky_warning.anm2", true)
+    end
+
+    HeartsUI:LoadGraphics()
+    ClockUI:LoadGraphics()
+    FuckyWarning:LoadGraphics()
+
+    InitialCutsceneScreen:Play("Idle", true)
+    HeartsUI:Play("Idle", true)
+    ClockUI:Play("Idle", true)
+    ConfusionEffectOverlay:Play("Idle", true)
+
+    --Transition
+    SFXManager:Play(MinigameSounds.TRANSITION)
+
+    --Backdrop
+    local backdrop = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, ArcadeCabinetVariables.Backdrop2x2Variant, 0, room:GetCenterPos(), Vector.Zero, nil)
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+        backdrop:GetSprite():ReplaceSpritesheet(0, "gfx/backdrop/glitched_nl_backdrop.png")
+    else
+        backdrop:GetSprite():ReplaceSpritesheet(0, "gfx/backdrop/nl_backdrop.png")
+    end
+    backdrop:GetSprite():LoadGraphics()
+    backdrop.DepthOffset = -500
+
+    --Fake player
+    FakePlayer = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.FAKE_PLAYER, 0, room:GetCenterPos(), Vector.Zero, nil)
+    LightBeam = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.FAKE_PLAYER, 0, room:GetCenterPos(), Vector.Zero, nil)
+    LightBeam:GetSprite():Load("gfx/nl_light_beam.anm2", false)
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+        LightBeam:GetSprite():ReplaceSpritesheet(0, "gfx/characters/nl_glitch_lightbeam.png")
+    end
+    LightBeam:GetSprite():LoadGraphics()
+    LightBeam.DepthOffset = -200
+
+
+    --Prepare players
+    local playerNum = game:GetNumPlayers()
+    for i = 0, playerNum - 1, 1 do
+        local player = game:GetPlayer(i)
+
+        player.Position = room:GetCenterPos()
+        player.ControlsEnabled = false
+        player.Visible = false
     end
 end
-night_light.callbacks[ModCallbacks.MC_POST_EFFECT_UPDATE] = night_light.EffectUpdate
+
 
 return night_light
