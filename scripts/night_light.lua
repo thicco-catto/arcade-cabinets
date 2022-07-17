@@ -46,6 +46,7 @@ local MinigameEntityVariants = {
 --Constants
 local MinigameConstants = {
     --Wave control
+    MAX_HOURS = 6,
     SECONDS_PER_HOUR = 12,
     GHOSTS_PER_HOUR = {
         16,
@@ -68,7 +69,10 @@ local MinigameConstants = {
     MORNINGSTAR_CHASE_SPEED = 4.2,
     MORNINGSTAR_RETREAT_SPEED = 1.2,
 
-    MAX_CHEATING_COUNTER = 100
+    MAX_CHEATING_COUNTER = 100,
+
+    --GLITCH_STUFF
+    GLITCH_MORNING_STAR_CLOSE_SPAWN = 0.4
 }
 
 --Timers
@@ -391,6 +395,10 @@ local function SpawnMorningStar()
         cornerPos = Vector(-500, -500)
     end
 
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+        cornerPos = cornerPos * MinigameConstants.GLITCH_MORNING_STAR_CLOSE_SPAWN
+    end
+
     cornerPos = game:GetRoom():GetCenterPos() + cornerPos
 
     MorningStar = Isaac.Spawn(MinigameEntityTypes.CUSTOM_ENEMY, MinigameEntityVariants.CUSTOM_MORNINGSTAR, 0, cornerPos, Vector.Zero, nil):ToNPC()
@@ -432,9 +440,16 @@ local function UpdatePlaying()
         end
 
         --Spawn morning star
-        if CurrentHour == 4 or (CheatingCounter > MinigameConstants.MAX_CHEATING_COUNTER and CurrentHour == 3) then
+        if ArcadeCabinetVariables.IsCurrentMinigameGlitched and CurrentHour % 2 == 1 then
             SpawnMorningStar()
-        elseif CurrentHour == 6 then
+        elseif ArcadeCabinetVariables.IsCurrentMinigameGlitched and CurrentHour % 2 == 0 and
+        CurrentHour > 0 and CurrentHour < MinigameConstants.MAX_HOURS then
+            MorningStar:Remove()
+            MorningStar = nil
+        elseif CurrentHour == 4 or (CheatingCounter > MinigameConstants.MAX_CHEATING_COUNTER and CurrentHour == 3)
+        and not ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+            SpawnMorningStar()
+        elseif CurrentHour == MinigameConstants.MAX_HOURS then
             CurrentMinigameState = MinigameState.WAIT_FOR_WINNING
             MinigameTimers.WaitForWinTimer = MinigameConstants.WAIT_FOR_WIN_MAX_FRAMES
             FinalCutsceneScreen:Play("Start", true)
@@ -734,6 +749,7 @@ function night_light:OnNPCCollision(entity, collider)
 
     if collider:ToPlayer() and entity.Variant == MinigameEntityVariants.CUSTOM_DUST and not entity:GetData().IsDead then
         entity:GetData().IsDead = true
+        entity.Velocity = Vector.Zero
 
         entity:GetSprite():Play("Poof")
         SFXManager:Play(MinigameSounds.DUST_DEATH)
@@ -748,6 +764,7 @@ function night_light:OnNPCCollision(entity, collider)
         SFXManager:Play(MinigameSounds.DUST_DEATH)
         entity:GetSprite():Play("Poof", true)
         entity:GetData().IsDead = true
+        entity.Velocity = Vector.Zero
     elseif collider:ToPlayer() and entity.Variant == MinigameEntityVariants.CUSTOM_MORNINGSTAR then
         FakePlayer:GetSprite():Play("Hit")
         SFXManager:Play(MinigameSounds.PLAYER_HIT)
@@ -756,7 +773,7 @@ function night_light:OnNPCCollision(entity, collider)
     end
 
     if PlayerHP == 0 then
-        FadeOutScreen:Play("Appear")
+        FadeOutScreen:Play("Appear", true)
         SFXManager:Play(MinigameSounds.LOSE)
         CurrentMinigameState = MinigameState.LOSING
     end
