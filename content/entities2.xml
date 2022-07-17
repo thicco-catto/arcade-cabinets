@@ -130,7 +130,7 @@
         <gibs amount="0" blood="0" bone="0" eye="0" gut="0" large="0" />
     </entity>
 
-    <entity anm2path="hs_falling_stalagmite_shadow.anm2" subtype="0" name="stalagmite shadow HS" variant="2109" id="960" baseHP="0" boss="0" champion="0" collisionDamage="0" collisionMass="0" collisionRadius="0" friction="1" numGridCollisionPoints="0" shadowSize="0" shutdoors="false" stageHP="0" gridCollision="none"> 
+    <entity anm2path="hs_falling_stalagmite_shadow.anm2" subtype="0" name="stalagmite shadow HS" id="1000" variant="" baseHP="0" boss="0" champion="0" collisionDamage="0" collisionMass="0" collisionRadius="0" friction="1" numGridCollisionPoints="0" shadowSize="0" shutdoors="false" stageHP="0" gridCollision="none"> 
         <gibs amount="0" blood="0" bone="0" eye="0" gut="0" large="0" />
     </entity>
 
@@ -138,7 +138,7 @@
         <gibs amount="0" blood="0" bone="0" eye="0" gut="0" large="0" />
     </entity>
 
-    <entity anm2path="hs_floor_crack.anm2" subtype="0" name="floor crack HS" variant="2110" id="960" baseHP="0" boss="0" champion="0" collisionDamage="0" collisionMass="0" collisionRadius="0" friction="1" numGridCollisionPoints="0" shadowSize="0" shutdoors="false" stageHP="0" gridCollision="none"> 
+    <entity anm2path="hs_floor_crack.anm2" subtype="0" name="floor crack HS" id="1000" variant="" baseHP="0" boss="0" champion="0" collisionDamage="0" collisionMass="0" collisionRadius="0" friction="1" numGridCollisionPoints="0" shadowSize="0" shutdoors="false" stageHP="0" gridCollision="none"> 
         <gibs amount="0" blood="0" bone="0" eye="0" gut="0" large="0" />
     </entity>
 
@@ -146,19 +146,19 @@
         <gibs amount="0" blood="0" bone="0" eye="0" gut="0" large="0" />
     </entity>
 
-    <entity anm2path="hs_double_laser.anm2" subtype="0" name="double laser HS" variant="2111" id="960" baseHP="0" boss="0" champion="0" collisionDamage="0" collisionMass="0" collisionRadius="0" friction="1" numGridCollisionPoints="0" shadowSize="0" shutdoors="false" stageHP="0" gridCollision="none"> 
+    <entity anm2path="hs_double_laser.anm2" subtype="0" name="double laser HS" id="1000" variant="" baseHP="0" boss="0" champion="0" collisionDamage="0" collisionMass="0" collisionRadius="0" friction="1" numGridCollisionPoints="0" shadowSize="0" shutdoors="false" stageHP="0" gridCollision="none"> 
         <gibs amount="0" blood="0" bone="0" eye="0" gut="0" large="0" />
     </entity>
 
-    <entity anm2path="hs_holy_laser.anm2" subtype="0" name="holy laser HS" variant="3097" id="1000" baseHP="0" boss="0" champion="0" collisionDamage="0" collisionMass="0" collisionRadius="0" friction="1" numGridCollisionPoints="0" shadowSize="0" shutdoors="false" stageHP="0" gridCollision="none"> 
+    <entity anm2path="hs_holy_laser.anm2" subtype="0" name="holy laser HS" id="1000" variant="" baseHP="0" boss="0" champion="0" collisionDamage="0" collisionMass="0" collisionRadius="0" friction="1" numGridCollisionPoints="0" shadowSize="0" shutdoors="false" stageHP="0" gridCollision="none"> 
         <gibs amount="0" blood="0" bone="0" eye="0" gut="0" large="0" />
     </entity>
 
-    <entity anm2path="hs_end_explosion.anm2" subtype="0" name="end explosion HS" variant="2112" id="960" baseHP="0" boss="0" champion="0" collisionDamage="0" collisionMass="0" collisionRadius="0" friction="1" numGridCollisionPoints="0" shadowSize="0" shutdoors="false" stageHP="0" gridCollision="none"> 
+    <entity anm2path="hs_end_explosion.anm2" subtype="0" name="end explosion HS" id="1000" variant="" baseHP="0" boss="0" champion="0" collisionDamage="0" collisionMass="0" collisionRadius="0" friction="1" numGridCollisionPoints="0" shadowSize="0" shutdoors="false" stageHP="0" gridCollision="none"> 
         <gibs amount="0" blood="0" bone="0" eye="0" gut="0" large="0" />
     </entity>
 
-    <entity anm2path="hs_platform.anm2" subtype="0" name="platform HS" variant="2113" id="960" baseHP="0" boss="0" champion="0" collisionDamage="0" collisionMass="0" collisionRadius="0" friction="1" numGridCollisionPoints="0" shadowSize="0" shutdoors="false" stageHP="0" gridCollision="none"> 
+    <entity anm2path="hs_platform.anm2" subtype="0" name="platform HS" id="1000" variant="" baseHP="0" boss="0" champion="0" collisionDamage="0" collisionMass="0" collisionRadius="0" friction="1" numGridCollisionPoints="0" shadowSize="0" shutdoors="false" stageHP="0" gridCollision="none"> 
         <gibs amount="0" blood="0" bone="0" eye="0" gut="0" large="0" />
     </entity>
 

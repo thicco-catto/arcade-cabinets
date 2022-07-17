@@ -1,5 +1,5 @@
 <AnimatedActor>
-	<Info CreatedBy="Unknown" CreatedOn="19/04/2022 16:31:21" Version="73" Fps="30"/>
+	<Info CreatedBy="Unknown" CreatedOn="17/07/2022 17:49:56" Version="78" Fps="30"/>
 	<Content>
 		<Spritesheets>
 			<Spritesheet Path="enemies\hs_satan_head.png" Id="0"/>
@@ -11,8 +11,13 @@
 		</Layers>
 		<Nulls/>
 		<Events>
-			<Event Name="Prize" Id="0"/>
-			<Event Name="Explosion" Id="1"/>
+			<Event Name="StalagmiteScream" Id="0"/>
+			<Event Name="ShootDiamondProjectiles" Id="1"/>
+			<Event Name="FinishFloorCracks" Id="2"/>
+			<Event Name="ShootNoseLaser" Id="3"/>
+			<Event Name="ShootNoseProjectiles" Id="4"/>
+			<Event Name="RemoveNoseLaser" Id="5"/>
+			<Event Name="ShootGigaLaser" Id="6"/>
 		</Events>
 	</Content>
 	<Animations DefaultAnimation="Idle">
@@ -59,7 +64,9 @@
 				<LayerAnimation LayerId="1" Visible="true"/>
 			</LayerAnimations>
 			<NullAnimations/>
-			<Triggers/>
+			<Triggers>
+				<Trigger EventId="0" AtFrame="6"/>
+			</Triggers>
 		</Animation>
 		<Animation Name="ShootDiamondProjectiles" FrameNum="21" Loop="false">
 			<RootAnimation>
@@ -75,7 +82,9 @@
 				<LayerAnimation LayerId="1" Visible="true"/>
 			</LayerAnimations>
 			<NullAnimations/>
-			<Triggers/>
+			<Triggers>
+				<Trigger EventId="1" AtFrame="12"/>
+			</Triggers>
 		</Animation>
 		<Animation Name="FloorCrackScream" FrameNum="69" Loop="false">
 			<RootAnimation>
@@ -110,7 +119,9 @@
 				<LayerAnimation LayerId="1" Visible="true"/>
 			</LayerAnimations>
 			<NullAnimations/>
-			<Triggers/>
+			<Triggers>
+				<Trigger EventId="2" AtFrame="66"/>
+			</Triggers>
 		</Animation>
 		<Animation Name="FireNoseLaser" FrameNum="108" Loop="false">
 			<RootAnimation>
@@ -161,7 +172,9 @@
 				</LayerAnimation>
 			</LayerAnimations>
 			<NullAnimations/>
-			<Triggers/>
+			<Triggers>
+				<Trigger EventId="3" AtFrame="9"/>
+			</Triggers>
 		</Animation>
 		<Animation Name="ShootDoubleLaserProjectiles" FrameNum="24" Loop="false">
 			<RootAnimation>
@@ -186,7 +199,9 @@
 				</LayerAnimation>
 			</LayerAnimations>
 			<NullAnimations/>
-			<Triggers/>
+			<Triggers>
+				<Trigger EventId="4" AtFrame="12"/>
+			</Triggers>
 		</Animation>
 		<Animation Name="ShootGigaLaser" FrameNum="96" Loop="false">
 			<RootAnimation>
@@ -227,7 +242,10 @@
 				</LayerAnimation>
 			</LayerAnimations>
 			<NullAnimations/>
-			<Triggers/>
+			<Triggers>
+				<Trigger EventId="5" AtFrame="30"/>
+				<Trigger EventId="6" AtFrame="54"/>
+			</Triggers>
 		</Animation>
 	</Animations>
 </AnimatedActor>

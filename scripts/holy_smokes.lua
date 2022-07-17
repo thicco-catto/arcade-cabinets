@@ -50,7 +50,6 @@ local MinigameEntityTypes = {
 local MinigameEntityVariants = {
     PLATFORM = Isaac.GetEntityVariantByName("platform HS"),
     SATAN_HEAD = Isaac.GetEntityVariantByName("satan head HS"),
-    STAGE_ELEMENT = Isaac.GetEntityVariantByName("stage element HS"),
     HOLY_LASER = Isaac.GetEntityVariantByName("holy laser HS"),
     END_EXPLOSION = Isaac.GetEntityVariantByName("end explosion HS"),
 
@@ -80,7 +79,6 @@ local MinigameConstants = {
     STALAGMITE_HEIGHT = 400,
     STALAGMITE_SPEED = 20,
     MAX_SHOCKWAVE_COUNT = 9,
-    FRAMES_FOR_NEXT_SHOCKWAVE = 6,
     SHOCKWAVE_COUNT_TO_STALAGMITE = 8,
     MAX_STALAGMITES_NUM = 4,
 
@@ -108,6 +106,11 @@ local MinigameConstants = {
     FRAMES_BETWEEN_END_EXPLOSIONS = 3,
     END_EXPLOSION_SPAWNING_AREA = Vector(100, 100),
     END_EXPLOSION_SPAWNING_OFFSET = Vector(0, 75),
+
+    --Glitch stuff
+    GLITCH_CHANCE_FOR_INTERRUPT = 33,
+    GLITCH_MINIMUM_INTERRUPT_FRAMES = 100,
+    GLITCH_INTERRUP_FRAMES_RANDOM_OFFSET = 100,
 }
 
 -- Timers
@@ -119,6 +122,8 @@ local MinigameTimers = {
     SpecialAttackTimer = 0,
     EndExplosionsTimer = 0,
     EndWaitTimer = 0,
+
+    GlitchInterruptTimer = 0,
 }
 
 -- States
@@ -178,6 +183,27 @@ local function EndAttack()
 end
 
 
+local function EndAllAttacks()
+    for _, entity in ipairs(Isaac.GetRoomEntities()) do
+        if not (entity:ToPlayer() or
+        entity:ToTear() or
+        entity.Type == EntityType.ENTITY_GENERIC_PROP or
+        (entity.Type == MinigameEntityTypes.CUSTOM_ENTITY and entity.Variant == MinigameEntityVariants.SATAN_HEAD) or
+        (entity:ToEffect() and
+            (entity.Variant == MinigameEntityVariants.HOLY_LASER or
+            entity.Variant == MinigameEntityVariants.PLATFORM or
+            entity.Variant == EffectVariant.TEAR_POOF_A or
+            entity.Variant == EffectVariant.TEAR_POOF_B))) then
+            entity:Remove()
+        end
+    end
+
+    for _, sound in ipairs(MinigameSounds) do
+        SFXManager:Stop(sound)
+    end
+end
+
+
 local function SpawnStalagmite(spawnLeft)
     local room = game:GetRoom()
 
@@ -185,13 +211,21 @@ local function SpawnStalagmite(spawnLeft)
     local stalagmiteFloorPos = room:GetGridPosition(gridPos)
 
     local stalagmite = Isaac.Spawn(MinigameEntityTypes.CUSTOM_ENTITY, MinigameEntityVariants.STALAGMITE, 0, stalagmiteFloorPos + Vector(0, -MinigameConstants.STALAGMITE_HEIGHT), Vector.Zero, nil)
-    local shadow = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.STALAGMITE_SHADOW, 0, stalagmiteFloorPos, Vector.Zero, stalagmite)
+    local shadow = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.STALAGMITE_SHADOW, 0, stalagmiteFloorPos, Vector.Zero, stalagmite)
     shadow.DepthOffset = -50
 
     stalagmite:AddEntityFlags(EntityFlag.FLAG_NO_FLASH_ON_DAMAGE | EntityFlag.FLAG_NO_KNOCKBACK | EntityFlag.FLAG_NO_PHYSICS_KNOCKBACK)
     stalagmite:ClearEntityFlags(EntityFlag.FLAG_APPEAR)
     stalagmite:GetData().SpawnLeft = spawnLeft
     stalagmite.Child = shadow
+
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+        stalagmite:GetSprite():ReplaceSpritesheet(0, "gfx/effects/holy smokes/hs_glitch_falling_stalagmite.png")
+        shadow:GetSprite():ReplaceSpritesheet(0, "gfx/effects/holy smokes/hs_glitch_falling_stalagmite.png")
+
+        stalagmite:GetSprite():LoadGraphics()
+        shadow:GetSprite():LoadGraphics()
+    end
 
     stalagmite:GetSprite():Play("Fall")
     shadow:GetSprite():Play("Shadow")
@@ -214,6 +248,11 @@ local function SpawnNextShockWave(spawnLeft, shockWaveCount)
     shockwave:ClearEntityFlags(EntityFlag.FLAG_APPEAR)
     shockwave:GetData().SpawnLeft = spawnLeft
     shockwave:GetData().ShockWaveCount = shockWaveCount
+
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+        shockwave:GetSprite():ReplaceSpritesheet(0, "gfx/effects/holy smokes/hs_glitch_shockwave.png")
+        shockwave:GetSprite():LoadGraphics()
+    end
 
     shockwave:GetSprite():Play("Break", true)
     SFXManager:Play(MinigameSounds.SHOCKWAVE)
@@ -258,7 +297,7 @@ local function ManageShockWaves()
             end
 
             shockwave:Remove()
-        elseif shockwave:GetSprite():GetFrame() == MinigameConstants.FRAMES_FOR_NEXT_SHOCKWAVE then
+        elseif shockwave:GetSprite():IsEventTriggered("SpawnNext") then
             local data = shockwave:GetData()
 
             if data.ShockWaveCount ~= MinigameConstants.MAX_SHOCKWAVE_COUNT then
@@ -276,7 +315,7 @@ end
 local function ManageSatanStalamiteAttack()
     if SatanHead:GetSprite():IsFinished("StalagmiteScream") then
         SatanHead:GetSprite():Play("Idle", true)
-    elseif SatanHead:GetSprite():IsPlaying("StalagmiteScream") and SatanHead:GetSprite():GetFrame() == 6 then
+    elseif SatanHead:GetSprite():IsEventTriggered("StalagmiteScream") then
         SFXManager:Play(MinigameSounds.SATAN_STALAGMITE_SCREAM)
         game:ShakeScreen(14)
     end
@@ -317,7 +356,7 @@ local function ManageSatanDiamondProjectileAttack()
         else
             SatanHead:GetSprite():Play("ShootDiamondProjectiles", true)
         end
-    elseif SatanHead:GetSprite():GetFrame() == 12 then
+    elseif SatanHead:GetSprite():IsEventTriggered("ShootDiamondProjectiles") then
         SFXManager:Play(MinigameSounds.SPIT)
         ShootDiamondProjectiles()
         DiamondProjectileWavesNum = DiamondProjectileWavesNum + 1
@@ -357,7 +396,7 @@ local function SpawnFloorCracks()
     local posbileSpawns = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}
     local chosenSpawns = {}
 
-    for _, crack in ipairs(Isaac.FindByType(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.FLOOR_CRACK, 0)) do
+    for _, crack in ipairs(Isaac.FindByType(EntityType.ENTITY_EFFECT, MinigameEntityVariants.FLOOR_CRACK, 0)) do
         posbileSpawns = RemoveTakenPositions(posbileSpawns, room:GetClampedGridIndex(crack.Position))
     end
 
@@ -374,9 +413,13 @@ local function SpawnFloorCracks()
     end
 
     for _, pos in ipairs(chosenSpawns) do
-        local crack = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.FLOOR_CRACK, 0, room:GetGridPosition(pos + 211), Vector.Zero, nil)
+        local crack = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.FLOOR_CRACK, 0, room:GetGridPosition(pos + 211), Vector.Zero, nil)
         crack:ClearEntityFlags(EntityFlag.FLAG_APPEAR)
-        crack:GetSprite():Play("Open", true)
+        if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+            crack:GetSprite():Play("OpenGlitched", true)
+        else
+            crack:GetSprite():Play("Open", true)
+        end
         crack.DepthOffset = -50
 
         crack:GetData().IsLast = (FloorCracksNum == #MinigameConstants.FLOOR_CRACK_PATTERN)
@@ -388,21 +431,26 @@ end
 
 
 local function ManageFloorCracks()
-    local cracks = Isaac.FindByType(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.FLOOR_CRACK, 0)
+    local cracks = Isaac.FindByType(EntityType.ENTITY_EFFECT, MinigameEntityVariants.FLOOR_CRACK, 0)
     if #cracks == 0 then return end
 
     local hasAlreadySpawnedCracks = false
 
     for _, crack in ipairs(cracks) do
-        if crack:GetSprite():IsPlaying("Open") and crack:GetSprite():GetFrame() == 10 and
-         not SatanHead:GetSprite():IsPlaying("FloorCrackScream") then
+        if crack:GetSprite():IsEventTriggered("SatanScream") and not SatanHead:GetSprite():IsPlaying("FloorCrackScream") then
             SatanHead:GetSprite():Play("FloorCrackScream", true)
         end
 
-        if crack:GetSprite():IsFinished("Open") and not crack.Child then
+        if (crack:GetSprite():IsFinished("Open") or crack:GetSprite():IsFinished("OpenGlitched")) and not crack.Child then
             local fire = Isaac.Spawn(MinigameEntityTypes.CUSTOM_ENTITY, MinigameEntityVariants.FIRE_GEYSER, 0, crack.Position, Vector.Zero, nil)
             fire:AddEntityFlags(EntityFlag.FLAG_NO_FLASH_ON_DAMAGE | EntityFlag.FLAG_NO_KNOCKBACK | EntityFlag.FLAG_NO_PHYSICS_KNOCKBACK)
             fire:ClearEntityFlags(EntityFlag.FLAG_APPEAR)
+
+            if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+                fire:GetSprite():ReplaceSpritesheet(0, "gfx/effects/holy smokes/hs_glitch_fire_geyser.png")
+                fire:GetSprite():LoadGraphics()
+            end
+
             fire:GetSprite():Play("Idle", true)
 
             crack.Child = fire
@@ -431,7 +479,7 @@ end
 
 local function ManageFireGeysers()
     local fires = Isaac.FindByType(MinigameEntityTypes.CUSTOM_ENTITY, MinigameEntityVariants.FIRE_GEYSER, 0)
-    if #fires == 0 then 
+    if #fires == 0 then
         SFXManager:Stop(MinigameSounds.FIRE_LOOP)
         return
     end
@@ -447,8 +495,8 @@ local function ManageSatanFloorCrackingAttack()
         SatanHead:GetSprite():Play("Idle", true)
     end
 
-    if SatanHead:GetSprite():IsPlaying("FloorCrackScream") and SatanHead:GetSprite():GetFrame() == 66 then
-        for _, crack in ipairs(Isaac.FindByType(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.FLOOR_CRACK, 0)) do
+    if SatanHead:GetSprite():IsEventTriggered("FinishFloorCracks") then
+        for _, crack in ipairs(Isaac.FindByType(EntityType.ENTITY_EFFECT, MinigameEntityVariants.FLOOR_CRACK, 0)) do
             crack:GetSprite():Play("Close", true)
         end
 
@@ -484,8 +532,16 @@ local function ShootNoseLasers()
     rightLaser:SetActiveRotation(10, -30, -0.3, true)
     rightLaser.Visible = false
 
-    local fakeLaser = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.DOUBLE_LASER, 0, SatanHead.Position, Vector.Zero, nil)
+    local fakeLaser = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.DOUBLE_LASER, 0, SatanHead.Position, Vector.Zero, nil)
     fakeLaser.DepthOffset = 100
+
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+        fakeLaser:GetSprite():ReplaceSpritesheet(0, "gfx/effects/holy smokes/hs_glitch_laser.png")
+        fakeLaser:GetSprite():ReplaceSpritesheet(1, "gfx/effects/holy smokes/hs_glitch_fire_geyser.png")
+        fakeLaser:GetSprite():ReplaceSpritesheet(2, "gfx/effects/holy smokes/hs_glitch_fire_geyser.png")
+        fakeLaser:GetSprite():LoadGraphics()
+    end
+
     fakeLaser:GetSprite():Play("CloseIn", true)
 end
 
@@ -510,7 +566,7 @@ local function RemoveFireAndDoubleLasers()
         fire:Remove()
     end
 
-    Isaac.FindByType(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.DOUBLE_LASER, 0)[1]:Remove()
+    Isaac.FindByType(EntityType.ENTITY_EFFECT, MinigameEntityVariants.DOUBLE_LASER, 0)[1]:Remove()
 end
 
 
@@ -518,8 +574,13 @@ local function ShootGigaLaser()
     local gigaLaser = EntityLaser.ShootAngle(11, SatanHead.Position, 90, 30, Vector.Zero, SatanHead)
     gigaLaser.Visible = false
 
-    local fakeLaser = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.DOUBLE_LASER, 0, SatanHead.Position + Vector(0, 20), Vector.Zero, nil)
-    fakeLaser:GetSprite():Load("gfx/hs_giga_laser.anm2", true)
+    local fakeLaser = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.DOUBLE_LASER, 0, SatanHead.Position + Vector(0, 20), Vector.Zero, nil)
+    fakeLaser:GetSprite():Load("gfx/hs_giga_laser.anm2", false)
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+        fakeLaser:GetSprite():ReplaceSpritesheet(0, "gfx/effects/holy smokes/hs_glitch_giga_laser.png")
+        fakeLaser:GetSprite():ReplaceSpritesheet(1, "gfx/effects/holy smokes/hs_glitch_giga_laser.png")
+    end
+    fakeLaser:GetSprite():LoadGraphics()
     fakeLaser:GetSprite():Play("Idle", true)
     fakeLaser.DepthOffset = 200
     fakeLaser:GetData().IsGigaLaser = true
@@ -529,17 +590,17 @@ end
 
 
 local function ManageSatanNoseLaserAttack()
-    if SatanHead:GetSprite():IsPlaying("FireNoseLaser") and SatanHead:GetSprite():GetFrame() == 10 then
+    if SatanHead:GetSprite():IsEventTriggered("ShootNoseLaser") then
         ShootNoseLasers()
     elseif SatanHead:GetSprite():IsFinished("FireNoseLaser") or (SatanHead:GetSprite():IsFinished("ShootDoubleLaserProjectiles") and DoubleLaserProjectilesNum < MinigameConstants.AMOUNT_OF_PROJECTILE_WAVES_LASER) then
         SatanHead:GetSprite():Play("ShootDoubleLaserProjectiles", true)
-    elseif SatanHead:GetSprite():IsPlaying("ShootDoubleLaserProjectiles") and SatanHead:GetSprite():GetFrame() == 12 then
+    elseif SatanHead:GetSprite():IsEventTriggered("ShootNoseProjectiles") then
         ShootDoubleLaserProjectiles()
     elseif SatanHead:GetSprite():IsFinished("ShootDoubleLaserProjectiles") then
         SatanHead:GetSprite():Play("ShootGigaLaser", true)
-    elseif SatanHead:GetSprite():IsPlaying("ShootGigaLaser") and SatanHead:GetSprite():GetFrame() == 30 then
+    elseif SatanHead:GetSprite():IsEventTriggered("RemoveNoseLaser") then
         RemoveFireAndDoubleLasers()
-    elseif SatanHead:GetSprite():IsPlaying("ShootGigaLaser") and SatanHead:GetSprite():GetFrame() == 54 then
+    elseif SatanHead:GetSprite():IsEventTriggered("ShootGigaLaser") then
         ShootGigaLaser()
     elseif SatanHead:GetSprite():IsFinished("ShootGigaLaser") then
         EndAttack()
@@ -551,7 +612,11 @@ local function SpawnFireAtGrid(pos)
     local fire = Isaac.Spawn(MinigameEntityTypes.CUSTOM_ENTITY, MinigameEntityVariants.FIRE_GEYSER, 0, pos, Vector.Zero, nil)
     fire:AddEntityFlags(EntityFlag.FLAG_NO_FLASH_ON_DAMAGE | EntityFlag.FLAG_NO_KNOCKBACK | EntityFlag.FLAG_NO_PHYSICS_KNOCKBACK)
     fire:ClearEntityFlags(EntityFlag.FLAG_APPEAR)
-    fire:GetSprite():ReplaceSpritesheet(0, "gfx/effects/holy smokes/hs_flat_fire.png")
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+        fire:GetSprite():ReplaceSpritesheet(0, "gfx/effects/holy smokes/hs_glitch_flat_fire.png")
+    else
+        fire:GetSprite():ReplaceSpritesheet(0, "gfx/effects/holy smokes/hs_flat_fire.png")
+    end
     fire:GetSprite():LoadGraphics()
     fire:GetSprite():Play("Idle", true)
 end
@@ -571,7 +636,7 @@ end
 
 
 local function ManageDoubleLaser()
-    local doubleLaser = Isaac.FindByType(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.DOUBLE_LASER, 0)[1]
+    local doubleLaser = Isaac.FindByType(EntityType.ENTITY_EFFECT, MinigameEntityVariants.DOUBLE_LASER, 0)[1]
 
     if not doubleLaser then
         SFXManager:Stop(MinigameSounds.FIRE_LOOP)
@@ -609,7 +674,7 @@ local function InitNoseLaserAttack()
 end
 
 
-local function StartAttack()
+local function StartAttack(isFromInterrupt)
     local chosenAttack
 
     if LastAttack then
@@ -632,6 +697,12 @@ local function StartAttack()
         InitFloorCrackingAttack()
     elseif CurrentSatanAttack == SatanAttack.NOSE_LASER then
         InitNoseLaserAttack()
+    end
+
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched and not isFromInterrupt and
+    rng:RandomInt(100) <= MinigameConstants.GLITCH_CHANCE_FOR_INTERRUPT then
+        MinigameTimers.GlitchInterruptTimer = MinigameConstants.GLITCH_MINIMUM_INTERRUPT_FRAMES +
+        rng:RandomInt(MinigameConstants.GLITCH_INTERRUP_FRAMES_RANDOM_OFFSET)
     end
 end
 
@@ -674,19 +745,10 @@ local function ManageHolyLaser()
 end
 
 
-local function RemoveEndExplosions()
-    for _, explosion in ipairs(Isaac.FindByType(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.END_EXPLOSION, 0)) do
-        if explosion:GetSprite():IsFinished("Idle") then
-            explosion:Remove()
-        end
-    end
-end
-
-
 local function SpawnEndExplosions()
     if game:GetFrameCount() % MinigameConstants.FRAMES_BETWEEN_END_EXPLOSIONS ~= 0 then return end
 
-    if #Isaac.FindByType(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.END_EXPLOSION, 0) < MinigameConstants.MAX_END_EXPLOSIONS then
+    if #Isaac.FindByType(EntityType.ENTITY_EFFECT, MinigameEntityVariants.END_EXPLOSION, 0) < MinigameConstants.MAX_END_EXPLOSIONS then
         game:ShakeScreen(4)
         local spawningPos = SatanHead.Position - MinigameConstants.END_EXPLOSION_SPAWNING_AREA - MinigameConstants.END_EXPLOSION_SPAWNING_OFFSET
         spawningPos = spawningPos + Vector(0, MinigameTimers.EndExplosionsTimer * 3)
@@ -694,9 +756,10 @@ local function SpawnEndExplosions()
         spawningPos = Vector(spawningPos.X + rng:RandomInt(MinigameConstants.END_EXPLOSION_SPAWNING_AREA.X * 2),
         spawningPos.Y + rng:RandomInt(MinigameConstants.END_EXPLOSION_SPAWNING_AREA.Y * 2))
 
-        local explosion = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.END_EXPLOSION, 0, spawningPos, Vector.Zero, nil)
+        local explosion = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.END_EXPLOSION, 0, spawningPos, Vector.Zero, nil)
         explosion:GetSprite():Play("Idle", true)
         explosion.DepthOffset = -1000
+        explosion.Visible = not ArcadeCabinetVariables.IsCurrentMinigameGlitched
         SFXManager:Play(MinigameSounds.STALAGMITE_DROP)
     end
 end
@@ -735,7 +798,7 @@ function holy_smokes:OnFrameUpdate()
         end
 
         if MinigameTimers.NextAttackTimer == 0 then
-            StartAttack()
+            StartAttack(false)
         end
     elseif CurrentMinigameState == MinigameState.BOSS_ATTACK then
         if CurrentSatanAttack == SatanAttack.FALLING_STALAGMITES then
@@ -747,18 +810,23 @@ function holy_smokes:OnFrameUpdate()
         elseif CurrentSatanAttack == SatanAttack.NOSE_LASER then
             UpdateNoseLaserAttack()
         end
+
+        if MinigameTimers.GlitchInterruptTimer > 0 then MinigameTimers.GlitchInterruptTimer = MinigameTimers.GlitchInterruptTimer - 1 end
+
+        if MinigameTimers.GlitchInterruptTimer == 1 then
+            --Do it at 1 so it only happens once (its at 0 by default)
+            EndAllAttacks()
+            StartAttack(true)
+        end
     elseif CurrentMinigameState == MinigameState.SATAN_DYING then
         MinigameTimers.EndExplosionsTimer = MinigameTimers.EndExplosionsTimer + 1
         SpawnEndExplosions()
-        RemoveEndExplosions()
 
         if Backdrop:GetSprite():IsFinished("Die") then
             MinigameTimers.EndWaitTimer = MinigameConstants.MAX_END_WAIT_FRAMES
             CurrentMinigameState = MinigameState.WAIT_FOR_END
         end
     elseif CurrentMinigameState == MinigameState.WAIT_FOR_END then
-        RemoveEndExplosions()
-
         if MinigameTimers.EndWaitTimer == 0 then
            CurrentMinigameState = MinigameState.WINNING
             SFXManager:Play(MinigameSounds.WIN)
@@ -869,24 +937,6 @@ end
 
 
 --ENTITY CALLBACKS
-local function EndAllAttacks()
-    for _, entity in ipairs(Isaac.GetRoomEntities()) do
-        if not (entity:ToPlayer() or
-        (entity.Type == EntityType.ENTITY_GENERIC_PROP and entity.Variant == ArcadeCabinetVariables.Backdrop1x2Variant) or
-        (entity.Type == EntityType.ENTITY_GENERIC_PROP and entity.Variant == MinigameEntityVariants.PLATFORM) or
-        entity:ToTear() or
-        entity:ToEffect() or
-        (entity.Type == MinigameEntityTypes.CUSTOM_ENTITY and entity.Variant == MinigameEntityVariants.SATAN_HEAD)) then
-            entity:Remove()
-        end
-    end
-
-    for _, sound in ipairs(MinigameSounds) do
-        SFXManager:Stop(sound)
-    end
-end
-
-
 function holy_smokes:OnPlayerDamage(player)
     player = player:ToPlayer()
 
@@ -978,6 +1028,13 @@ function holy_smokes:OnTinyFlyUpdate(effect)
 end
 
 
+function holy_smokes:OnFinalExplosionUpdate(explosion)
+    if explosion:GetSprite():IsFinished("Idle") then
+        explosion:Remove()
+    end
+end
+
+
 function holy_smokes:OnTearFire(tear)
     SFXManager:Stop(SoundEffect.SOUND_TEARS_FIRE)
 
@@ -1001,7 +1058,13 @@ end
 
 
 function holy_smokes:OnProjectileInit(projectile)
-    projectile:GetSprite():Load("gfx/hs_satan_projectile.anm2", true)
+    projectile:GetSprite():Load("gfx/hs_satan_projectile.anm2", false)
+
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+        projectile:GetSprite():ReplaceSpritesheet(0, "gfx/effects/holy smokes/hs_glitch_satan_projectile.png")
+    end
+
+    projectile:GetSprite():LoadGraphics()
     projectile:GetSprite():Play("Idle", true)
 end
 
@@ -1050,6 +1113,7 @@ function holy_smokes:AddCallbacks(mod)
     mod:AddCallback(ModCallbacks.MC_POST_EFFECT_INIT, holy_smokes.OnWaterSplashInit, EffectVariant.WATER_SPLASH)
     mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, holy_smokes.OnProjectilePoofUpdate, EffectVariant.BULLET_POOF)
     mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, holy_smokes.OnTinyFlyUpdate, EffectVariant.TINY_FLY)
+    mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, holy_smokes.OnFinalExplosionUpdate, MinigameEntityVariants.END_EXPLOSION)
     mod:AddCallback(ModCallbacks.MC_POST_FIRE_TEAR, holy_smokes.OnTearFire)
     mod:AddCallback(ModCallbacks.MC_PRE_TEAR_COLLISION, holy_smokes.OnTearCollision)
     mod:AddCallback(ModCallbacks.MC_POST_PROJECTILE_INIT, holy_smokes.OnProjectileInit)
@@ -1092,23 +1156,64 @@ function holy_smokes:Init(mod, variables)
 
     rng:SetSeed(game:GetSeeds():GetStartSeed(), 35)
 
+    --UI
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+        TransitionScreen:ReplaceSpritesheet(0, "gfx/effects/holy smokes/hs_glitch_vs_screen.png")
+        PlayerHealthUI:ReplaceSpritesheet(0, "gfx/effects/holy smokes/hs_glitch_hp_bar.png")
+        PlayerPowerUI:ReplaceSpritesheet(0, "gfx/effects/holy smokes/hs_glitch_power_bar.png")
+
+        BossHealthUI:ReplaceSpritesheet(0, "gfx/effects/holy smokes/hs_glitch_boss_hp_bar.png")
+        BossHealthUI:ReplaceSpritesheet(1, "gfx/effects/holy smokes/hs_glitch_boss_hp_bar.png")
+        BossHealthUI:ReplaceSpritesheet(2, "gfx/effects/holy smokes/hs_glitch_boss_hp_bar.png")
+    else
+        TransitionScreen:ReplaceSpritesheet(0, "gfx/effects/holy smokes/hs_vs_screen.png")
+        PlayerHealthUI:ReplaceSpritesheet(0, "gfx/effects/holy smokes/hs_hp_bar.png")
+        PlayerPowerUI:ReplaceSpritesheet(0, "gfx/effects/holy smokes/hs_power_bar.png")
+
+        BossHealthUI:ReplaceSpritesheet(0, "gfx/effects/holy smokes/hs_boss_hp_bar.png")
+        BossHealthUI:ReplaceSpritesheet(1, "gfx/effects/holy smokes/hs_boss_hp_bar.png")
+        BossHealthUI:ReplaceSpritesheet(2, "gfx/effects/holy smokes/hs_boss_hp_bar.png")
+    end
+
+    PlayerHealthUI:LoadGraphics()
+    PlayerPowerUI:LoadGraphics()
+    BossHealthUI:LoadGraphics()
+    TransitionScreen:LoadGraphics()
+
     --Set vs screen stuff
     MinigameTimers.IntroTimer = MinigameConstants.MAX_INTRO_FRAMES
     TransitionScreen:Play("Idle", true)
     SFXManager:Play(MinigameSounds.SATAN_STALAGMITE_SCREAM)
 
-    -- Backdrop
+    --Backdrop
     Backdrop = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, ArcadeCabinetVariables.Backdrop1x2Variant, 0, game:GetRoom():GetCenterPos(), Vector.Zero, nil)
     Backdrop:GetSprite():Load("gfx/backdrop/backdrop_hs.anm2", true)
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+        local bgSpr = Backdrop:GetSprite()
+        bgSpr:ReplaceSpritesheet(0, "gfx/backdrop/glitched_hs_backdrop.png")
+        bgSpr:ReplaceSpritesheet(1, "gfx/grid/hs_glitch_satan_body.png")
+        bgSpr:ReplaceSpritesheet(2, "gfx/grid/hs_glitch_satan_die.png")
+        bgSpr:ReplaceSpritesheet(3, "gfx/grid/hs_glitch_gradient.png")
+    end
+    Backdrop:GetSprite():LoadGraphics()
     Backdrop.DepthOffset = -9000
 
-    local platform = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.PLATFORM, 0, game:GetRoom():GetCenterPos() + MinigameConstants.PLATFORM_SPAWNING_OFFSET, Vector.Zero, nil)
+    local platform = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.PLATFORM, 0, game:GetRoom():GetCenterPos() + MinigameConstants.PLATFORM_SPAWNING_OFFSET, Vector.Zero, nil)
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+        platform:GetSprite():ReplaceSpritesheet(0, "gfx/grid/hs_glitch_platform.png")
+        platform:GetSprite():LoadGraphics()
+    end
     platform.DepthOffset = -500
 
     -- Boss
     SatanHead = Isaac.Spawn(MinigameEntityTypes.CUSTOM_ENTITY, MinigameEntityVariants.SATAN_HEAD, 0, game:GetRoom():GetCenterPos() + MinigameConstants.SATAN_HEAD_SPAWNING_OFFSET, Vector.Zero, nil)
     SatanHead:AddEntityFlags(EntityFlag.FLAG_NO_FLASH_ON_DAMAGE | EntityFlag.FLAG_NO_KNOCKBACK | EntityFlag.FLAG_NO_PHYSICS_KNOCKBACK)
     SatanHead:ClearEntityFlags(EntityFlag.FLAG_APPEAR)
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+        SatanHead:GetSprite():ReplaceSpritesheet(0, "gfx/enemies/hs_glitch_satan_head.png")
+        SatanHead:GetSprite():ReplaceSpritesheet(1, "gfx/enemies/hs_glitch_sata_eye_overlay.png")
+        SatanHead:GetSprite():LoadGraphics()
+    end
 
     -- UI
     PlayerHealthUI:Play("Idle", true)

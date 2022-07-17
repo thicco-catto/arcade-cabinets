@@ -1,5 +1,5 @@
 <AnimatedActor>
-	<Info CreatedBy="Unknown" CreatedOn="11/04/2022 19:11:30" Version="27" Fps="30"/>
+	<Info CreatedBy="Unknown" CreatedOn="17/07/2022 17:41:14" Version="30" Fps="30"/>
 	<Content>
 		<Spritesheets>
 			<Spritesheet Path="effects\holy smokes\hs_crack.png" Id="0"/>
@@ -9,14 +9,13 @@
 		</Layers>
 		<Nulls/>
 		<Events>
-			<Event Name="Prize" Id="0"/>
-			<Event Name="Explosion" Id="1"/>
+			<Event Name="SatanScream" Id="0"/>
 		</Events>
 	</Content>
 	<Animations DefaultAnimation="Open">
-		<Animation Name="Open" FrameNum="15" Loop="false">
+		<Animation Name="Open" FrameNum="24" Loop="false">
 			<RootAnimation>
-				<Frame XPosition="0" YPosition="0" XScale="100" YScale="100" Delay="15" Visible="true" RedTint="255" GreenTint="255" BlueTint="255" AlphaTint="255" RedOffset="0" GreenOffset="0" BlueOffset="0" Rotation="0" Interpolated="false"/>
+				<Frame XPosition="0" YPosition="0" XScale="100" YScale="100" Delay="1" Visible="true" RedTint="255" GreenTint="255" BlueTint="255" AlphaTint="255" RedOffset="0" GreenOffset="0" BlueOffset="0" Rotation="0" Interpolated="false"/>
 			</RootAnimation>
 			<LayerAnimations>
 				<LayerAnimation LayerId="0" Visible="true">
@@ -24,11 +23,13 @@
 					<Frame XPosition="0" YPosition="0" XPivot="13" YPivot="13" XCrop="26" YCrop="0" Width="26" Height="26" XScale="100" YScale="100" Delay="3" Visible="true" RedTint="255" GreenTint="255" BlueTint="255" AlphaTint="255" RedOffset="0" GreenOffset="0" BlueOffset="0" Rotation="0" Interpolated="false"/>
 					<Frame XPosition="0" YPosition="0" XPivot="13" YPivot="13" XCrop="52" YCrop="0" Width="26" Height="26" XScale="100" YScale="100" Delay="3" Visible="true" RedTint="255" GreenTint="255" BlueTint="255" AlphaTint="255" RedOffset="0" GreenOffset="0" BlueOffset="0" Rotation="0" Interpolated="false"/>
 					<Frame XPosition="0" YPosition="0" XPivot="13" YPivot="13" XCrop="78" YCrop="0" Width="26" Height="26" XScale="100" YScale="100" Delay="3" Visible="true" RedTint="255" GreenTint="255" BlueTint="255" AlphaTint="255" RedOffset="0" GreenOffset="0" BlueOffset="0" Rotation="0" Interpolated="false"/>
-					<Frame XPosition="0" YPosition="0" XPivot="13" YPivot="13" XCrop="104" YCrop="0" Width="26" Height="26" XScale="100" YScale="100" Delay="3" Visible="true" RedTint="255" GreenTint="255" BlueTint="255" AlphaTint="255" RedOffset="0" GreenOffset="0" BlueOffset="0" Rotation="0" Interpolated="false"/>
+					<Frame XPosition="0" YPosition="0" XPivot="13" YPivot="13" XCrop="104" YCrop="0" Width="26" Height="26" XScale="100" YScale="100" Delay="12" Visible="true" RedTint="255" GreenTint="255" BlueTint="255" AlphaTint="255" RedOffset="0" GreenOffset="0" BlueOffset="0" Rotation="0" Interpolated="false"/>
 				</LayerAnimation>
 			</LayerAnimations>
 			<NullAnimations/>
-			<Triggers/>
+			<Triggers>
+				<Trigger EventId="0" AtFrame="17"/>
+			</Triggers>
 		</Animation>
 		<Animation Name="Close" FrameNum="15" Loop="false">
 			<RootAnimation>
@@ -45,6 +46,24 @@
 			</LayerAnimations>
 			<NullAnimations/>
 			<Triggers/>
+		</Animation>
+		<Animation Name="OpenGlitched" FrameNum="15" Loop="false">
+			<RootAnimation>
+				<Frame XPosition="0" YPosition="0" XScale="100" YScale="100" Delay="1" Visible="true" RedTint="255" GreenTint="255" BlueTint="255" AlphaTint="255" RedOffset="0" GreenOffset="0" BlueOffset="0" Rotation="0" Interpolated="false"/>
+			</RootAnimation>
+			<LayerAnimations>
+				<LayerAnimation LayerId="0" Visible="true">
+					<Frame XPosition="0" YPosition="0" XPivot="13" YPivot="13" XCrop="0" YCrop="0" Width="26" Height="26" XScale="100" YScale="100" Delay="3" Visible="true" RedTint="255" GreenTint="255" BlueTint="255" AlphaTint="255" RedOffset="0" GreenOffset="0" BlueOffset="0" Rotation="0" Interpolated="false"/>
+					<Frame XPosition="0" YPosition="0" XPivot="13" YPivot="13" XCrop="26" YCrop="0" Width="26" Height="26" XScale="100" YScale="100" Delay="3" Visible="true" RedTint="255" GreenTint="255" BlueTint="255" AlphaTint="255" RedOffset="0" GreenOffset="0" BlueOffset="0" Rotation="0" Interpolated="false"/>
+					<Frame XPosition="0" YPosition="0" XPivot="13" YPivot="13" XCrop="52" YCrop="0" Width="26" Height="26" XScale="100" YScale="100" Delay="3" Visible="true" RedTint="255" GreenTint="255" BlueTint="255" AlphaTint="255" RedOffset="0" GreenOffset="0" BlueOffset="0" Rotation="0" Interpolated="false"/>
+					<Frame XPosition="0" YPosition="0" XPivot="13" YPivot="13" XCrop="78" YCrop="0" Width="26" Height="26" XScale="100" YScale="100" Delay="3" Visible="true" RedTint="255" GreenTint="255" BlueTint="255" AlphaTint="255" RedOffset="0" GreenOffset="0" BlueOffset="0" Rotation="0" Interpolated="false"/>
+					<Frame XPosition="0" YPosition="0" XPivot="13" YPivot="13" XCrop="104" YCrop="0" Width="26" Height="26" XScale="100" YScale="100" Delay="3" Visible="true" RedTint="255" GreenTint="255" BlueTint="255" AlphaTint="255" RedOffset="0" GreenOffset="0" BlueOffset="0" Rotation="0" Interpolated="false"/>
+				</LayerAnimation>
+			</LayerAnimations>
+			<NullAnimations/>
+			<Triggers>
+				<Trigger EventId="0" AtFrame="8"/>
+			</Triggers>
 		</Animation>
 	</Animations>
 </AnimatedActor>
