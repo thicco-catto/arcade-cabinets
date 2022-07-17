@@ -850,15 +850,22 @@ function night_light:Init(mod, variables)
 
     --UI
     if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+        InitialCutsceneScreen:ReplaceSpritesheet(0, "gfx/effects/night light/nl_glitch_initial_cutscene.png")
+        InitialCutsceneScreen:ReplaceSpritesheet(1, "gfx/effects/night light/nl_glitch_initial_cutscene.png")
         HeartsUI:ReplaceSpritesheet(0, "gfx/effects/night light/nl_glitch_hearts_ui.png")
         ClockUI:ReplaceSpritesheet(0, "gfx/effects/night light/nl_glitch_clock_ui.png")
         FuckyWarning:Load("gfx/nl_glitch_fucky_warning.anm2", true)
+        FinalCutsceneScreen:Load("gfx/nl_glitch_final_cutscene.anm2", true)
     else
+        InitialCutsceneScreen:ReplaceSpritesheet(0, "gfx/effects/night light/nl_initial_cutscene.png")
+        InitialCutsceneScreen:ReplaceSpritesheet(1, "gfx/effects/night light/nl_initial_cutscene.png")
         HeartsUI:ReplaceSpritesheet(0, "gfx/effects/night light/nl_hearts_ui.png")
         ClockUI:ReplaceSpritesheet(0, "gfx/effects/night light/nl_clock_ui.png")
         FuckyWarning:Load("gfx/nl_fucky_warning.anm2", true)
+        FinalCutsceneScreen:Load("gfx/nl_final_cutsence.anm2", true)
     end
 
+    InitialCutsceneScreen:LoadGraphics()
     HeartsUI:LoadGraphics()
     ClockUI:LoadGraphics()
     FuckyWarning:LoadGraphics()
@@ -882,13 +889,14 @@ function night_light:Init(mod, variables)
     backdrop.DepthOffset = -500
 
     --Fake player
-    FakePlayer = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.FAKE_PLAYER, 0, room:GetCenterPos(), Vector.Zero, nil)
-    LightBeam = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.FAKE_PLAYER, 0, room:GetCenterPos(), Vector.Zero, nil)
+    FakePlayer = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.FAKE_PLAYER, 0, room:GetCenterPos(), Vector.Zero, nil)
+    LightBeam = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.FAKE_PLAYER, 0, room:GetCenterPos(), Vector.Zero, nil)
     LightBeam:GetSprite():Load("gfx/nl_light_beam.anm2", false)
     if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
         LightBeam:GetSprite():ReplaceSpritesheet(0, "gfx/characters/nl_glitch_lightbeam.png")
     end
     LightBeam:GetSprite():LoadGraphics()
+    LightBeam:GetSprite():Play("IdleDown", true)
     LightBeam.DepthOffset = -200
 
 
