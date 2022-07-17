@@ -76,7 +76,7 @@ local MinigameConstants = {
         "bsw_glitch_snapper_body.png",
         "bsw_glitch_lunatic_body.png"
     },
-    GLITCHED_CHANCE_OF_SHY_RUNE = 10,
+    GLITCHED_CHANCE_OF_SHY_RUNE = 50,
     GLITCHED_DISTANCE_FOR_SHY_RUNE = 120,
 
     GLITCH_NUM_GLITCH_TILES = 20,
@@ -538,6 +538,7 @@ function black_stone_wielder:OnNPCInit(entity)
         if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
             entity:GetSprite():ReplaceSpritesheet(0, "gfx/enemies/bsw_glitch_whipper_body.png")
             entity:GetSprite():ReplaceSpritesheet(1, "gfx/enemies/bsw_glitch_whipper_head.png")
+            entity:GetSprite():ReplaceSpritesheet(2, "gfx/enemies/bsw_glitch_whipper_body.png")
         end
 
         entity:GetSprite():LoadGraphics()
@@ -547,6 +548,7 @@ function black_stone_wielder:OnNPCInit(entity)
         if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
             entity:GetSprite():ReplaceSpritesheet(0, "gfx/enemies/bsw_glitch_snapper_body.png")
             entity:GetSprite():ReplaceSpritesheet(1, "gfx/enemies/bsw_glitch_snapper_head.png")
+            entity:GetSprite():ReplaceSpritesheet(2, "gfx/enemies/bsw_glitch_snapper_body.png")
         end
 
         entity:GetSprite():LoadGraphics()
@@ -556,6 +558,7 @@ function black_stone_wielder:OnNPCInit(entity)
         if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
             entity:GetSprite():ReplaceSpritesheet(0, "gfx/enemies/bsw_glitch_lunatic_body.png")
             entity:GetSprite():ReplaceSpritesheet(1, "gfx/enemies/bsw_glitch_lunatic_head.png")
+            entity:GetSprite():ReplaceSpritesheet(2, "gfx/enemies/bsw_glitch_lunatic_body.png")
         end
 
         entity:GetSprite():LoadGraphics()
