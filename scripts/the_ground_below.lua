@@ -3,21 +3,7 @@ local game = Game()
 local rng = RNG()
 local SFXManager = SFXManager()
 local MusicManager = MusicManager()
-----------------------------------------------
--- FANCY REQUIRE (Thanks manaphoenix <3)
-----------------------------------------------
-local function loadFile(loc, ...)
-    local _, err = pcall(require, "")
-    local modName = err:match("/mods/(.*)/%.lua")
-    local path = "mods/" .. modName .. "/"
-
-    return assert(loadfile(path .. loc .. ".lua"))(...)
-end
-local ArcadeCabinetVariables = loadFile("scripts/variables")
-
-the_ground_below.callbacks = {}
-the_ground_below.result = nil
-the_ground_below.startingItems = {}
+local ArcadeCabinetVariables
 
 -- Sounds
 local MinigameSounds = {
@@ -35,9 +21,6 @@ local MinigameSounds = {
 local MinigameMusic = Isaac.GetMusicIdByName("bsw black beat wielder")
 
 -- Entities
-local MinigameEntityTypes = {
-}
-
 local MinigameEntityVariants = {
     BACKGROUND = Isaac.GetEntityVariantByName("background TGB"),
     PLAYER = Isaac.GetEntityVariantByName("player TGB"),
@@ -96,9 +79,9 @@ local MinigameConstants = {
     --Random flies attack
     FLY_VELOCITY = 4.5,
     FLY_Y_SPAWN = 500,
-    FLY_HITBOX_RADIUS = 30,
+    FLY_HITBOX_RADIUS = 20,
     NUM_FLY_LINES = 5,
-    MAX_FLY_LINE_TIMER_FRAMES = 50,
+    MAX_FLY_LINE_TIMER_FRAMES = 70,
 
     --Duke of flies attack
     DUKE_SPAWNING_POS = Vector(550, 540),
@@ -168,49 +151,6 @@ local FlyLineNum = 0
 local spawnedBgNum = 0
 local currentBgType = "rocks"
 local nextBgChange = -10
-
--- INIT MINIGAME
-function the_ground_below:Init()
-    -- Reset variables
-    MinigameTimers.FallingTimer = MinigameConstants.MAX_FALLING_TIMER_FRAMES
-    MinigameTimers.IntroScreenTimer = MinigameConstants.MAX_INTRO_TIMER_FRAMES
-    MinigameTimers.IFramesTimer = 0
-    PlayerHP = 3
-    CurrentMinigameState = MinigameState.INTRO
-    CurrentWave = 1
-    CurrentChapter = 1
-    spawnedBgNum = 0
-    nextBgChange = -10
-    currentBgType = "rocks"
-    the_ground_below.result = nil
-
-    rng:SetSeed(game:GetSeeds():GetStartSeed(), 35)
-
-    SFXManager:Play(MinigameSounds.INTRO)
-
-    -- Prepare players
-    local playerNum = game:GetNumPlayers()
-    for i = 0, playerNum - 1, 1 do
-        local player = game:GetPlayer(i)
-
-        for _, item in ipairs(the_ground_below.startingItems) do
-            player:AddCollectible(item, 0, false)
-        end
-
-        --Set the spritesheets
-        local playerSprite = player:GetSprite()
-        playerSprite:Load("gfx/hs_isaac52.anm2", true)
-        playerSprite:ReplaceSpritesheet(1, "gfx/characters/isaac_hs.png")
-        playerSprite:ReplaceSpritesheet(4, "gfx/characters/isaac_hs.png")
-        playerSprite:ReplaceSpritesheet(12, "gfx/characters/isaac_hs.png")
-        playerSprite:LoadGraphics()
-
-        player.Position = Vector(player.Position.X, 230)
-
-        player.Visible = false
-        player:GetData().FakePlayer = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.PLAYER, 0, player.Position + Vector(0, 1), Vector.Zero, nil)
-    end
-end
 
 
 local function FinishAttack()
@@ -379,7 +319,7 @@ local function SpawnNextBg(currentBg)
 end
 
 
-local function UpdateBackground(effect)
+function the_ground_below:OnUpdateBackground(effect)
     if CurrentMinigameState == MinigameState.SPLATTING or CurrentMinigameState == MinigameState.WINNING then return end
 
     effect.Velocity = Vector(0, -MinigameConstants.BG_SCROLLING_SPEED)
@@ -391,7 +331,7 @@ local function UpdateBackground(effect)
 end
 
 
-local function UpdateHorf(effect)
+function the_ground_below:OnUpdateHorf(effect)
     if (game:GetFrameCount() - effect:GetData().SpawningFrame) % MinigameConstants.HORF_SHOT_COOLDOWN == 0 and
     math.abs(effect.Position.Y - Isaac.GetPlayer(0).Position.Y) > MinigameConstants.HORF_SAFE_DISTANCE and
     IsPositionOnScreen(effect.Position) then
@@ -432,7 +372,7 @@ local function UpdateHorf(effect)
 end
 
 
-local function UpdateKeeper(effect)
+function the_ground_below:OnUpdateKeeper(effect)
     if (game:GetFrameCount() - effect:GetData().SpawningFrame) % MinigameConstants.KEEPER_SHOT_COOLDOWN == 0 and
      effect.Velocity:Length() < 0.1 then
         effect:GetData().KeeperShotsFired = effect:GetData().KeeperShotsFired + 1
@@ -472,7 +412,7 @@ local function UpdateKeeper(effect)
 end
 
 
-local function UpdateFly(effect)
+function the_ground_below:OnUpdateFly(effect)
     if not SFXManager:IsPlaying(MinigameSounds.BUZZ) then
         SFXManager:Play(MinigameSounds.BUZZ)
     end
@@ -510,7 +450,7 @@ local function UpdateFly(effect)
 end
 
 
-local function UpdateDuke(effect)
+function the_ground_below:OnUpdateDuke(effect)
     if (game:GetFrameCount() - effect:GetData().SpawningFrame) % MinigameConstants.DUKE_SPAWN_FLY_COOLDOWN == 0 and effect.Velocity:Length() < 0.1 then
         if effect:GetData().NumFlyLinesSpawned == MinigameConstants.DUKE_NUM_FLY_ROUNDS then
             effect.Velocity = (MinigameConstants.DUKE_DESPAWN - effect.Position):Normalized() * MinigameConstants.DUKE_VELOCITY
@@ -557,7 +497,9 @@ local function UpdateDuke(effect)
 end
 
 
-local function UpdateCutscenePlayer(effect)
+function the_ground_below:OnUpdateCutscenePlayer(effect)
+    if not effect:GetData().IsCutscenePlayer then return end
+
     if effect.Position.Y > MinigameConstants.CUTSCENE_PLAYER_Y_SPLAT and not effect:GetData().SplatFrame then
         SFXManager:Play(MinigameSounds.SPLAT)
         effect.Velocity = Vector.Zero
@@ -575,35 +517,21 @@ local function UpdateCutscenePlayer(effect)
 end
 
 
-function the_ground_below:OnEffectUpdate(effect)
-    if effect.Variant == MinigameEntityVariants.BACKGROUND then
-        UpdateBackground(effect)
-    elseif effect.Variant == MinigameEntityVariants.HORF then
-        UpdateHorf(effect)
-    elseif effect.Variant == MinigameEntityVariants.KEEPER then
-        UpdateKeeper(effect)
-    elseif effect.Variant == MinigameEntityVariants.FLY then
-        UpdateFly(effect)
-    elseif effect.Variant == MinigameEntityVariants.DUKE then
-        UpdateDuke(effect)
-    elseif effect.Variant == MinigameEntityVariants.PLAYER and effect:GetData().IsCutscenePlayer then
-        UpdateCutscenePlayer(effect)
-    elseif effect.Variant == EffectVariant.BULLET_POOF then
-        --Remove this there because otherwise it doesnt stop the sound lmao
-        effect:Remove()
-        SFXManager:Stop(SoundEffect.SOUND_TEARIMPACTS)
-    elseif effect.Variant == EffectVariant.TINY_FLY then
-        effect:Remove()
-    end
+function the_ground_below:OnUpdateBulletPoof(poof)
+    poof:Remove()
+    SFXManager:Stop(SoundEffect.SOUND_TEARIMPACTS)
 end
-the_ground_below.callbacks[ModCallbacks.MC_POST_EFFECT_UPDATE] = the_ground_below.OnEffectUpdate
+
+
+function the_ground_below:OnTinyFlyUpdate(fly)
+    fly:Remove()
+end
 
 
 function the_ground_below:OnProjectileInit(projectile)
     projectile:GetSprite():Load("gfx/hs_satan_projectile.anm2", true)
     projectile:GetSprite():Play("Idle", true)
 end
-the_ground_below.callbacks[ModCallbacks.MC_POST_PROJECTILE_INIT] = the_ground_below.OnProjectileInit
 
 
 function the_ground_below:OnProjectileUpdate(projectile)
@@ -618,7 +546,6 @@ function the_ground_below:OnProjectileUpdate(projectile)
         projectile:Remove()
     end
 end
-the_ground_below.callbacks[ModCallbacks.MC_POST_PROJECTILE_UPDATE] = the_ground_below.OnProjectileUpdate
 
 
 local function UpdateIntro()
@@ -638,6 +565,11 @@ local function UpdateIntro()
         bg.Child = bg2
 
         spawnedBgNum = 2
+
+        for i = 0, game:GetNumPlayers() - 1, 1 do
+            local player = game:GetPlayer(i)
+            player.ControlsEnabled = true
+        end
     end
 end
 
@@ -686,7 +618,7 @@ local function UpdateFlyAttack()
 end
 
 
-function the_ground_below:OnUpdate()
+function the_ground_below:OnFrameUpdate()
     if MinigameTimers.IFramesTimer > 0 then MinigameTimers.IFramesTimer = MinigameTimers.IFramesTimer - 1 end
 
     if CurrentMinigameState == MinigameState.INTRO then
@@ -699,7 +631,6 @@ function the_ground_below:OnUpdate()
         end
     end
 end
-the_ground_below.callbacks[ModCallbacks.MC_POST_UPDATE] = the_ground_below.OnUpdate
 
 
 local function RenderUI()
@@ -727,9 +658,9 @@ local function RenderFadeOut()
 
     if TransitionScreen:IsFinished("Appear") then
         if CurrentMinigameState == MinigameState.WINNING then
-            the_ground_below.result = ArcadeCabinetVariables.MinigameResult.WIN
+            ArcadeCabinetVariables.CurrentMinigameResult = ArcadeCabinetVariables.MinigameResult.WIN
         else
-            the_ground_below.result = ArcadeCabinetVariables.MinigameResult.LOSE
+            ArcadeCabinetVariables.CurrentMinigameResult = ArcadeCabinetVariables.MinigameResult.LOSE
         end
     end
 
@@ -749,7 +680,6 @@ function the_ground_below:OnRender()
 
     RenderFadeOut()
 end
-the_ground_below.callbacks[ModCallbacks.MC_POST_RENDER] = the_ground_below.OnRender
 
 
 function the_ground_below:OnPlayerUpdate(player)
@@ -792,27 +722,20 @@ function the_ground_below:OnPlayerUpdate(player)
         player:GetData().FakePlayer:GetSprite():SetFrame(2)
     end
 end
-the_ground_below.callbacks[ModCallbacks.MC_POST_PLAYER_UPDATE] = the_ground_below.OnPlayerUpdate
 
 
 function the_ground_below:OnEffectInit(effect)
-    if effect.Variant == EffectVariant.BULLET_POOF then
-        SFXManager:Stop(SoundEffect.SOUND_TEARIMPACTS)
-        SFXManager:Stop(SoundEffect.SOUND_SPLATTER)
-        effect.Visible = false
-    end
+    SFXManager:Stop(SoundEffect.SOUND_TEARIMPACTS)
+    SFXManager:Stop(SoundEffect.SOUND_SPLATTER)
+    effect.Visible = false
 end
-the_ground_below.callbacks[ModCallbacks.MC_POST_EFFECT_INIT] = the_ground_below.OnEffectInit
 
 
-function the_ground_below:OnEntityDamage(tookDamage)
-    if tookDamage:ToPlayer() then
-        DealDamage(tookDamage:ToPlayer())
+function the_ground_below:OnPlayerDamage(player)
+    DealDamage(player:ToPlayer())
 
-        return false
-    end
+    return false
 end
-the_ground_below.callbacks[ModCallbacks.MC_ENTITY_TAKE_DMG] = the_ground_below.OnEntityDamage
 
 
 function the_ground_below:OnInput(_, inputHook, buttonAction)
@@ -826,30 +749,88 @@ function the_ground_below:OnInput(_, inputHook, buttonAction)
         end
     end
 end
-the_ground_below.callbacks[ModCallbacks.MC_INPUT_ACTION] = the_ground_below.OnInput
 
 
-function the_ground_below:OnCMD(command, args)
-    if command == "vel" then
-        print("bg velocity changed")
-        MinigameConstants.BG_SCROLLING_SPEED = tonumber(args)
-    elseif command == "att" then
-        print("Attack set to " .. args)
-		CurrentAttack = tonumber(args)
-        CurrentMinigameState = MinigameState.ATTACK
-
-        if CurrentAttack == MinigameAttack.HORFS then
-            StartHorfAttack()
-        elseif CurrentAttack == MinigameAttack.HANGING_KEEPERS then
-            StartHangingKeeperAttack()
-        elseif CurrentAttack == MinigameAttack.FLIES then
-            StartRandomFlyAttack()
-        elseif CurrentAttack == MinigameAttack.DUKE_OF_FLIES then
-            StartDukeAttack()
-        end
-    end
-
+-- INIT MINIGAME
+function the_ground_below:AddCallbacks(mod)
+    mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, the_ground_below.OnUpdateBackground, MinigameEntityVariants.BACKGROUND)
+    mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, the_ground_below.OnUpdateHorf, MinigameEntityVariants.HORF)
+    mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, the_ground_below.OnUpdateKeeper, MinigameEntityVariants.KEEPER)
+    mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, the_ground_below.OnUpdateFly, MinigameEntityVariants.FLY)
+    mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, the_ground_below.OnUpdateDuke, MinigameEntityVariants.DUKE)
+    mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, the_ground_below.OnUpdateCutscenePlayer, MinigameEntityVariants.PLAYER)
+    mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, the_ground_below.OnUpdateBulletPoof, EffectVariant.BULLET_POOF)
+    mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, the_ground_below.OnTinyFlyUpdate, EffectVariant.TINY_FLY)
+    mod:AddCallback(ModCallbacks.MC_POST_PROJECTILE_INIT, the_ground_below.OnProjectileInit)
+    mod:AddCallback(ModCallbacks.MC_POST_PROJECTILE_UPDATE, the_ground_below.OnProjectileUpdate)
+    mod:AddCallback(ModCallbacks.MC_POST_UPDATE, the_ground_below.OnFrameUpdate)
+    mod:AddCallback(ModCallbacks.MC_POST_RENDER, the_ground_below.OnRender)
+    mod:AddCallback(ModCallbacks.MC_POST_PLAYER_UPDATE, the_ground_below.OnPlayerUpdate)
+    mod:AddCallback(ModCallbacks.MC_POST_EFFECT_INIT, the_ground_below.OnEffectInit, EffectVariant.BULLET_POOF)
+    mod:AddCallback(ModCallbacks.MC_ENTITY_TAKE_DMG, the_ground_below.OnPlayerDamage, EntityType.ENTITY_PLAYER)
+    mod:AddCallback(ModCallbacks.MC_INPUT_ACTION, the_ground_below.OnInput)
 end
-the_ground_below.callbacks[ModCallbacks.MC_EXECUTE_CMD] = the_ground_below.OnCMD
+
+
+function the_ground_below:RemoveCallbacks(mod)
+    mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, the_ground_below.OnUpdateBackground)
+    mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, the_ground_below.OnUpdateHorf)
+    mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, the_ground_below.OnUpdateKeeper)
+    mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, the_ground_below.OnUpdateFly)
+    mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, the_ground_below.OnUpdateDuke)
+    mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, the_ground_below.OnUpdateCutscenePlayer)
+    mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, the_ground_below.OnUpdateBulletPoof)
+    mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, the_ground_below.OnTinyFlyUpdate)
+    mod:RemoveCallback(ModCallbacks.MC_POST_PROJECTILE_INIT, the_ground_below.OnProjectileInit)
+    mod:RemoveCallback(ModCallbacks.MC_POST_PROJECTILE_UPDATE, the_ground_below.OnProjectileUpdate)
+    mod:RemoveCallback(ModCallbacks.MC_POST_UPDATE, the_ground_below.OnFrameUpdate)
+    mod:RemoveCallback(ModCallbacks.MC_POST_RENDER, the_ground_below.OnRender)
+    mod:RemoveCallback(ModCallbacks.MC_POST_PLAYER_UPDATE, the_ground_below.OnPlayerUpdate)
+    mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_INIT, the_ground_below.OnEffectInit)
+    mod:RemoveCallback(ModCallbacks.MC_ENTITY_TAKE_DMG, the_ground_below.OnPlayerDamage)
+    mod:RemoveCallback(ModCallbacks.MC_INPUT_ACTION, the_ground_below.OnInput)
+end
+
+
+function the_ground_below:Init(mod, variables)
+    ArcadeCabinetVariables = variables
+    the_ground_below:AddCallbacks(mod)
+
+    -- Reset variables
+    MinigameTimers.FallingTimer = MinigameConstants.MAX_FALLING_TIMER_FRAMES
+    MinigameTimers.IntroScreenTimer = MinigameConstants.MAX_INTRO_TIMER_FRAMES
+    MinigameTimers.IFramesTimer = 0
+    PlayerHP = 3
+    CurrentMinigameState = MinigameState.INTRO
+    CurrentWave = 1
+    CurrentChapter = 1
+    spawnedBgNum = 0
+    nextBgChange = -10
+    currentBgType = "rocks"
+
+    rng:SetSeed(game:GetSeeds():GetStartSeed(), 35)
+
+    SFXManager:Play(MinigameSounds.INTRO)
+
+    -- Prepare players
+    local playerNum = game:GetNumPlayers()
+    for i = 0, playerNum - 1, 1 do
+        local player = game:GetPlayer(i)
+
+        --Set the spritesheets
+        local playerSprite = player:GetSprite()
+        playerSprite:Load("gfx/hs_isaac52.anm2", true)
+        playerSprite:ReplaceSpritesheet(1, "gfx/characters/isaac_hs.png")
+        playerSprite:ReplaceSpritesheet(4, "gfx/characters/isaac_hs.png")
+        playerSprite:ReplaceSpritesheet(12, "gfx/characters/isaac_hs.png")
+        playerSprite:LoadGraphics()
+
+        player.Position = Vector(player.Position.X, 230)
+
+        player.Visible = false
+        player:GetData().FakePlayer = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.PLAYER, 0, player.Position + Vector(0, 1), Vector.Zero, nil)
+    end
+end
+
 
 return the_ground_below
