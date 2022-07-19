@@ -417,6 +417,8 @@ local function SpawnFloorCracks()
         local crack = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.FLOOR_CRACK, 0, room:GetGridPosition(pos + 211), Vector.Zero, nil)
         crack:ClearEntityFlags(EntityFlag.FLAG_APPEAR)
         if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+            crack:GetSprite():ReplaceSpritesheet(0, "gfx/effects/holy smokes/hs_glitch_crack.png")
+            crack:GetSprite():LoadGraphics()
             crack:GetSprite():Play("OpenGlitched", true)
         else
             crack:GetSprite():Play("Open", true)
