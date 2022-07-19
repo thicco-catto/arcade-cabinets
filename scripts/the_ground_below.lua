@@ -68,7 +68,7 @@ local MinigameConstants = {
     HORF_TARGET_Y = -20,
     HORF_VELOCITY = 2,
     HORF_SHOT_COOLDOWN = 30,
-    HORF_SAFE_DISTANCE = 40,
+    HORF_SAFE_DISTANCE = 50,
     HORF_HITBOX_RADIUS = 30,
 
     --Hanging keepers attack
@@ -105,6 +105,8 @@ local MinigameConstants = {
 
     --Glitch stuff
     GLITCH_FLY_CHANGE_Y_POS = 400,
+
+    GLITCH_EXTRA_CHANCE_FOR_COOL_ATTACKS = 15,
 
     GLITCH_NUM_GLITCH_TILES = 40,
     GLITCH_TILE_FRAME_NUM = 4,
@@ -161,6 +163,8 @@ local FlyLineNum = 0
 local spawnedBgNum = 0
 local currentBgType = "rocks"
 local nextBgChange = -10
+
+local HasSpawnedHorfs = false
 
 
 local function FinishAttack()
@@ -393,7 +397,7 @@ function the_ground_below:OnUpdateHorf(effect)
 
     if effect:GetSprite():IsEventTriggered("Shoot") then
         local dummy = Isaac.Spawn(997, 10, 0, effect.Position + Vector(0, 0.1), Vector.Zero, nil)
-        local spawningPos = dummy.Position + Vector(0, 25)
+        local spawningPos = dummy.Position
         local spawningSpeed = (game:GetPlayer(0).Position - spawningPos):Normalized() * 10
         local params = ProjectileParams()
         params.BulletFlags = ProjectileFlags.NO_WALL_COLLIDE
@@ -439,7 +443,7 @@ function the_ground_below:OnUpdateKeeper(effect)
 
     if effect:GetSprite():IsEventTriggered("Shoot") then
         local dummy = Isaac.Spawn(997, 10, 0, effect.Position + Vector(0, 0.1), Vector.Zero, nil)
-        local spawningPos = dummy.Position + Vector(0, 25)
+        local spawningPos = dummy.Position
         local spawningSpeed = (game:GetPlayer(0).Position - spawningPos):Normalized() * 10
         local params = ProjectileParams()
         params.BulletFlags = ProjectileFlags.NO_WALL_COLLIDE
@@ -610,7 +614,7 @@ end
 
 
 function the_ground_below:OnProjectileInit(projectile)
-    projectile:GetSprite():Load("gfx/hs_satan_projectile.anm2", false)
+    projectile:GetSprite():Load("gfx/tgb_projectile.anm2", false)
     if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
         projectile:GetSprite():ReplaceSpritesheet(0, "gfx/effects/the ground below/tgb_glitch_projectile.png")
     end
@@ -685,14 +689,23 @@ local function UpdateFalling()
             CurrentAttack = MinigameAttack.DUKE_OF_FLIES
             StartDukeAttack()
         else
-            if (CurrentChapter > 1 or CurrentWave > 1) and
-            rng:RandomInt(100) < MinigameConstants.HORF_CHANCE_PER_CHAPTER[CurrentChapter] then
-                if rng:RandomInt(100) < MinigameConstants.KEEPER_CHANCE_PER_CHAPTER[CurrentChapter] then
+            local extraGlitchChance = 0
+            if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+                extraGlitchChance = MinigameConstants.GLITCH_EXTRA_CHANCE_FOR_COOL_ATTACKS
+            end
+
+            if ((CurrentChapter > 1 or CurrentWave > 1) and
+            rng:RandomInt(100) < (MinigameConstants.HORF_CHANCE_PER_CHAPTER[CurrentChapter]) + extraGlitchChance) or
+            (CurrentChapter == 2 and CurrentWave == MinigameConstants.NUM_WAVES_PER_CHAPTER[CurrentChapter] and not HasSpawnedHorfs) then
+                if rng:RandomInt(100) < (MinigameConstants.KEEPER_CHANCE_PER_CHAPTER[CurrentChapter] + extraGlitchChance) and
+                not (CurrentChapter == 2 and CurrentWave == MinigameConstants.NUM_WAVES_PER_CHAPTER[CurrentChapter] and not HasSpawnedHorfs) then
                     CurrentAttack = MinigameAttack.HANGING_KEEPERS
                     StartHangingKeeperAttack()
                 else
                     CurrentAttack = MinigameAttack.HORFS
                     StartHorfAttack()
+
+                    HasSpawnedHorfs = CurrentChapter == 2
                 end
             else
                 CurrentAttack = MinigameAttack.FLIES
