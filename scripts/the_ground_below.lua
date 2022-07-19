@@ -28,7 +28,9 @@ local MinigameEntityVariants = {
     HORF = Isaac.GetEntityVariantByName("horf TGB"),
     KEEPER = Isaac.GetEntityVariantByName("keeper TGB"),
     FLY = Isaac.GetEntityVariantByName("fly TGB"),
-    DUKE = Isaac.GetEntityVariantByName("duke TGB")
+    DUKE = Isaac.GetEntityVariantByName("duke TGB"),
+
+    GLITCH_TILE = Isaac.GetEntityVariantByName("glitch tile TGB")
 }
 
 -- Constants
@@ -103,6 +105,11 @@ local MinigameConstants = {
 
     --Glitch stuff
     GLITCH_FLY_CHANGE_Y_POS = 400,
+
+    GLITCH_NUM_GLITCH_TILES = 40,
+    GLITCH_TILE_FRAME_NUM = 4,
+    GLITCH_TILE_CHANGE_FRAMES = 10,
+    GLITCH_TILE_CHANGING_CHANCE = 10,
 }
 
 -- Timers
@@ -230,23 +237,35 @@ local function StartHorfAttack()
     local spawningPos2 = Vector(game:GetRoom():GetCenterPos().X - (MinigameConstants.HORF_SPAWNING_POS.X - game:GetRoom():GetCenterPos().X), MinigameConstants.HORF_SPAWNING_POS.Y)
     local horf2 = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.HORF, 0, spawningPos2, Vector(0, -MinigameConstants.HORF_VELOCITY), nil)
     horf2:GetData().SpawningFrame = game:GetFrameCount() + 10
+
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+        horf1:GetSprite():ReplaceSpritesheet(0, "gfx/enemies/tgb_glitch_horf.png")
+        horf1:GetSprite():LoadGraphics()
+
+        horf2:GetSprite():ReplaceSpritesheet(0, "gfx/enemies/tgb_glitch_horf.png")
+        horf2:GetSprite():LoadGraphics()
+    end
 end
 
 
 local function StartHangingKeeperAttack()
-    local targetVelocity = (MinigameConstants.KEEPER_TARGET_POS - MinigameConstants.KEEPER_SPAWNING_POS):Normalized() * MinigameConstants.KEEPER_VELOCITY
-    local rightKeeper = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.KEEPER, 0, MinigameConstants.KEEPER_SPAWNING_POS, targetVelocity, nil)
-    rightKeeper:GetData().KeeperShotsFired = 0
-    rightKeeper:GetData().SpawningPos = MinigameConstants.KEEPER_SPAWNING_POS
-    rightKeeper:GetData().SpawningFrame = game:GetFrameCount() + 30
+    local spawningPos = MinigameConstants.KEEPER_SPAWNING_POS
+    local targetPos = MinigameConstants.KEEPER_TARGET_POS
+    if rng:RandomInt(2) == 0 then
+        spawningPos = Vector(game:GetRoom():GetCenterPos().X - (MinigameConstants.KEEPER_SPAWNING_POS.X - game:GetRoom():GetCenterPos().X), MinigameConstants.KEEPER_SPAWNING_POS.Y)
+        targetPos = Vector(game:GetRoom():GetCenterPos().X - (MinigameConstants.KEEPER_TARGET_POS.X - game:GetRoom():GetCenterPos().X), MinigameConstants.KEEPER_TARGET_POS.Y)
+    end
+    local targetVelocity = (targetPos - spawningPos):Normalized() * MinigameConstants.KEEPER_VELOCITY
+    local keeper = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.KEEPER, 0, spawningPos, targetVelocity, nil)
+    keeper:GetData().KeeperShotsFired = 0
+    keeper:GetData().SpawningPos = spawningPos
+    keeper:GetData().SpawningFrame = game:GetFrameCount() + 30
 
-    -- local spawningPos2 = Vector(game:GetRoom():GetCenterPos().X - (MinigameConstants.KEEPER_SPAWNING_POS.X - game:GetRoom():GetCenterPos().X), MinigameConstants.KEEPER_SPAWNING_POS.Y)
-    -- local targetPos2 = Vector(game:GetRoom():GetCenterPos().X - (MinigameConstants.KEEPER_TARGET_POS.X - game:GetRoom():GetCenterPos().X), MinigameConstants.KEEPER_TARGET_POS.Y)
-    -- local targetVelocity2 = (targetPos2 - spawningPos2):Normalized() * MinigameConstants.KEEPER_VELOCITY
-    -- local leftKeeper = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.KEEPER, 0, spawningPos2, targetVelocity2, nil)
-    -- leftKeeper:GetData().KeeperShotsFired = 0
-    -- leftKeeper:GetData().SpawningPos = spawningPos2
-    -- leftKeeper:GetData().SpawningFrame = game:GetFrameCount() + 30
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+        keeper:GetSprite():ReplaceSpritesheet(0, "gfx/enemies/tgb_glitch_keeper.png")
+        keeper:GetSprite():ReplaceSpritesheet(1, "gfx/enemies/tgb_glitch_keeper_rope.png")
+        keeper:GetSprite():LoadGraphics()
+    end
 end
 
 
@@ -295,6 +314,11 @@ local function StartDukeAttack()
     local duke = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.DUKE, 0, MinigameConstants.DUKE_SPAWNING_POS, dukeVelocity, nil)
     duke:GetData().NumFlyLinesSpawned = 0
     duke:GetData().SpawningFrame = game:GetFrameCount() - 10
+
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+        duke:GetSprite():ReplaceSpritesheet(0, "gfx/enemies/tgb_glitch_duke.png")
+        duke:GetSprite():LoadGraphics()
+    end
 end
 
 
@@ -347,7 +371,11 @@ end
 function the_ground_below:OnUpdateBackground(effect)
     if CurrentMinigameState == MinigameState.SPLATTING or CurrentMinigameState == MinigameState.WINNING then return end
 
-    effect.Velocity = Vector(0, -MinigameConstants.BG_SCROLLING_SPEED)
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+        effect.Velocity = Vector.Zero
+    else
+        effect.Velocity = Vector(0, -MinigameConstants.BG_SCROLLING_SPEED)
+    end
 
     if effect.Position.Y < (game:GetRoom():GetCenterPos() - Vector(0, MinigameConstants.BG_TO_SPAWN_THRESHOLD)).Y then
         SpawnNextBg(effect)
@@ -565,8 +593,28 @@ function the_ground_below:OnTinyFlyUpdate(fly)
 end
 
 
+---@param tile EntityEffect
+function the_ground_below:OnGlitchTileUpdate(tile)
+    local data = tile:GetData()
+    if data.ChagingTile and (game:GetFrameCount() + data.RandomOffset) % MinigameConstants.GLITCH_TILE_CHANGE_FRAMES == 0 then
+        local maxFrames = MinigameConstants.GLITCH_TILE_FRAME_NUM
+        local newFrame = rng:RandomInt(maxFrames - 1)
+        if newFrame >= data.ChosenFrame then
+            newFrame = newFrame + 1
+        end
+        data.ChosenFrame = newFrame
+    end
+
+    tile:GetSprite():SetFrame(data.ChosenFrame)
+end
+
+
 function the_ground_below:OnProjectileInit(projectile)
-    projectile:GetSprite():Load("gfx/hs_satan_projectile.anm2", true)
+    projectile:GetSprite():Load("gfx/hs_satan_projectile.anm2", false)
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+        projectile:GetSprite():ReplaceSpritesheet(0, "gfx/effects/the ground below/tgb_glitch_projectile.png")
+    end
+    projectile:GetSprite():LoadGraphics()
     projectile:GetSprite():Play("Idle", true)
 end
 
@@ -593,19 +641,23 @@ local function UpdateIntro()
 
         -- Backdrop
         local bg = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.BACKGROUND, 0, game:GetRoom():GetCenterPos() - Vector(0, 120), Vector.Zero, nil)
-        bg.DepthOffset = -1000
+        bg.DepthOffset = -5000
         if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
-            bg:GetSprite():ReplaceSpritesheet(0, "gfx/grid/tgb_glitch_rocks_start.png")
+            bg.Position = Vector(bg.Position.X, bg.Position.Y - 20)
+            bg.Velocity = Vector.Zero
+            bg:GetSprite():ReplaceSpritesheet(0, "gfx/grid/tgb_glitch_pitch_black.png")
         else
             bg:GetSprite():ReplaceSpritesheet(0, "gfx/grid/tgb_rocks_start.png")
         end
         bg:GetSprite():LoadGraphics()
 
         local bg2 = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.BACKGROUND, 0, bg.Position + Vector(0,440), Vector.Zero, nil)
-        bg2.DepthOffset = -1000
+        bg2.DepthOffset = -5000
         bg.Child = bg2
         if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
-            bg2:GetSprite():ReplaceSpritesheet(0, "gfx/grid/tgb_glitch_rocks_mid.png")
+            bg2.Position = Vector(bg2.Position.X, bg2.Position.Y - 20)
+            bg2.Velocity = Vector.Zero
+            bg2:GetSprite():ReplaceSpritesheet(0, "gfx/grid/tgb_glitch_pitch_black.png")
         else
             bg2:GetSprite():ReplaceSpritesheet(0, "gfx/grid/tgb_rocks_mid.png")
         end
@@ -803,6 +855,32 @@ end
 
 
 -- INIT MINIGAME
+local function SpawnGlitchTiles()
+    if not ArcadeCabinetVariables.IsCurrentMinigameGlitched then return end
+    local room = game:GetRoom()
+
+    local possibleGlitchTiles = {}
+    for i = 0, 149, 1 do
+        table.insert(possibleGlitchTiles, i)
+    end
+
+    for _ = 1, MinigameConstants.GLITCH_NUM_GLITCH_TILES, 1 do
+        local chosen = rng:RandomInt(#possibleGlitchTiles) + 1
+        local gridIndex = possibleGlitchTiles[chosen]
+        table.remove(possibleGlitchTiles, chosen)
+
+        local glitchTile = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.GLITCH_TILE, 0, room:GetGridPosition(gridIndex), Vector.Zero, nil)
+
+        glitchTile:GetSprite():Play("Idle", true)
+        glitchTile:GetData().ChosenFrame = rng:RandomInt(MinigameConstants.GLITCH_TILE_FRAME_NUM)
+        glitchTile:GetSprite():SetFrame(glitchTile:GetData().ChosenFrame)
+        glitchTile:GetData().ChagingTile = rng:RandomInt(100) < MinigameConstants.GLITCH_TILE_CHANGING_CHANCE
+        glitchTile:GetData().RandomOffset = rng:RandomInt(MinigameConstants.GLITCH_TILE_CHANGE_FRAMES)
+        glitchTile.DepthOffset = -100
+    end
+end
+
+
 function the_ground_below:AddCallbacks(mod)
     mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, the_ground_below.OnUpdateBackground, MinigameEntityVariants.BACKGROUND)
     mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, the_ground_below.OnUpdateHorf, MinigameEntityVariants.HORF)
@@ -812,6 +890,7 @@ function the_ground_below:AddCallbacks(mod)
     mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, the_ground_below.OnUpdateCutscenePlayer, MinigameEntityVariants.PLAYER)
     mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, the_ground_below.OnUpdateBulletPoof, EffectVariant.BULLET_POOF)
     mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, the_ground_below.OnTinyFlyUpdate, EffectVariant.TINY_FLY)
+    mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, the_ground_below.OnGlitchTileUpdate, MinigameEntityVariants.GLITCH_TILE)
 
     mod:AddCallback(ModCallbacks.MC_POST_PROJECTILE_INIT, the_ground_below.OnProjectileInit)
     mod:AddCallback(ModCallbacks.MC_POST_PROJECTILE_UPDATE, the_ground_below.OnProjectileUpdate)
@@ -834,6 +913,7 @@ function the_ground_below:RemoveCallbacks(mod)
     mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, the_ground_below.OnUpdateCutscenePlayer)
     mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, the_ground_below.OnUpdateBulletPoof)
     mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, the_ground_below.OnTinyFlyUpdate)
+    mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, the_ground_below.OnGlitchTileUpdate)
     mod:RemoveCallback(ModCallbacks.MC_POST_PROJECTILE_INIT, the_ground_below.OnProjectileInit)
     mod:RemoveCallback(ModCallbacks.MC_POST_PROJECTILE_UPDATE, the_ground_below.OnProjectileUpdate)
     mod:RemoveCallback(ModCallbacks.MC_POST_UPDATE, the_ground_below.OnFrameUpdate)
@@ -864,6 +944,17 @@ function the_ground_below:Init(mod, variables)
     rng:SetSeed(game:GetSeeds():GetStartSeed(), 35)
 
     SFXManager:Play(MinigameSounds.INTRO)
+
+    SpawnGlitchTiles()
+
+    --UI
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+        HeartsUI:ReplaceSpritesheet(0, "gfx/effects/the ground below/tgb_glitch_hearts.png")
+    else
+        HeartsUI:ReplaceSpritesheet(0, "gfx/effects/the ground below/tgb_hearts.png")
+    end
+
+    HeartsUI:LoadGraphics()
 
     -- Prepare players
     local playerNum = game:GetNumPlayers()

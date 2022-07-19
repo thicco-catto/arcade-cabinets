@@ -171,7 +171,7 @@
         <gibs amount="0" blood="0" bone="0" eye="0" gut="0" large="0" />
     </entity>
 
-    <entity anm2path="js_glitch_tile.anm2" subtype="0" name="glitch tile JC" id="1000" variant="" baseHP="0" boss="0" champion="0" collisionDamage="0" collisionMass="0" collisionRadius="0" friction="1" numGridCollisionPoints="0" shadowSize="0" shutdoors="false" stageHP="0" gridCollision="none"> 
+    <entity anm2path="jc_glitch_tile.anm2" subtype="0" name="glitch tile JC" id="1000" variant="" baseHP="0" boss="0" champion="0" collisionDamage="0" collisionMass="0" collisionRadius="0" friction="1" numGridCollisionPoints="0" shadowSize="0" shutdoors="false" stageHP="0" gridCollision="none"> 
         <gibs amount="0" blood="0" bone="0" eye="0" gut="0" large="0" />
     </entity>
 
@@ -267,6 +267,10 @@
     </entity>
 
     <entity anm2path="tgb_player.anm2" subtype="0" name="player TGB" variant="" id="1000" baseHP="0" boss="0" champion="0" collisionDamage="0" collisionMass="0" collisionRadius="0" friction="1" numGridCollisionPoints="0" shadowSize="0" shutdoors="false" stageHP="0" gridCollision="none"> 
+        <gibs amount="0" blood="0" bone="0" eye="0" gut="0" large="0" />
+    </entity>
+
+    <entity anm2path="tgb_glitch_tile.anm2" subtype="0" name="glitch tile TGB" id="1000" variant="" baseHP="0" boss="0" champion="0" collisionDamage="0" collisionMass="0" collisionRadius="0" friction="1" numGridCollisionPoints="0" shadowSize="0" shutdoors="false" stageHP="0" gridCollision="none"> 
         <gibs amount="0" blood="0" bone="0" eye="0" gut="0" large="0" />
     </entity>
 
