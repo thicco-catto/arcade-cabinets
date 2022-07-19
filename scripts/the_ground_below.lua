@@ -100,6 +100,9 @@ local MinigameConstants = {
     CUTSCENE_PLAYER_Y_SPLAT = 320,
     FLOOR_Y_SPAWN = 280,
     MAX_SPLAT_FRAMES = 30,
+
+    --Glitch stuff
+    GLITCH_FLY_CHANGE_Y_POS = 400,
 }
 
 -- Timers
@@ -251,6 +254,14 @@ local function SpawnLineFlies()
     local room = game:GetRoom()
 
     local freeGridLocation = 47 + rng:RandomInt(10)
+    local nextFreeGridLocation
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+        local freeLocationOffset = rng:RandomInt(4) - 2
+        if freeLocationOffset >= 0 then
+            freeLocationOffset = freeLocationOffset + 1
+        end
+        nextFreeGridLocation = freeGridLocation + freeLocationOffset
+    end
 
     for i = 46, 58, 1 do
         if i ~= freeGridLocation then
@@ -258,6 +269,15 @@ local function SpawnLineFlies()
             local spawningPos = Vector(room:GetGridPosition(i).X, MinigameConstants.FLY_Y_SPAWN) + randomOffset
             local fly = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.FLY, 0, spawningPos, Vector(0, -MinigameConstants.FLY_VELOCITY), nil)
             fly:GetData().LineNum = FlyLineNum
+
+            if nextFreeGridLocation and i == nextFreeGridLocation then
+                fly:GetData().MoveToGrid = freeGridLocation
+            end
+
+            if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+                fly:GetSprite():ReplaceSpritesheet(0, "gfx/enemies/tgb_glitch_fly.png")
+                fly:GetSprite():LoadGraphics()
+            end
         end
     end
 end
@@ -292,14 +312,19 @@ local function ChangeBgSprite(bg)
         end
     end
 
+    local glitchPrefix = ""
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+        glitchPrefix = "glitch_"
+    end
+
     if spawnedBgNum == nextBgChange then
-        newSprite = "gfx/grid/tgb_" .. bgTypeForThis .. "_end.png"
+        newSprite = "gfx/grid/tgb_" .. glitchPrefix .. bgTypeForThis .. "_end.png"
     elseif spawnedBgNum == nextBgChange + 1 then
-        newSprite = "gfx/grid/tgb_pitch_black.png"
+        newSprite = "gfx/grid/tgb_" .. glitchPrefix .. "pitch_black.png"
     elseif spawnedBgNum == nextBgChange + 2 then
-        newSprite = "gfx/grid/tgb_" .. bgTypeForThis .. "_start.png"
+        newSprite = "gfx/grid/tgb_" .. glitchPrefix .. bgTypeForThis .. "_start.png"
     elseif spawnedBgNum < nextBgChange or spawnedBgNum > nextBgChange + 2 then
-        newSprite = "gfx/grid/tgb_" .. bgTypeForThis .. "_mid.png"
+        newSprite = "gfx/grid/tgb_" .. glitchPrefix .. bgTypeForThis .. "_mid.png"
     end
 
     if not newSprite then return end
@@ -412,7 +437,7 @@ function the_ground_below:OnUpdateKeeper(effect)
 end
 
 
-function the_ground_below:OnUpdateFly(effect)
+function the_ground_below:OnFlyUpdate(effect)
     if not SFXManager:IsPlaying(MinigameSounds.BUZZ) then
         SFXManager:Play(MinigameSounds.BUZZ)
     end
@@ -429,6 +454,13 @@ function the_ground_below:OnUpdateFly(effect)
 
             effect:GetData().TargetPosition = nil
         end
+    end
+
+    if effect:GetData().MoveToGrid and effect.Position.Y <= MinigameConstants.GLITCH_FLY_CHANGE_Y_POS then
+        local gridPos = game:GetRoom():GetGridPosition(effect:GetData().MoveToGrid)
+        effect.Position = Vector(gridPos.X, effect.Position.Y)
+
+        effect:GetData().MoveToGrid = nil
     end
 
     if effect.Position.Y < 0 then
@@ -450,7 +482,7 @@ function the_ground_below:OnUpdateFly(effect)
 end
 
 
-function the_ground_below:OnUpdateDuke(effect)
+function the_ground_below:OnDukeUpdate(effect)
     if (game:GetFrameCount() - effect:GetData().SpawningFrame) % MinigameConstants.DUKE_SPAWN_FLY_COOLDOWN == 0 and effect.Velocity:Length() < 0.1 then
         if effect:GetData().NumFlyLinesSpawned == MinigameConstants.DUKE_NUM_FLY_ROUNDS then
             effect.Velocity = (MinigameConstants.DUKE_DESPAWN - effect.Position):Normalized() * MinigameConstants.DUKE_VELOCITY
@@ -475,6 +507,11 @@ function the_ground_below:OnUpdateDuke(effect)
 
                 if i == 46 then
                     fly:GetData().IsLastFly = true
+                end
+
+                if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+                    fly:GetSprite():ReplaceSpritesheet(0, "gfx/enemies/tgb_glitch_fly.png")
+                    fly:GetSprite():LoadGraphics()
                 end
             end
         end
@@ -557,12 +594,22 @@ local function UpdateIntro()
         -- Backdrop
         local bg = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.BACKGROUND, 0, game:GetRoom():GetCenterPos() - Vector(0, 120), Vector.Zero, nil)
         bg.DepthOffset = -1000
-        bg:GetSprite():ReplaceSpritesheet(0, "gfx/grid/tgb_rocks_start.png")
+        if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+            bg:GetSprite():ReplaceSpritesheet(0, "gfx/grid/tgb_glitch_rocks_start.png")
+        else
+            bg:GetSprite():ReplaceSpritesheet(0, "gfx/grid/tgb_rocks_start.png")
+        end
         bg:GetSprite():LoadGraphics()
 
         local bg2 = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.BACKGROUND, 0, bg.Position + Vector(0,440), Vector.Zero, nil)
         bg2.DepthOffset = -1000
         bg.Child = bg2
+        if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+            bg2:GetSprite():ReplaceSpritesheet(0, "gfx/grid/tgb_glitch_rocks_mid.png")
+        else
+            bg2:GetSprite():ReplaceSpritesheet(0, "gfx/grid/tgb_rocks_mid.png")
+        end
+        bg2:GetSprite():LoadGraphics()
 
         spawnedBgNum = 2
 
@@ -704,7 +751,11 @@ function the_ground_below:OnPlayerUpdate(player)
             end
 
             local floor = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.BACKGROUND, 0, Vector(game:GetRoom():GetCenterPos().X, MinigameConstants.FLOOR_Y_SPAWN), Vector.Zero, nil)
-            floor:GetSprite():ReplaceSpritesheet(0, "gfx/grid/tgb_floor.png")
+            if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+                floor:GetSprite():ReplaceSpritesheet(0, "gfx/grid/tgb_glitch_floor.png")
+            else
+                floor:GetSprite():ReplaceSpritesheet(0, "gfx/grid/tgb_floor.png")
+            end
             floor:GetSprite():LoadGraphics()
             floor.DepthOffset = -500
         end
@@ -756,8 +807,8 @@ function the_ground_below:AddCallbacks(mod)
     mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, the_ground_below.OnUpdateBackground, MinigameEntityVariants.BACKGROUND)
     mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, the_ground_below.OnUpdateHorf, MinigameEntityVariants.HORF)
     mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, the_ground_below.OnUpdateKeeper, MinigameEntityVariants.KEEPER)
-    mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, the_ground_below.OnUpdateFly, MinigameEntityVariants.FLY)
-    mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, the_ground_below.OnUpdateDuke, MinigameEntityVariants.DUKE)
+    mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, the_ground_below.OnFlyUpdate, MinigameEntityVariants.FLY)
+    mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, the_ground_below.OnDukeUpdate, MinigameEntityVariants.DUKE)
     mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, the_ground_below.OnUpdateCutscenePlayer, MinigameEntityVariants.PLAYER)
     mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, the_ground_below.OnUpdateBulletPoof, EffectVariant.BULLET_POOF)
     mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, the_ground_below.OnTinyFlyUpdate, EffectVariant.TINY_FLY)
@@ -778,8 +829,8 @@ function the_ground_below:RemoveCallbacks(mod)
     mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, the_ground_below.OnUpdateBackground)
     mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, the_ground_below.OnUpdateHorf)
     mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, the_ground_below.OnUpdateKeeper)
-    mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, the_ground_below.OnUpdateFly)
-    mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, the_ground_below.OnUpdateDuke)
+    mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, the_ground_below.OnFlyUpdate)
+    mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, the_ground_below.OnDukeUpdate)
     mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, the_ground_below.OnUpdateCutscenePlayer)
     mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, the_ground_below.OnUpdateBulletPoof)
     mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, the_ground_below.OnTinyFlyUpdate)

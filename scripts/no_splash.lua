@@ -1135,6 +1135,26 @@ end
 
 
 function no_splash:RemoveCallbacks(mod)
+    mod:RemoveCallback(ModCallbacks.MC_POST_UPDATE, no_splash.OnFrameUpdate)
+    mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_INIT, no_splash.OnTearPoofInit)
+    mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_INIT, no_splash.OnTearPoofInit)
+    mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_INIT, no_splash.OnBulletPoofInit)
+    mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, no_splash.OnBubbleUpdate)
+    mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, no_splash.OnExplosionUpdate)
+    mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, no_splash.OnCorpseUpdate)
+    mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, no_splash.OnChuckCorpseUpdate)
+    mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, no_splash.OnBulletPoofUpdate)
+    mod:RemoveCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, no_splash.OnTinyFlyUpdate)
+    mod:RemoveCallback(ModCallbacks.MC_NPC_UPDATE, no_splash.OnNPCUpdate)
+    mod:RemoveCallback(ModCallbacks.MC_ENTITY_TAKE_DMG, no_splash.OnPlayerDamage)
+    mod:RemoveCallback(ModCallbacks.MC_ENTITY_TAKE_DMG, no_splash.OnEntityDamage)
+    mod:RemoveCallback(ModCallbacks.MC_POST_PROJECTILE_INIT, no_splash.OnProjectileInit)
+    mod:RemoveCallback(ModCallbacks.MC_POST_PROJECTILE_UPDATE, no_splash.OnProjectileUpdate)
+    mod:RemoveCallback(ModCallbacks.MC_INPUT_ACTION, no_splash.OnInput)
+    mod:RemoveCallback(ModCallbacks.MC_POST_PLAYER_UPDATE, no_splash.OnPlayerUpdate)
+    mod:RemoveCallback(ModCallbacks.MC_EVALUATE_CACHE, no_splash.OnCache)
+    mod:RemoveCallback(ModCallbacks.MC_POST_FIRE_TEAR, no_splash.OnTearFire)
+    mod:RemoveCallback(ModCallbacks.MC_POST_RENDER, no_splash.OnRender)
 end
 
 
