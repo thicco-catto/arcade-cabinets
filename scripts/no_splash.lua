@@ -3,21 +3,7 @@ local game = Game()
 local rng = RNG()
 local SFXManager = SFXManager()
 local MusicManager = MusicManager()
-----------------------------------------------
--- FANCY REQUIRE (Thanks manaphoenix <3)
-----------------------------------------------
-local function loadFile(loc, ...)
-    local _, err = pcall(require, "")
-    local modName = err:match("/mods/(.*)/%.lua")
-    local path = "mods/" .. modName .. "/"
-
-    return assert(loadfile(path .. loc .. ".lua"))(...)
-end
-local ArcadeCabinetVariables = loadFile("scripts/variables")
-
-no_splash.callbacks = {}
-no_splash.result = nil
-no_splash.startingItems = {}
+local ArcadeCabinetVariables
 
 -- Sounds
 local MinigameSounds = {
@@ -180,52 +166,6 @@ local LastPlayerPosX = 0
 local SpawnedFinalExplosions = 0
 
 
-function no_splash:Init()
-    --Reset variables
-    PlayerHP = 3
-    CurrentWave = 0
-    DistanceTraveled = 0
-    AnglerFishProjectiles = 0
-    AnglerFishAttacksInARow = 0
-    no_splash.result = nil
-
-    MinigameTimers.IFramesTimer = 0
-
-    CurrentMinigameState = MinigameState.SWIMMING
-
-    rng:SetSeed(game:GetSeeds():GetStartSeed(), 35)
-
-    local overlay = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.BACKGROUND, 0, game:GetRoom():GetCenterPos(), Vector.Zero, nil)
-    overlay:GetSprite():Load("gfx/ns_overlay.anm2", true)
-    overlay:GetSprite():Play("Idle", true)
-    overlay.DepthOffset = 1000
-
-    local bg = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.BACKGROUND, 0, game:GetRoom():GetCenterPos(), Vector.Zero, nil)
-    bg:GetSprite():Load("gfx/ns_bg.anm2", true)
-    bg:GetSprite():Play("Idle", true)
-    bg.DepthOffset = -1000
-
-    Arrow = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.ARROW, 0, MinigameConstants.ARROW_SPAWNING_POS, Vector.Zero, nil)
-
-    -- Prepare players
-    local playerNum = game:GetNumPlayers()
-    for i = 0, playerNum - 1, 1 do
-        local player = game:GetPlayer(i)
-
-        for _, item in ipairs(no_splash.startingItems) do
-            player:AddCollectible(item, 0, false)
-        end
-
-        player.Position = game:GetRoom():GetCenterPos()
-        player.Visible = false
-
-        local fakePlayer = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.FAKE_PLAYER, 0, player.Position + Vector(0, 0.1), Vector.Zero, nil)
-        fakePlayer:GetSprite():Load("gfx/ns_player.anm2", true)
-        player:GetData().FakePlayer = fakePlayer
-    end
-end
-
-
 local function SpawnBubbles()
     if MinigameTimers.BubbleSpawnTimer > 0 then
         MinigameTimers.BubbleSpawnTimer = MinigameTimers.BubbleSpawnTimer - 1
@@ -377,7 +317,7 @@ local function FinishWave()
 end
 
 
-function no_splash:OnUpdate()
+function no_splash:OnFrameUpdate()
     if MinigameTimers.IFramesTimer > 0 then MinigameTimers.IFramesTimer = MinigameTimers.IFramesTimer - 1 end
     if MinigameTimers.BossHealthFlashTimer > 0 then MinigameTimers.BossHealthFlashTimer = MinigameTimers.BossHealthFlashTimer - 1 end
 
@@ -428,24 +368,23 @@ function no_splash:OnUpdate()
         LastPlayerPosX = currentPlayerPosX
     end
 end
-no_splash.callbacks[ModCallbacks.MC_POST_UPDATE] = no_splash.OnUpdate
 
 
-function no_splash:OnEffectInit(effect)
-    if effect.Variant == EffectVariant.TEAR_POOF_A or effect.Variant == EffectVariant.TEAR_POOF_B then
-        SFXManager:Stop(SoundEffect.SOUND_TEARIMPACTS)
-        SFXManager:Stop(SoundEffect.SOUND_SPLATTER)
+function no_splash:OnTearPoofInit(poof)
+    SFXManager:Stop(SoundEffect.SOUND_TEARIMPACTS)
+    SFXManager:Stop(SoundEffect.SOUND_SPLATTER)
 
-        effect:GetSprite():Load("gfx/ns_player_tear_splash.anm2", true)
-        effect:GetSprite():Play("Poof", true)
-    elseif effect.Variant == EffectVariant.BULLET_POOF then
-        effect.Visible = false
-    end
+    poof:GetSprite():Load("gfx/ns_player_tear_splash.anm2", true)
+    poof:GetSprite():Play("Poof", true)
 end
-no_splash.callbacks[ModCallbacks.MC_POST_EFFECT_INIT] = no_splash.OnEffectInit
 
 
-local function UpdateBubble(effect)
+function no_splash:OnBulletPoofInit(poof)
+    poof.Visible = false
+end
+
+
+function no_splash:OnBubbleUpdate(effect)
     if effect.Position.Y < 0 then
         effect:Remove()
     end
@@ -455,7 +394,7 @@ end
 
 
 ---@param explosion EntityEffect
-local function UpdateExplosion(explosion)
+function no_splash:OnExplosionUpdate(explosion)
     if explosion:GetSprite():IsFinished("Idle") then
         explosion:Remove()
     end
@@ -463,7 +402,7 @@ end
 
 
 ---@param corpse EntityEffect
-local function UpdateCorpse(corpse)
+function no_splash:OnCorpseUpdate(corpse)
     corpse.Velocity = Vector(CurrentBubbleXVelocity, corpse.Velocity.Y)
 
     if corpse.Position.Y < 0 or corpse.Position.Y > 600 then
@@ -473,7 +412,7 @@ end
 
 
 ---@param corpse EntityEffect
-local function UpdateChuckCorpse(corpse)
+function no_splash:OnChuckCorpseUpdate(corpse)
     if corpse:GetSprite():IsPlaying("Idle") then
         if game:GetFrameCount() % 2 == 0 then
             corpse.Position = Vector(corpse.Position.X + 5, corpse.Position.Y)
@@ -512,24 +451,15 @@ local function UpdateChuckCorpse(corpse)
 end
 
 
-function no_splash:OnEffectUpdate(effect)
-    if effect.Variant == MinigameEntityVariants.BUBBLE then
-        UpdateBubble(effect)
-    elseif effect.Variant == MinigameEntityVariants.BLOOD_EXPLOSION then
-        UpdateExplosion(effect)
-    elseif effect.Variant == MinigameEntityVariants.CORPSE then
-        UpdateCorpse(effect)
-    elseif effect.Variant == MinigameEntityVariants.CHUCK_CORPSE then
-        UpdateChuckCorpse(effect)
-    elseif effect.Variant == EffectVariant.BULLET_POOF then
-        --Remove this there because otherwise it doesnt stop the sound lmao
-        effect:Remove()
-        SFXManager:Stop(SoundEffect.SOUND_TEARIMPACTS)
-    elseif effect.Variant == EffectVariant.TINY_FLY then
-        effect:Remove()
-    end
+function no_splash:OnBulletPoofUpdate(poof)
+    poof:Remove()
+    SFXManager:Stop(SoundEffect.SOUND_TEARIMPACTS)
 end
-no_splash.callbacks[ModCallbacks.MC_POST_EFFECT_UPDATE] = no_splash.OnEffectUpdate
+
+
+function no_splash:OnTinyFlyUpdate(fly)
+    fly:Remove()
+end
 
 
 local function UpdateFish(fish)
@@ -836,48 +766,45 @@ function no_splash:OnNPCUpdate(entity)
         UpdateAnglerFish(entity)
     end
 end
-no_splash.callbacks[ModCallbacks.MC_NPC_UPDATE] = no_splash.OnNPCUpdate
 
 
-function no_splash:OnEntityDamage(tookDamage, damageAmount, _, _)
-    if tookDamage:ToPlayer() then
-        if MinigameTimers.IFramesTimer <= 0 then
-            PlayerHP = PlayerHP - 1
-            SFXManager:Play(MinigameSounds.PLAYER_HIT)
-            PlayerHealthUI:Play("Flash", true)
-            MinigameTimers.IFramesTimer = MinigameConstants.MAX_PLAYER_IFRAMES
-            tookDamage:GetData().FakePlayer:GetSprite():Play("Hurt", true)
+function no_splash:OnPlayerDamage(player)
+    if MinigameTimers.IFramesTimer <= 0 then
+        PlayerHP = PlayerHP - 1
+        SFXManager:Play(MinigameSounds.PLAYER_HIT)
+        PlayerHealthUI:Play("Flash", true)
+        MinigameTimers.IFramesTimer = MinigameConstants.MAX_PLAYER_IFRAMES
+        player:GetData().FakePlayer:GetSprite():Play("Hurt", true)
 
-            if PlayerHP == 0 then
-                CurrentMinigameState = MinigameState.LOSING
+        if PlayerHP == 0 then
+            CurrentMinigameState = MinigameState.LOSING
 
-                TransitionScreen:Play("Appear", true)
-                SFXManager:Play(MinigameSounds.LOSE)
+            TransitionScreen:Play("Appear", true)
+            SFXManager:Play(MinigameSounds.LOSE)
 
-                for _, entity in ipairs(Isaac.FindByType(MinigameEntityTypes.CUSTOM_ENTITY)) do
-                    entity.Velocity = Vector.Zero
-                end
+            for _, entity in ipairs(Isaac.FindByType(MinigameEntityTypes.CUSTOM_ENTITY)) do
+                entity.Velocity = Vector.Zero
+            end
 
-                for _, entity in ipairs(Isaac.FindByType(EntityType.ENTITY_PROJECTILE)) do
-                    entity:Remove()
-                end
+            for _, entity in ipairs(Isaac.FindByType(EntityType.ENTITY_PROJECTILE)) do
+                entity:Remove()
+            end
 
-                local playerNum = game:GetNumPlayers()
-                for i = 0, playerNum - 1, 1 do
-                    local player = game:GetPlayer(i)
+            local playerNum = game:GetNumPlayers()
+            for i = 0, playerNum - 1, 1 do
+                local player = game:GetPlayer(i)
 
-                    player.Velocity = Vector.Zero
-                    player.ControlsEnabled = false
-                end
+                player.Velocity = Vector.Zero
+                player.ControlsEnabled = false
             end
         end
-
-        return false
     end
 
-    if tookDamage.Type ~= MinigameEntityTypes.CUSTOM_ENTITY then return end
+    return false
+end
 
-    --Negate damage if the fish is playing the transition anim
+
+function no_splash:OnEntityDamage(tookDamage, damageAmount)
     if tookDamage.Variant == MinigameEntityVariants.FISH and tookDamage:GetSprite():IsPlaying("Transition") then
         return false
     elseif tookDamage.Variant == MinigameEntityVariants.ANGLER_FISH then
@@ -948,7 +875,6 @@ function no_splash:OnEntityDamage(tookDamage, damageAmount, _, _)
         tookDamage:Remove()
     end
 end
-no_splash.callbacks[ModCallbacks.MC_ENTITY_TAKE_DMG] = no_splash.OnEntityDamage
 
 
 local function SetUpSpikeProjectile(projectile)
@@ -1007,7 +933,6 @@ function no_splash:OnProjectileInit(projectile)
         SetUpSpikeProjectile(projectile)
     end
 end
-no_splash.callbacks[ModCallbacks.MC_POST_PROJECTILE_INIT] = no_splash.OnProjectileInit
 
 
 function no_splash:OnProjectileUpdate(projectile)
@@ -1016,7 +941,6 @@ function no_splash:OnProjectileUpdate(projectile)
     projectile.FallingSpeed = 0
     projectile.FallingAccel = -0.1
 end
-no_splash.callbacks[ModCallbacks.MC_POST_PROJECTILE_UPDATE] = no_splash.OnProjectileUpdate
 
 
 function no_splash:OnInput(_, inputHook, buttonAction)
@@ -1031,7 +955,6 @@ function no_splash:OnInput(_, inputHook, buttonAction)
         end
     end
 end
-no_splash.callbacks[ModCallbacks.MC_INPUT_ACTION] = no_splash.OnInput
 
 
 ---@param player EntityPlayer
@@ -1082,7 +1005,6 @@ function no_splash:OnPlayerUpdate(player)
     end
     player:EvaluateItems()
 end
-no_splash.callbacks[ModCallbacks.MC_POST_PLAYER_UPDATE] = no_splash.OnPlayerUpdate
 
 
 function no_splash:OnCache(player, cacheFlags)
@@ -1103,7 +1025,6 @@ function no_splash:OnCache(player, cacheFlags)
         player.TearHeight = 5
     end
 end
-no_splash.callbacks[ModCallbacks.MC_EVALUATE_CACHE] = no_splash.OnCache
 
 
 function no_splash:OnTearFire(tear)
@@ -1126,7 +1047,6 @@ function no_splash:OnTearFire(tear)
         end
     end
 end
-no_splash.callbacks[ModCallbacks.MC_POST_FIRE_TEAR] = no_splash.OnTearFire
 
 
 function RenderUI()
@@ -1167,9 +1087,9 @@ local function RenderFadeOut()
 
     if TransitionScreen:IsFinished("Appear") then
         if CurrentMinigameState == MinigameState.WINNING then
-            no_splash.result = ArcadeCabinetVariables.MinigameResult.WIN
+            ArcadeCabinetVariables.CurrentMinigameResult = ArcadeCabinetVariables.MinigameResult.WIN
         else
-            no_splash.result = ArcadeCabinetVariables.MinigameResult.LOSE
+            ArcadeCabinetVariables.CurrentMinigameResult = ArcadeCabinetVariables.MinigameResult.LOSE
         end
     end
 
@@ -1187,7 +1107,80 @@ function no_splash:OnRender()
 
     RenderFadeOut()
 end
-no_splash.callbacks[ModCallbacks.MC_POST_RENDER] = no_splash.OnRender
+
+
+--INIT
+function no_splash:AddCallbacks(mod)
+    mod:AddCallback(ModCallbacks.MC_POST_UPDATE, no_splash.OnFrameUpdate)
+    mod:AddCallback(ModCallbacks.MC_POST_EFFECT_INIT, no_splash.OnTearPoofInit, EffectVariant.TEAR_POOF_A)
+    mod:AddCallback(ModCallbacks.MC_POST_EFFECT_INIT, no_splash.OnTearPoofInit, EffectVariant.TEAR_POOF_B)
+    mod:AddCallback(ModCallbacks.MC_POST_EFFECT_INIT, no_splash.OnBulletPoofInit, EffectVariant.BULLET_POOF)
+    mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, no_splash.OnBubbleUpdate, MinigameEntityVariants.BUBBLE)
+    mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, no_splash.OnExplosionUpdate, MinigameEntityVariants.BLOOD_EXPLOSION)
+    mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, no_splash.OnCorpseUpdate, MinigameEntityVariants.CORPSE)
+    mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, no_splash.OnChuckCorpseUpdate, MinigameEntityVariants.CHUCK_CORPSE)
+    mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, no_splash.OnBulletPoofUpdate, EffectVariant.BULLET_POOF)
+    mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, no_splash.OnTinyFlyUpdate, EffectVariant.TINY_FLY)
+    mod:AddCallback(ModCallbacks.MC_NPC_UPDATE, no_splash.OnNPCUpdate, MinigameEntityTypes.CUSTOM_ENTITY)
+    mod:AddCallback(ModCallbacks.MC_ENTITY_TAKE_DMG, no_splash.OnPlayerDamage, EntityType.ENTITY_PLAYER)
+    mod:AddCallback(ModCallbacks.MC_ENTITY_TAKE_DMG, no_splash.OnEntityDamage, MinigameEntityTypes.CUSTOM_ENTITY)
+    mod:AddCallback(ModCallbacks.MC_POST_PROJECTILE_INIT, no_splash.OnProjectileInit)
+    mod:AddCallback(ModCallbacks.MC_POST_PROJECTILE_UPDATE, no_splash.OnProjectileUpdate)
+    mod:AddCallback(ModCallbacks.MC_INPUT_ACTION, no_splash.OnInput)
+    mod:AddCallback(ModCallbacks.MC_POST_PLAYER_UPDATE, no_splash.OnPlayerUpdate)
+    mod:AddCallback(ModCallbacks.MC_EVALUATE_CACHE, no_splash.OnCache)
+    mod:AddCallback(ModCallbacks.MC_POST_FIRE_TEAR, no_splash.OnTearFire)
+    mod:AddCallback(ModCallbacks.MC_POST_RENDER, no_splash.OnRender)
+end
+
+
+function no_splash:RemoveCallbacks(mod)
+end
+
+
+function no_splash:Init(mod, variables)
+    ArcadeCabinetVariables = variables
+    no_splash:AddCallbacks(mod)
+
+    --Reset variables
+    PlayerHP = 3
+    CurrentWave = 0
+    DistanceTraveled = 0
+    AnglerFishProjectiles = 0
+    AnglerFishAttacksInARow = 0
+
+    MinigameTimers.IFramesTimer = 0
+
+    CurrentMinigameState = MinigameState.SWIMMING
+
+    rng:SetSeed(game:GetSeeds():GetStartSeed(), 35)
+
+    local overlay = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.BACKGROUND, 0, game:GetRoom():GetCenterPos(), Vector.Zero, nil)
+    overlay:GetSprite():Load("gfx/ns_overlay.anm2", true)
+    overlay:GetSprite():Play("Idle", true)
+    overlay.DepthOffset = 1000
+
+    local bg = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.BACKGROUND, 0, game:GetRoom():GetCenterPos(), Vector.Zero, nil)
+    bg:GetSprite():Load("gfx/ns_bg.anm2", true)
+    bg:GetSprite():Play("Idle", true)
+    bg.DepthOffset = -1000
+
+    Arrow = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.ARROW, 0, MinigameConstants.ARROW_SPAWNING_POS, Vector.Zero, nil)
+
+    -- Prepare players
+    local playerNum = game:GetNumPlayers()
+    for i = 0, playerNum - 1, 1 do
+        local player = game:GetPlayer(i)
+
+        player.Position = game:GetRoom():GetCenterPos()
+        player.Visible = false
+        player.ControlsEnabled = true
+
+        local fakePlayer = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.FAKE_PLAYER, 0, player.Position + Vector(0, 0.1), Vector.Zero, nil)
+        fakePlayer:GetSprite():Load("gfx/ns_player.anm2", true)
+        player:GetData().FakePlayer = fakePlayer
+    end
+end
 
 
 return no_splash
