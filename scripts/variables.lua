@@ -1,5 +1,15 @@
 local ArcadeCabinetVariables = {}
 
+----------------------------------------------
+--FANCY REQUIRE (Thanks manaphoenix <3)
+----------------------------------------------
+local function loadFile(loc, ...)
+    local _, err = pcall(require, "")
+    local modName = err:match("/mods/(.*)/%.lua")
+    local path = "mods/" .. modName .. "/"
+    return assert(loadfile(path .. loc .. ".lua"))(...)
+end
+
 ArcadeCabinetVariables.ArcadeCabinetVariant = {
     VARIANT_BLACKSTONEWIELDER = Isaac.GetEntityVariantByName("Arcade Cabinet BSW"),
     VARIANT_GUSH = Isaac.GetEntityVariantByName("Arcade Cabinet GUSH"),
@@ -33,7 +43,16 @@ ArcadeCabinetVariables.ArcadeCabinetRooms = {
     [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_TOOUNDERGROUND] = "220"
 }
 
-ArcadeCabinetVariables.ArcadeCabinetScripts = nil
+ArcadeCabinetVariables.ArcadeCabinetScripts = {
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_BLACKSTONEWIELDER] = loadFile("scripts/black_stone_wielder"),
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_GUSH] = loadFile("scripts/gush"),
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_HOLYSMOKES] = loadFile("scripts/holy_smokes"),
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_JUMPINGCOFFING] = loadFile("scripts/jumping_coffing"),
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_NIGHTLIGHT] = loadFile("scripts/night_light"),
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_NOSPLASH] = loadFile("scripts/no_splash"),
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_THEGROUNDBELOW] = loadFile("scripts/the_ground_below"),
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_TOOUNDERGROUND] = loadFile("scripts/too_underground")
+}
 
 ArcadeCabinetVariables.GameState = {
     NOT_PLAYING = 1,
