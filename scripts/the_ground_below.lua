@@ -80,7 +80,7 @@ local MinigameConstants = {
     FLY_VELOCITY = 4.5,
     FLY_Y_SPAWN = 500,
     FLY_HITBOX_RADIUS = 20,
-    NUM_FLY_LINES = 5,
+    NUM_FLY_LINES = 3,
     MAX_FLY_LINE_TIMER_FRAMES = 70,
 
     --Duke of flies attack
@@ -237,13 +237,13 @@ local function StartHangingKeeperAttack()
     rightKeeper:GetData().SpawningPos = MinigameConstants.KEEPER_SPAWNING_POS
     rightKeeper:GetData().SpawningFrame = game:GetFrameCount() + 30
 
-    local spawningPos2 = Vector(game:GetRoom():GetCenterPos().X - (MinigameConstants.KEEPER_SPAWNING_POS.X - game:GetRoom():GetCenterPos().X), MinigameConstants.KEEPER_SPAWNING_POS.Y)
-    local targetPos2 = Vector(game:GetRoom():GetCenterPos().X - (MinigameConstants.KEEPER_TARGET_POS.X - game:GetRoom():GetCenterPos().X), MinigameConstants.KEEPER_TARGET_POS.Y)
-    local targetVelocity2 = (targetPos2 - spawningPos2):Normalized() * MinigameConstants.KEEPER_VELOCITY
-    local leftKeeper = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.KEEPER, 0, spawningPos2, targetVelocity2, nil)
-    leftKeeper:GetData().KeeperShotsFired = 0
-    leftKeeper:GetData().SpawningPos = spawningPos2
-    leftKeeper:GetData().SpawningFrame = game:GetFrameCount() + 30
+    -- local spawningPos2 = Vector(game:GetRoom():GetCenterPos().X - (MinigameConstants.KEEPER_SPAWNING_POS.X - game:GetRoom():GetCenterPos().X), MinigameConstants.KEEPER_SPAWNING_POS.Y)
+    -- local targetPos2 = Vector(game:GetRoom():GetCenterPos().X - (MinigameConstants.KEEPER_TARGET_POS.X - game:GetRoom():GetCenterPos().X), MinigameConstants.KEEPER_TARGET_POS.Y)
+    -- local targetVelocity2 = (targetPos2 - spawningPos2):Normalized() * MinigameConstants.KEEPER_VELOCITY
+    -- local leftKeeper = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.KEEPER, 0, spawningPos2, targetVelocity2, nil)
+    -- leftKeeper:GetData().KeeperShotsFired = 0
+    -- leftKeeper:GetData().SpawningPos = spawningPos2
+    -- leftKeeper:GetData().SpawningFrame = game:GetFrameCount() + 30
 end
 
 
@@ -761,8 +761,10 @@ function the_ground_below:AddCallbacks(mod)
     mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, the_ground_below.OnUpdateCutscenePlayer, MinigameEntityVariants.PLAYER)
     mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, the_ground_below.OnUpdateBulletPoof, EffectVariant.BULLET_POOF)
     mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, the_ground_below.OnTinyFlyUpdate, EffectVariant.TINY_FLY)
+
     mod:AddCallback(ModCallbacks.MC_POST_PROJECTILE_INIT, the_ground_below.OnProjectileInit)
     mod:AddCallback(ModCallbacks.MC_POST_PROJECTILE_UPDATE, the_ground_below.OnProjectileUpdate)
+
     mod:AddCallback(ModCallbacks.MC_POST_UPDATE, the_ground_below.OnFrameUpdate)
     mod:AddCallback(ModCallbacks.MC_POST_RENDER, the_ground_below.OnRender)
     mod:AddCallback(ModCallbacks.MC_POST_PLAYER_UPDATE, the_ground_below.OnPlayerUpdate)
