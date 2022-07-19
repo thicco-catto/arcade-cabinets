@@ -203,6 +203,22 @@
         <sample weight="1" path="no splash/bonedead.wav"/>
     </sound>
 
+    <sound name="ns eel dead">
+        <sample weight="1" path="no splash/eeldie.wav"/>
+    </sound>
+
+    <sound name="ns clam appear">
+        <sample weight="1" path="no splash/clamappear.wav"/>
+    </sound>
+
+    <sound name="ns clam shoot">
+        <sample weight="1" path="no splash/clamshoot.wav"/>
+    </sound>
+
+    <sound name="ns clam dead">
+        <sample weight="1" path="no splash/clamdie.wav"/>
+    </sound>
+
     <!--The ground below-->
     <sound name="tgb intro">
         <sample weight="1" path="the ground below/intro.wav"/>

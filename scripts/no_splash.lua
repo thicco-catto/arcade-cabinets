@@ -15,6 +15,10 @@ local MinigameSounds = {
     CUNT_DEAD = Isaac.GetSoundIdByName("ns cunt dead"),
     FISH_SKIN = Isaac.GetSoundIdByName("ns fish skin"),
     BONE_DEAD = Isaac.GetSoundIdByName("ns bone dead"),
+    EEL_DEAD = Isaac.GetSoundIdByName("ns eel dead"),
+    CLAM_APPEAR = Isaac.GetSoundIdByName("ns clam appear"),
+    CLAM_SHOOT = Isaac.GetSoundIdByName("ns clam appear"),
+    CLAM_DEAD = Isaac.GetSoundIdByName("ns clam dead"),
     WAVE_FINISH = Isaac.GetSoundIdByName("ns wave finish"),
     ZAP = Isaac.GetSoundIdByName("ns zap"),
     CHUCK_CHICANERY = Isaac.GetSoundIdByName("jc third wave"),
@@ -65,18 +69,18 @@ local MinigameConstants = {
     --Wave stuff
     MAX_WAVES = 3,
     DISTANCE_NEEDED_FOR_WAVE_START = 450,
-    X_POSITION_TO_SPAWN = 500,
+    X_POSITION_TO_SPAWN = 550,
     X_POSITION_PER_MINIWAVE = 200,
 
     --Bubble stuff
-    MIN_BUBBLE_SPAWN_TIMER_FRAMES = 7,
+    MIN_BUBBLE_SPAWN_TIMER_FRAMES = 3,
     RANDOM_FRAMES_BUBBLE_SPAWN_TIMER = 10,
     BUBBLE_Y_SPAWN_POSITION = 500,
-    BUBBLE_MAX_X_SPAWN_POSITION = 600,
+    BUBBLE_MAX_X_SPAWN_POSITION = 1000,
     BUBBLE_Y_VELOCITY = 2.5,
     BUBBLE_Y_VELOCITY_RANDOM_OFFSET = 1,
-    BUBBLE_X_ACCELERATION = 0.1,
-    BUBBLE_MAX_X_VELOCITY = 3,
+    BUBBLE_X_ACCELERATION = 0.2,
+    BUBBLE_MAX_X_VELOCITY = 6,
 
     --Fish stuff
     FISH_AMOUNT = 2,
@@ -94,9 +98,10 @@ local MinigameConstants = {
     --Clam stuff
     CLAM_VELOCITY = 3,
     CLAM_TARGET_Y = 400,
+    CLAM_APPEAR_SOUND_Y = 450,
     CLAM_SPAWNING_Y = 700,
     CLAM_SPAWNING_X = 120,
-    CLAM_SPAWNING_X_OFFSET = 300,
+    CLAM_SPAWNING_X_OFFSET = 600,
     CLAM_SHOOT_COOLDOWN = 30,
 
     --Angler fish stuff
@@ -301,6 +306,11 @@ local function StartWave()
 
         if not hasSpawnedEelOrClam then
             SpawnEnemy(MinigameEntityVariants.CLAM, 1, 0)
+        end
+
+        local fishes = Isaac.FindByType(MinigameEntityTypes.CUSTOM_ENTITY, MinigameEntityVariants.FISH)
+        for i = 4, #fishes, 1 do
+            fishes[i]:Remove()
         end
     end
 
@@ -524,6 +534,11 @@ local function UpdateClam(clam)
     clam:AddEntityFlags(EntityFlag.FLAG_NO_PHYSICS_KNOCKBACK)
 
     if CurrentMinigameState == MinigameState.FINISHING_WAVE or CurrentMinigameState == MinigameState.SWIMMING then
+        if not clam:GetData().HasPlayedDeadSound then
+            SFXManager:Play(MinigameSounds.CLAM_DEAD)
+            clam:GetData().HasPlayedDeadSound = true
+        end
+
         clam.Velocity = Vector(0, MinigameConstants.CLAM_VELOCITY)
 
         if clam.Position.Y > MinigameConstants.CLAM_SPAWNING_Y then
@@ -533,12 +548,18 @@ local function UpdateClam(clam)
         return
     end
 
+    if clam.Position.Y <= MinigameConstants.CLAM_APPEAR_SOUND_Y and not clam:GetData().HasPlayedAppearSound then
+        SFXManager:Play(MinigameSounds.CLAM_APPEAR)
+        clam:GetData().HasPlayedAppearSound = true
+    end
+
     if clam.Position.Y <= MinigameConstants.CLAM_TARGET_Y then
         clam.Velocity = Vector.Zero
     end
 
     if clam:IsFrame(MinigameConstants.CLAM_SHOOT_COOLDOWN, 0) and clam.Position.Y <= MinigameConstants.CLAM_TARGET_Y then
         clam:GetSprite():Play("Shoot", true)
+        SFXManager:Play(MinigameSounds.CLAM_APPEAR)
         local spawningPos = clam.Position + Vector(0, 5)
         local spawningSpeed = (game:GetPlayer(0).Position - spawningPos):Normalized() * 10
         local projectileType = 0
@@ -851,6 +872,8 @@ function no_splash:OnEntityDamage(tookDamage, damageAmount)
         explosion:GetSprite():LoadGraphics()
         explosion:GetSprite():Play("Idle", true)
 
+        SFXManager:Play(MinigameSounds.EEL_DEAD)
+
         tookDamage:Remove()
     elseif tookDamage.Variant == MinigameEntityVariants.CUNT then
         SFXManager:Play(MinigameSounds.CUNT_DEAD)
@@ -1000,14 +1023,15 @@ function no_splash:OnPlayerUpdate(player)
         end
     end
 
-    if CurrentMinigameState ~= MinigameState.WINNING and CurrentMinigameState ~= MinigameState.LOSING then
-        player:AddCacheFlags(CacheFlag.CACHE_DAMAGE | CacheFlag.CACHE_FIREDELAY | CacheFlag.CACHE_SHOTSPEED | CacheFlag.CACHE_RANGE)
-    end
+
+    player:AddCacheFlags(CacheFlag.CACHE_DAMAGE | CacheFlag.CACHE_FIREDELAY | CacheFlag.CACHE_SHOTSPEED | CacheFlag.CACHE_RANGE)
     player:EvaluateItems()
 end
 
 
 function no_splash:OnCache(player, cacheFlags)
+    if CurrentMinigameState == MinigameState.WINNING or CurrentMinigameState == MinigameState.LOSING then return end
+
     if cacheFlags == CacheFlag.CACHE_DAMAGE then
         player.Damage = 2
     end
