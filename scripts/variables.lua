@@ -99,4 +99,6 @@ ArcadeCabinetVariables.TransitionScreen:Load("gfx/minigame_transition.anm2", tru
 ArcadeCabinetVariables.TransitionFrameCount = -1
 ArcadeCabinetVariables.FadeOutTimer = nil
 
+ArcadeCabinetVariables.MachinesInRun = {}
+
 return ArcadeCabinetVariables

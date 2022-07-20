@@ -12,8 +12,22 @@ local function loadFile(loc, ...)
 end
 
 local ArcadeCabinetVariables = loadFile("scripts/variables")
-local CabinetManagement = loadFile("scripts/cabinet")
-CabinetManagement:Init(ArcadeCabinetMod, ArcadeCabinetVariables)
+
+local Cabinet = loadFile("scripts/cabinet")
+Cabinet:Init(ArcadeCabinetVariables)
+
+local CabinetManagement = loadFile("scripts/cabinetManager")
+CabinetManagement:Init(ArcadeCabinetMod, ArcadeCabinetVariables, Cabinet)
+
+local MinigameManagement = loadFile("scripts/minigameManager")
+MinigameManagement:Init(ArcadeCabinetMod, ArcadeCabinetVariables, Cabinet)
+
+local PlayerManagement = loadFile("scripts/playerManager")
+PlayerManagement:Init(ArcadeCabinetMod, ArcadeCabinetVariables, Cabinet)
+
+CabinetManagement:AddOtherManagers(MinigameManagement, PlayerManagement)
+MinigameManagement:AddOtherManagers(CabinetManagement, PlayerManagement)
+PlayerManagement:AddOtherManagers(CabinetManagement, MinigameManagement)
 
 
 local function SpawnMachine(variant, pos)
