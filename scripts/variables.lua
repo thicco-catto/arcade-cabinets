@@ -10,6 +10,7 @@ local function loadFile(loc, ...)
     return assert(loadfile(path .. loc .. ".lua"))(...)
 end
 
+--#region Variables corresponding to each minigame
 ArcadeCabinetVariables.ArcadeCabinetVariant = {
     VARIANT_BLACKSTONEWIELDER = Isaac.GetEntityVariantByName("Arcade Cabinet BSW"),
     VARIANT_GUSH = Isaac.GetEntityVariantByName("Arcade Cabinet GUSH"),
@@ -44,15 +45,24 @@ ArcadeCabinetVariables.ArcadeCabinetRooms = {
 }
 
 ArcadeCabinetVariables.ArcadeCabinetScripts = {
-    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_BLACKSTONEWIELDER] = loadFile("scripts/black_stone_wielder"),
-    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_GUSH] = loadFile("scripts/gush"),
-    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_HOLYSMOKES] = loadFile("scripts/holy_smokes"),
-    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_JUMPINGCOFFING] = loadFile("scripts/jumping_coffing"),
-    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_NIGHTLIGHT] = loadFile("scripts/night_light"),
-    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_NOSPLASH] = loadFile("scripts/no_splash"),
-    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_THEGROUNDBELOW] = loadFile("scripts/the_ground_below"),
-    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_TOOUNDERGROUND] = loadFile("scripts/too_underground")
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_BLACKSTONEWIELDER] = loadFile("scripts/minigames/black_stone_wielder"),
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_GUSH] = loadFile("scripts/minigames/gush"),
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_HOLYSMOKES] = loadFile("scripts/minigames/holy_smokes"),
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_JUMPINGCOFFING] = loadFile("scripts/minigames/jumping_coffing"),
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_NIGHTLIGHT] = loadFile("scripts/minigames/night_light"),
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_NOSPLASH] = loadFile("scripts/minigames/no_splash"),
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_THEGROUNDBELOW] = loadFile("scripts/minigames/the_ground_below"),
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_TOOUNDERGROUND] = loadFile("scripts/minigames/too_underground")
 }
+--#endregion
+
+--#region Backdrop variants
+ArcadeCabinetVariables.BackdropVariant = Isaac.GetEntityVariantByName("minigame backdrop")
+ArcadeCabinetVariables.Backdrop1x1Variant = Isaac.GetEntityVariantByName("minigame backdrop 1x1")
+ArcadeCabinetVariables.Backdrop1x2Variant = Isaac.GetEntityVariantByName("minigame backdrop 1x2")
+ArcadeCabinetVariables.Backdrop2x1Variant = Isaac.GetEntityVariantByName("minigame backdrop 2x1")
+ArcadeCabinetVariables.Backdrop2x2Variant = Isaac.GetEntityVariantByName("minigame backdrop 2x2")
+--#endregion
 
 ArcadeCabinetVariables.GameState = {
     NOT_PLAYING = 1,
@@ -75,6 +85,8 @@ ArcadeCabinetVariables.MinigameDoor = nil
 ArcadeCabinetVariables.CurrentMinigame = nil
 ArcadeCabinetVariables.CurrentScript = nil
 ArcadeCabinetVariables.IsCurrentMinigameGlitched = nil
+ArcadeCabinetVariables.CurrentMinigameSeed = nil
+
 ArcadeCabinetVariables.LevelCurses = nil
 ArcadeCabinetVariables.OptionsChargeBar = nil
 ArcadeCabinetVariables.OptionsActiveCam = nil
@@ -86,10 +98,5 @@ ArcadeCabinetVariables.TransitionFrameCount = -1
 ArcadeCabinetVariables.LastRoomCollectibles = {}
 ArcadeCabinetVariables.MAX_ID_TMTRAINER = 4294967295
 ArcadeCabinetVariables.FadeOutTimer = nil
-ArcadeCabinetVariables.BackdropVariant = Isaac.GetEntityVariantByName("minigame backdrop")
-ArcadeCabinetVariables.Backdrop1x1Variant = Isaac.GetEntityVariantByName("minigame backdrop 1x1")
-ArcadeCabinetVariables.Backdrop1x2Variant = Isaac.GetEntityVariantByName("minigame backdrop 1x2")
-ArcadeCabinetVariables.Backdrop2x1Variant = Isaac.GetEntityVariantByName("minigame backdrop 2x1")
-ArcadeCabinetVariables.Backdrop2x2Variant = Isaac.GetEntityVariantByName("minigame backdrop 2x2")
 
 return ArcadeCabinetVariables

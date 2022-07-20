@@ -145,7 +145,7 @@ local MinigameConstants = {
 
     --Glitched stuff
     GLITCH_INTRO_ROOM = 80,
-    GLITCH_MAX_LEVEL = 4,
+    GLITCH_MAX_LEVEL = 1,
     GLITCH_ROOM_POOL = {
         81,
         82,

@@ -43,6 +43,20 @@ local function GetCabinetRNG(cabinet)
 end
 
 
+---Returns the cabinet entity that was used
+---@return Entity
+local function FindUsedCabinet()
+    for _, cabinet in ipairs(Isaac.FindByType(EntityType.ENTITY_SLOT)) do
+        if IsModdedVariant(cabinet.Variant) and
+        ArcadeCabinetVariables.CurrentMinigameSeed == GetCabinetRNG(cabinet):GetSeed() then
+            return cabinet
+        end
+    end
+
+    return nil
+end
+
+
 ---@param slot Entity
 local function UseMachine(slot)
     --Set states and current minigame
@@ -51,6 +65,7 @@ local function UseMachine(slot)
     ArcadeCabinetVariables.CurrentMinigame = slot.Variant
     ArcadeCabinetVariables.CurrentScript = ArcadeCabinetVariables.ArcadeCabinetScripts[ArcadeCabinetVariables.CurrentMinigame]
     ArcadeCabinetVariables.IsCurrentMinigameGlitched = slot:GetData().IsGlitched
+    ArcadeCabinetVariables.CurrentMinigameSeed = GetCabinetRNG(slot):GetSeed()
 
     --Set the transition screen graphics
     local path = "gfx/effects/"
@@ -83,12 +98,13 @@ function CabinetManagement:OnPlayerUpdate(player)
     if player:GetNumCoins() < 5 then return end
 
     for _, slot in pairs(Isaac.FindByType(EntityType.ENTITY_SLOT)) do
-        --If it isnt one of our machines we can just skip the rest
-        if not IsModdedVariant(slot.Variant) then break end
-
-        if (player.Position - slot.Position):Length() <= ArcadeCabinetVariables.CabinetRadius then
-            player:AddCoins(-5)
-            UseMachine(slot)
+        --If has to be one of our machines and it has to be playing the idle animation
+        if IsModdedVariant(slot.Variant) and slot:GetSprite():IsPlaying("Idle") then
+            --Distance must be less that the hardcoded radius (like this so we dont have to use player collision callback)
+            if (player.Position - slot.Position):Length() <= ArcadeCabinetVariables.CabinetRadius then
+                player:AddCoins(-5)
+                UseMachine(slot)
+            end
         end
     end
 end
@@ -218,6 +234,23 @@ local function FinishTransitionFadeIn()
 end
 
 
+local function FinishTransitionFadeOut()
+    ArcadeCabinetVariables.CurrentGameState = ArcadeCabinetVariables.GameState.NOT_PLAYING
+
+    local playerNum = game:GetNumPlayers()
+    for i = 0, playerNum - 1, 1 do
+        game:GetPlayer(i).ControlsEnabled = true
+    end
+
+    local cabinet = FindUsedCabinet()
+    if ArcadeCabinetVariables.CurrentMinigameResult == ArcadeCabinetVariables.MinigameResult.WIN then
+        cabinet:GetSprite():Play("Prize", true)
+    else
+        cabinet:GetSprite():Play("Failure", true)
+    end
+end
+
+
 local function RenderTransitionScreen()
     --Only render the screen if it's on fade in or on transition
     if ArcadeCabinetVariables.CurrentGameState ~= ArcadeCabinetVariables.GameState.FADE_IN and
@@ -236,11 +269,7 @@ local function RenderTransitionScreen()
     if ArcadeCabinetVariables.TransitionScreen:IsFinished("Appear") then
         FinishTransitionFadeIn()
     elseif ArcadeCabinetVariables.TransitionScreen:IsFinished("Disappear") then
-        ArcadeCabinetVariables.CurrentGameState = ArcadeCabinetVariables.GameState.NOT_PLAYING
-        local playerNum = game:GetNumPlayers()
-        for i = 0, playerNum - 1, 1 do
-            game:GetPlayer(i).ControlsEnabled = true
-        end
+        FinishTransitionFadeOut()
     end
 end
 
@@ -316,6 +345,49 @@ function CabinetManagement:OnRender()
     --If its in the transition (Showing the minigame screen) render it here
     --If it was rendering on the shader callback, it'd literally render on top of the shader lmao
     ArcadeCabinetVariables.TransitionScreen:Render(Vector(Isaac.GetScreenWidth() / 2, Isaac.GetScreenHeight() / 2), Vector.Zero, Vector.Zero)
+end
+
+
+local function SpawnCabinetReward(cabinet)
+    --Choose the item
+    print(cabinet)
+    local cabinetRng = GetCabinetRNG(cabinet)
+    local seed = cabinetRng:RandomInt(999) * 10000 + 10000
+    local chosenItem = game:GetItemPool():GetCollectible(ItemPoolType.POOL_CRANE_GAME, false, seed)
+
+    --Spawn the item pedestal
+    local pedestal = Isaac.Spawn(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_COLLECTIBLE, chosenItem, cabinet.Position, Vector.Zero, nilw)
+
+    --Load the appropiate graphics
+    local collectibleGfx = Isaac.GetItemConfig():GetCollectible(chosenItem).GfxFileName
+    pedestal:GetSprite():Load("gfx/cabinet_collectible_pedestal.anm2", true)
+    pedestal:GetSprite():ReplaceSpritesheet(1, collectibleGfx)
+
+    local pedestalGfx = "gfx/slots/" .. ArcadeCabinetVariables.ArcadeCabinetSprite[cabinet.Variant]
+    pedestal:GetSprite():ReplaceSpritesheet(5, pedestalGfx)
+
+    pedestal:GetSprite():LoadGraphics()
+
+    --Play the animations
+    pedestal:GetSprite():Play("Idle", true)
+    pedestal:GetSprite():PlayOverlay("Alternates", true)
+
+    --Set data so we know to set its frame to 0
+    pedestal:GetData().ArcadeCabinet = {}
+    pedestal:GetData().ArcadeCabinet.IsCabinetReward = true
+
+    --Remove the cabinet
+    cabinet:Remove()
+end
+
+
+---@param cabinet Entity
+local function OnCabinetUpdate(cabinet)
+    --Check if it should pay out
+    if cabinet:GetSprite():IsEventTriggered("Prize") then
+        SpawnCabinetReward(cabinet)
+        return
+    end
 end
 
 
@@ -408,6 +480,12 @@ end
 
 
 function CabinetManagement:OnFrameUpdate()
+    for _, cabinet in ipairs(Isaac.FindByType(EntityType.ENTITY_SLOT)) do
+        if IsModdedVariant(cabinet.Variant) then
+            OnCabinetUpdate(cabinet)
+        end
+    end
+
     CheckIfStartMinigame()
 
     CheckIfEndMinigame()
@@ -507,6 +585,15 @@ function CabinetManagement:OnNewRoom()
 end
 
 
+---@param collectible EntityPickup
+function CabinetManagement:OnCollectibleUpdate(collectible)
+    if not collectible:GetData().ArcadeCabinet then return end
+    if not collectible:GetData().ArcadeCabinet.IsCabinetReward then return end
+
+    collectible:GetSprite():SetOverlayFrame("Alternates", 0)
+end
+
+
 function CabinetManagement:Init(mod, variables)
     mod:AddCallback(ModCallbacks.MC_POST_PLAYER_UPDATE, CabinetManagement.OnPlayerUpdate)
     mod:AddCallback(ModCallbacks.MC_GET_SHADER_PARAMS, CabinetManagement.GetShaderParams)
@@ -514,6 +601,7 @@ function CabinetManagement:Init(mod, variables)
     mod:AddCallback(ModCallbacks.MC_POST_PEFFECT_UPDATE, CabinetManagement.OnPeffectUpdate)
     mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, CabinetManagement.OnNewRoom)
     mod:AddCallback(ModCallbacks.MC_POST_UPDATE, CabinetManagement.OnFrameUpdate)
+    mod:AddCallback(ModCallbacks.MC_POST_PICKUP_UPDATE, CabinetManagement.OnCollectibleUpdate, PickupVariant.PICKUP_COLLECTIBLE)
     ArcadeCabinetMod = mod
     ArcadeCabinetVariables = variables
 end
