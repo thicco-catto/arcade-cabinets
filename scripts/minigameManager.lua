@@ -236,9 +236,9 @@ local function FinishTransitionFadeOut()
     end
 
     local cabinet = FindUsedCabinet()
-    if ArcadeCabinetVariables.CurrentMinigameResult == ArcadeCabinetVariables.MinigameResult.WIN then
+    if ArcadeCabinetVariables.CurrentMinigameResult == ArcadeCabinetVariables.MinigameResult.WIN and cabinet then
         cabinet:GetSprite():Play("Prize", true)
-    else
+    elseif cabinet then
         cabinet:GetSprite():Play("Failure", true)
     end
 end
