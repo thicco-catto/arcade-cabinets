@@ -16,14 +16,17 @@ local ArcadeCabinetVariables = loadFile("scripts/variables")
 local Cabinet = loadFile("scripts/cabinet")
 Cabinet:Init(ArcadeCabinetVariables)
 
+local Helpers = loadFile("scripts/helpers")
+Helpers:Init(ArcadeCabinetVariables)
+
 local CabinetManagement = loadFile("scripts/cabinetManager")
-CabinetManagement:Init(ArcadeCabinetMod, ArcadeCabinetVariables, Cabinet)
+CabinetManagement:Init(ArcadeCabinetMod, ArcadeCabinetVariables, Cabinet, Helpers)
 
 local MinigameManagement = loadFile("scripts/minigameManager")
-MinigameManagement:Init(ArcadeCabinetMod, ArcadeCabinetVariables, Cabinet)
+MinigameManagement:Init(ArcadeCabinetMod, ArcadeCabinetVariables, Cabinet, Helpers)
 
 local PlayerManagement = loadFile("scripts/playerManager")
-PlayerManagement:Init(ArcadeCabinetMod, ArcadeCabinetVariables, Cabinet)
+PlayerManagement:Init(ArcadeCabinetMod, ArcadeCabinetVariables, Cabinet, Helpers)
 
 CabinetManagement:AddOtherManagers(MinigameManagement, PlayerManagement)
 MinigameManagement:AddOtherManagers(CabinetManagement, PlayerManagement)

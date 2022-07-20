@@ -1,32 +1,30 @@
-local Cabinet = {}
+local Cabinet = {
+    stage = -1,
+    room = -1,
+    gridPosition = -1,
+    glitched = false,
+    initialSeed = 0,
+    numberOfAttempts = 0,
+    numberOfRerolls = 0
+}
 local ArcadeCabinetVariables = nil
 local game = Game()
 
-Cabinet.stage = -1
-Cabinet.room = -1
-Cabinet.gridPosition = -1
-Cabinet.glitched = false
-Cabinet.initialSeed = -1
 
-Cabinet.numberOfAttempts = 0
-Cabinet.numberOfRerolls = 0
-
-
-function Cabinet:NewCabinet(gridPosition, glitched, initialSeed)
-    local cabinet = {}
-    setmetatable(cabinet, self)
-    self.__index = self
-
+function Cabinet:New(gridPosition, glitched, initialSeed)
     local level = game:GetLevel()
 
-    self.stage = level:GetAbsoluteStage()
-    self.room = level:GetCurrentRoomIndex()
-    self.gridPosition = gridPosition
-    self.glitched = glitched
-    self.initialSeed = initialSeed
-
-    self.numberOfAttempts = 0
-    self.numberOfRerolls = 0
+    local cabinet = {
+        stage = level:GetAbsoluteStage(),
+        room = level:GetCurrentRoomIndex(),
+        gridPosition = gridPosition,
+        glitched = glitched,
+        initialSeed = initialSeed,
+        numberOfAttempts = 0,
+        numberOfRerolls = 0
+    }
+    setmetatable(cabinet, self)
+    self.__index = self
 
     return cabinet
 end

@@ -1,19 +1,20 @@
 local PlayerManagement = {}
-local ArcadeCabinetMod = nil
-local ArcadeCabinetVariables = nil
-local Cabinet = nil
+local ArcadeCabinetVariables
 
-local CabinetManagement = nil
-local MinigameManagement = nil
+local Cabinet
+local Helpers
+
+local CabinetManagement
+local MinigameManagement
 
 local game = Game()
 
 
 --Set up
-function PlayerManagement:Init(mod, variables, cabinet)
-    ArcadeCabinetMod = mod
+function PlayerManagement:Init(mod, variables, cabinet, helpers)
     ArcadeCabinetVariables = variables
     Cabinet = cabinet
+    Helpers = helpers
 end
 
 

@@ -1,10 +1,11 @@
 local MinigameManagement = {}
-local ArcadeCabinetMod = nil
-local ArcadeCabinetVariables = nil
-local Cabinet = nil
+local ArcadeCabinetVariables
 
-local CabinetManagement = nil
-local PlayerManagement = nil
+local Cabinet
+local Helpers
+
+local CabinetManagement
+local PlayerManagement
 
 local game = Game()
 
@@ -329,7 +330,7 @@ end
 
 
 function MinigameManagement:OnRender()
-    DebugRender()
+    --DebugRender()
 
     --Update the animation here because the anm2 and everything is planned to update on render
     --Incredibly shitty but works
@@ -621,17 +622,16 @@ end
 
 
 --Set up
-function MinigameManagement:Init(mod, variables, cabinet)
+function MinigameManagement:Init(mod, variables, cabinet, helpers)
     mod:AddCallback(ModCallbacks.MC_POST_PLAYER_UPDATE, MinigameManagement.OnPlayerUpdate)
     mod:AddCallback(ModCallbacks.MC_GET_SHADER_PARAMS, MinigameManagement.GetShaderParams)
     mod:AddCallback(ModCallbacks.MC_POST_RENDER, MinigameManagement.OnRender)
     mod:AddCallback(ModCallbacks.MC_POST_PEFFECT_UPDATE, MinigameManagement.OnPeffectUpdate)
-    mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, MinigameManagement.OnNewRoom)
-    mod:AddCallback(ModCallbacks.MC_POST_UPDATE, MinigameManagement.OnFrameUpdate)
     mod:AddCallback(ModCallbacks.MC_POST_PICKUP_UPDATE, MinigameManagement.OnCollectibleUpdate, PickupVariant.PICKUP_COLLECTIBLE)
     ArcadeCabinetMod = mod
     ArcadeCabinetVariables = variables
     Cabinet = cabinet
+    Helpers = helpers
 end
 
 
