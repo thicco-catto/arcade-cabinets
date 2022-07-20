@@ -296,6 +296,13 @@ local function UpdateTransition()
                 local pos = room:FindFreePickupSpawnPosition(room:GetCenterPos(), 0, true)
                 local whipper = Isaac.Spawn(EntityType.ENTITY_WHIPPER, CurrentLevel - 1, 0, pos, Vector.Zero, nil)
                 whipper:ClearEntityFlags(EntityFlag.FLAG_APPEAR)
+
+                if CurrentLevel == 3 then
+                    whipper = whipper:ToNPC()
+                    whipper:MakeChampion(whipper.InitSeed, ChampionColor.BLUE)
+                    whipper:SetColor(Color(1, 1, 1), 10, -10, false, true)
+                    whipper.SpriteScale = Vector.One
+                end
             end
         end
     else
@@ -566,6 +573,15 @@ function black_stone_wielder:OnNPCInit(entity)
 end
 
 
+---@param entity EntityNPC
+function black_stone_wielder:OnNPCUpdate(entity)
+    if entity.Variant == 2 then
+        entity:SetColor(Color(1, 1, 1), 10, -10, false, true)
+        entity.Scale = 1
+    end
+end
+
+
 function black_stone_wielder:OnPlayerDamage(player)
     if MinigameTimers.IFramesTimer <= 0 then
         HitPlayer(player:ToPlayer())
@@ -696,6 +712,7 @@ function black_stone_wielder:AddCallbacks(mod)
     mod:AddCallback(ModCallbacks.MC_POST_UPDATE, black_stone_wielder.OnFrameUpdate)
     mod:AddCallback(ModCallbacks.MC_POST_RENDER, black_stone_wielder.OnRender)
     mod:AddCallback(ModCallbacks.MC_POST_NPC_INIT, black_stone_wielder.OnNPCInit, EntityType.ENTITY_WHIPPER)
+    mod:AddCallback(ModCallbacks.MC_NPC_UPDATE, black_stone_wielder.OnNPCUpdate, EntityType.ENTITY_WHIPPER)
     mod:AddCallback(ModCallbacks.MC_ENTITY_TAKE_DMG, black_stone_wielder.OnPlayerDamage, EntityType.ENTITY_PLAYER)
     mod:AddCallback(ModCallbacks.MC_PRE_NPC_COLLISION, black_stone_wielder.OnEntityCollision)
     mod:AddCallback(ModCallbacks.MC_POST_PICKUP_UPDATE, black_stone_wielder.OnPickupUpdate, MinigameEntityVariants.RUNE_SHARD)
