@@ -237,6 +237,8 @@ local function SpawnEnemy(EntityVariant, YPos, miniwave)
     entity:ClearEntityFlags(EntityFlag.FLAG_APPEAR)
     entity:AddEntityFlags(EntityFlag.FLAG_NO_FLASH_ON_DAMAGE)
     entity:GetSprite():Play("Idle", true)
+
+    return entity
 end
 
 
@@ -254,6 +256,12 @@ local function StartWave()
         anglerFish:AddEntityFlags(EntityFlag.FLAG_NO_FLASH_ON_DAMAGE | EntityFlag.FLAG_NO_PHYSICS_KNOCKBACK)
         anglerFish.DepthOffset = -100
         anglerFish:GetData().HasPlayedSound = false
+
+        if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+            anglerFish:GetSprite():ReplaceSpritesheet(0, "gfx/enemies/ns_glitch_angler_fish.png")
+            anglerFish:GetSprite():ReplaceSpritesheet(1, "gfx/enemies/ns_glitch_angler_fish.png")
+            anglerFish:GetSprite():LoadGraphics()
+        end
     else
         local hasSpawnedEelOrClam = false
 
@@ -272,21 +280,33 @@ local function StartWave()
                 --Fish
                 local yInitial = rng:RandomInt(500)
                 for _ = 1, MinigameConstants.FISH_AMOUNT + CurrentWave, 1 do
-                    SpawnEnemy(MinigameEntityVariants.FISH, yInitial, miniwave)
+                    local fish = SpawnEnemy(MinigameEntityVariants.FISH, yInitial, miniwave)
+                    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+                        fish:GetSprite():ReplaceSpritesheet(0, "gfx/enemies/ns_glitch_fish.png")
+                        fish:GetSprite():LoadGraphics()
+                    end
                     yInitial = yInitial + 10
                 end
             elseif chosenEnemy == 1 then
                 --Eel
                 hasSpawnedEelOrClam = true
                 for _ = 1, amountToSpawn, 1 do
-                    SpawnEnemy(MinigameEntityVariants.EEL, rng:RandomInt(500), miniwave)
+                    local eel = SpawnEnemy(MinigameEntityVariants.EEL, rng:RandomInt(500), miniwave)
+                    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+                        eel:GetSprite():ReplaceSpritesheet(0, "gfx/enemies/ns_glitch_eel.png")
+                        eel:GetSprite():LoadGraphics()
+                    end
                 end
             elseif chosenEnemy == 2 then
                 --Cunts
                 for _ = 1, amountToSpawn, 1 do
                     local yInitial = rng:RandomInt(500)
                     for _ = 1, MinigameConstants.CUNT_AMOUNT + CurrentWave, 1 do
-                        SpawnEnemy(MinigameEntityVariants.CUNT, yInitial, miniwave)
+                        local cunt = SpawnEnemy(MinigameEntityVariants.CUNT, yInitial, miniwave)
+                        if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+                            cunt:GetSprite():ReplaceSpritesheet(0, "gfx/enemies/ns_glitch_cunt.png")
+                            cunt:GetSprite():LoadGraphics()
+                        end
                     end
                 end
             elseif chosenEnemy == 3 then
@@ -299,13 +319,21 @@ local function StartWave()
 
                 hasSpawnedEelOrClam = true
                 for _ = 1, amountToSpawn, 1 do
-                    SpawnEnemy(MinigameEntityVariants.CLAM, 1, miniwave)
+                    local clam = SpawnEnemy(MinigameEntityVariants.CLAM, 1, miniwave)
+                    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+                        clam:GetSprite():ReplaceSpritesheet(0, "gfx/enemies/ns_glitch_clam.png")
+                        clam:GetSprite():LoadGraphics()
+                    end
                 end
             end
         end
 
         if not hasSpawnedEelOrClam then
-            SpawnEnemy(MinigameEntityVariants.CLAM, 1, 0)
+            local clam = SpawnEnemy(MinigameEntityVariants.CLAM, 1, 0)
+            if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+                clam:GetSprite():ReplaceSpritesheet(0, "gfx/enemies/ns_glitch_clam.png")
+                clam:GetSprite():LoadGraphics()
+            end
         end
 
         local fishes = Isaac.FindByType(MinigameEntityTypes.CUSTOM_ENTITY, MinigameEntityVariants.FISH)
@@ -321,6 +349,10 @@ end
 local function FinishWave()
     if CurrentWave > MinigameConstants.MAX_WAVES then return end
     Arrow = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.ARROW, 0, MinigameConstants.ARROW_SPAWNING_POS, Vector.Zero, nil)
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+        Arrow:GetSprite():ReplaceSpritesheet(0, "gfx/effects/no splash/ns_glitch_arrow.png")
+        Arrow:GetSprite():LoadGraphics()
+    end
     CurrentMinigameState = MinigameState.FINISHING_WAVE
     game:ShakeScreen(14)
     LastPlayerPosX = game:GetPlayer(0).Position.X
@@ -746,7 +778,11 @@ local function UpdateAnglerFish(anglerFish)
             local skellyCunt = Isaac.Spawn(MinigameEntityTypes.CUSTOM_ENTITY, MinigameEntityVariants.CUNT, 0, spawningPos, Vector.Zero, anglerFish)
             skellyCunt:ClearEntityFlags(EntityFlag.FLAG_APPEAR)
             skellyCunt:AddEntityFlags(EntityFlag.FLAG_NO_FLASH_ON_DAMAGE)
-            skellyCunt:GetSprite():ReplaceSpritesheet(0, "gfx/enemies/ns_skelly_cunt.png")
+            if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+                skellyCunt:GetSprite():ReplaceSpritesheet(0, "gfx/enemies/ns_glitch_skelly_cunt.png")
+            else
+                skellyCunt:GetSprite():ReplaceSpritesheet(0, "gfx/enemies/ns_skelly_cunt.png")
+            end
             skellyCunt:GetSprite():LoadGraphics()
             skellyCunt.DepthOffset = 30
         end
@@ -842,7 +878,11 @@ function no_splash:OnEntityDamage(tookDamage, damageAmount)
         if tookDamage.SubType == 0 then
             SFXManager:Play(MinigameSounds.FISH_SKIN)
             local bonerFish = Isaac.Spawn(MinigameEntityTypes.CUSTOM_ENTITY, MinigameEntityVariants.FISH, 1, tookDamage.Position, Vector.Zero, nil)
-            bonerFish:GetSprite():ReplaceSpritesheet(0, "gfx/enemies/ns_bone_fish.png")
+            if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+                bonerFish:GetSprite():ReplaceSpritesheet(0, "gfx/enemies/ns_glitch_bone_fish.png")
+            else
+                bonerFish:GetSprite():ReplaceSpritesheet(0, "gfx/enemies/ns_bone_fish.png")
+            end
             bonerFish:GetSprite():LoadGraphics()
             bonerFish:GetSprite():Play("Transition", true)
             bonerFish:ClearEntityFlags(EntityFlag.FLAG_APPEAR)
@@ -947,10 +987,18 @@ function no_splash:OnProjectileInit(projectile)
     projectile.DepthOffset = 20
 
     if projectile.SpawnerVariant == MinigameEntityVariants.EEL or projectile.SpawnerVariant == MinigameEntityVariants.ANGLER_FISH then
-        projectile:GetSprite():Load("gfx/ns_eel_projectile.anm2", true)
+        projectile:GetSprite():Load("gfx/ns_eel_projectile.anm2", false)
+        if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+            projectile:GetSprite():ReplaceSpritesheet(0, "gfx/effects/no splash/ns_glitch_eel_projectile.png")
+        end
+        projectile:GetSprite():LoadGraphics()
         projectile:GetSprite():Play("Idle", true)
     elseif projectile.SpawnerVariant == MinigameEntityVariants.CLAM then
-        projectile:GetSprite():Load("gfx/ns_pearl_projectile.anm2", true)
+        projectile:GetSprite():Load("gfx/ns_pearl_projectile.anm2", false)
+        if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+            projectile:GetSprite():ReplaceSpritesheet(0, "gfx/effects/no splash/ns_glitch_pearl_projectile.png")
+        end
+        projectile:GetSprite():LoadGraphics()
         projectile:GetSprite():Play("Idle", true)
     elseif projectile.SpawnerVariant == MinigameEntityVariants.SPIKED_MINE then
         SetUpSpikeProjectile(projectile)
@@ -1200,16 +1248,46 @@ function no_splash:Init(mod, variables)
     rng:SetSeed(game:GetSeeds():GetStartSeed(), 35)
 
     local overlay = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.BACKGROUND, 0, game:GetRoom():GetCenterPos(), Vector.Zero, nil)
-    overlay:GetSprite():Load("gfx/ns_overlay.anm2", true)
+    overlay:GetSprite():Load("gfx/ns_overlay.anm2", false)
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+        overlay:GetSprite():ReplaceSpritesheet(0, "gfx/grid/ns_glitch_overlay.png")
+    end
+    overlay:GetSprite():LoadGraphics()
     overlay:GetSprite():Play("Idle", true)
     overlay.DepthOffset = 1000
 
     local bg = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.BACKGROUND, 0, game:GetRoom():GetCenterPos(), Vector.Zero, nil)
-    bg:GetSprite():Load("gfx/ns_bg.anm2", true)
+    bg:GetSprite():Load("gfx/ns_bg.anm2", false)
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+        bg:GetSprite():ReplaceSpritesheet(0, "gfx/grid/ns_glitch_bg.png")
+    end
+    bg:GetSprite():LoadGraphics()
     bg:GetSprite():Play("Idle", true)
     bg.DepthOffset = -1000
 
     Arrow = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.ARROW, 0, MinigameConstants.ARROW_SPAWNING_POS, Vector.Zero, nil)
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+        Arrow:GetSprite():ReplaceSpritesheet(0, "gfx/effects/no splash/ns_glitch_arrow.png")
+        Arrow:GetSprite():LoadGraphics()
+    end
+
+    --UI
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+        PlayerHealthUI:ReplaceSpritesheet(0, "gfx/effects/no splash/ns_glitch_player_health_ui.png")
+
+        BossHealthUI:ReplaceSpritesheet(0, "gfx/effects/no splash/ns_glitch_boss_health_ui.png")
+        BossHealthUI:ReplaceSpritesheet(1, "gfx/effects/no splash/ns_glitch_boss_health_ui.png")
+        BossHealthUI:ReplaceSpritesheet(2, "gfx/effects/no splash/ns_glitch_boss_health_ui.png")
+    else
+        PlayerHealthUI:ReplaceSpritesheet(0, "gfx/effects/no splash/ns_player_health_ui.png")
+
+        BossHealthUI:ReplaceSpritesheet(0, "gfx/effects/no splash/ns_boss_health_ui.png")
+        BossHealthUI:ReplaceSpritesheet(1, "gfx/effects/no splash/ns_boss_health_ui.png")
+        BossHealthUI:ReplaceSpritesheet(2, "gfx/effects/no splash/ns_boss_health_ui.png")
+    end
+
+    PlayerHealthUI:LoadGraphics()
+    BossHealthUI:LoadGraphics()
 
     -- Prepare players
     local playerNum = game:GetNumPlayers()
