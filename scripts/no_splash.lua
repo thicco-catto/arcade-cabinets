@@ -126,7 +126,16 @@ local MinigameConstants = {
     MAX_CHUCK_EXPLOSIONS = 20,
     ANGLER_FISH_EXPLOSION_COOLDOWN = 4,
     ANGLER_FISH_EXPLOSIONS_X_OFFSET = 100,
-    ANGLER_FISH_EXPLOSIONS_Y_OFFSET = 50
+    ANGLER_FISH_EXPLOSIONS_Y_OFFSET = 50,
+
+    --Glitch stuff
+    GLITCH_CUNT_SPEED_INCREASE = 1.3,
+    GLITCH_CLAM_HOMING_CHANCE = 5,
+
+    GLITCH_CHANCE_FOR_QUICK_CHUCK_ATTACK = 30,
+    GLITCH_CHANCE_FOR_RANDOM_CHUCK_PROJECTILE = 7,
+    GLITCH_RANDOM_CHUCK_PROJECTILE_COOLDOWN = 20,
+    GLITCH_CHANCE_FOR_SPEEDY_CHUCK_CHARGE = 20,
 }
 
 -- Timers
@@ -135,6 +144,7 @@ local MinigameTimers = {
     AnglerFishAttackTimer = 0,
     IFramesTimer = 0,
     BossHealthFlashTimer = 0,
+    RandomChuckProjectileTimer = 0
 }
 
 -- States
@@ -172,6 +182,8 @@ local SpawnedFinalExplosions = 0
 
 
 local function SpawnBubbles()
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then return end
+
     if MinigameTimers.BubbleSpawnTimer > 0 then
         MinigameTimers.BubbleSpawnTimer = MinigameTimers.BubbleSpawnTimer - 1
         return
@@ -528,6 +540,9 @@ local function UpdateCunt(cunt)
     end
 
     cunt.Velocity = (Isaac.GetPlayer(0).Position - cunt.Position):Normalized() * MinigameConstants.CUNT_VELOCITY
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+        cunt.Velocity = cunt.Velocity * MinigameConstants.GLITCH_CUNT_SPEED_INCREASE
+    end
     cunt.FlipX = Isaac.GetPlayer(0).Position.X > cunt.Position.X
 end
 
@@ -597,6 +612,11 @@ local function UpdateClam(clam)
         local projectileType = 0
         local params = ProjectileParams()
         params.BulletFlags = ProjectileFlags.NO_WALL_COLLIDE
+        if ArcadeCabinetVariables.IsCurrentMinigameGlitched and rng:RandomInt(100) <= MinigameConstants.GLITCH_CLAM_HOMING_CHANCE then
+            params.BulletFlags = ProjectileFlags.NO_WALL_COLLIDE | ProjectileFlags.SMART | ProjectileFlags.CHANGE_FLAGS_AFTER_TIMEOUT
+            params.ChangeFlags = ProjectileFlags.NO_WALL_COLLIDE
+            params.ChangeTimeout = 50
+        end
         params.Spread = 1
         clam:FireProjectiles(spawningPos, spawningSpeed, projectileType, params)
     end
@@ -633,6 +653,10 @@ local function CalculateAnglerFishVel(anglerFish, anglerFishSpr)
             anglerFish.Velocity = Vector(MinigameConstants.ANGLER_FISH_CHARGE_VELOCITY, 0)
         else
             anglerFish.Velocity = Vector(-MinigameConstants.ANGLER_FISH_CHARGE_VELOCITY, 0)
+        end
+
+        if anglerFish:GetData().IsSpeedyCharge then
+            anglerFish.Velocity = anglerFish.Velocity * 1.5
         end
     elseif anglerFishSpr:IsPlaying("Idle") then
         if (anglerFish.FlipX and anglerFish.Position.X < MinigameConstants.ANGLER_FISH_NORMAL_ATTACK_LEFT) or
@@ -710,12 +734,40 @@ local function UpdateAnglerFish(anglerFish)
         if not anglerFish:GetData().CanDoAttacks then
             anglerFish:GetData().CanDoAttacks = true
             MinigameTimers.AnglerFishAttackTimer = MinigameConstants.ANGLER_FISH_INITIAL_COOLDOWN
+            if rng:RandomInt(100) <= MinigameConstants.GLITCH_CHANCE_FOR_QUICK_CHUCK_ATTACK then
+                MinigameTimers.AnglerFishAttackTimer = 5
+            end
         end
     end
 
     if not anglerFish:GetData().CanDoAttacks then return end
 
     ManageAttacking(anglerFish, anglerFishSpr)
+
+    if MinigameTimers.RandomChuckProjectileTimer > 0 then
+        MinigameTimers.RandomChuckProjectileTimer = MinigameTimers.RandomChuckProjectileTimer - 1
+    end
+
+    if anglerFishSpr:IsPlaying("Idle") and anglerFish.Velocity:Length() < 0.1 and
+    ArcadeCabinetVariables.IsCurrentMinigameGlitched and
+    rng:RandomInt(1000) < MinigameConstants.GLITCH_CHANCE_FOR_RANDOM_CHUCK_PROJECTILE and
+    MinigameTimers.RandomChuckProjectileTimer <= 0 then
+        SFXManager:Play(MinigameSounds.ZAP)
+
+        local spawnOffset = Vector(MinigameConstants.ANGLER_FISH_PROJECTILE_OFFSET.X, MinigameConstants.ANGLER_FISH_PROJECTILE_OFFSET.Y)
+        if not anglerFish.FlipX then spawnOffset.X = -spawnOffset.X end
+        local spawningPos = anglerFish.Position + spawnOffset
+        local spawningSpeed = (game:GetPlayer(0).Position - spawningPos):Normalized() * 5
+        local projectileType = 0
+        local params = ProjectileParams()
+        params.BulletFlags = ProjectileFlags.NO_WALL_COLLIDE | ProjectileFlags.SMART | ProjectileFlags.CHANGE_FLAGS_AFTER_TIMEOUT
+        params.ChangeFlags = ProjectileFlags.NO_WALL_COLLIDE
+        params.ChangeTimeout = 90
+        params.Spread = 1
+        anglerFish:FireProjectiles(spawningPos, spawningSpeed, projectileType, params)
+
+        MinigameTimers.RandomChuckProjectileTimer = MinigameConstants.GLITCH_RANDOM_CHUCK_PROJECTILE_COOLDOWN
+    end
 
     if anglerFishSpr:IsFinished("ProjectileStart") then
         anglerFishSpr:Play("ProjectileLoop", true)
@@ -736,6 +788,9 @@ local function UpdateAnglerFish(anglerFish)
             anglerFishSpr:Play("Idle", true)
             anglerFishSpr:PlayOverlay("IdleTail", true)
             MinigameTimers.AnglerFishAttackTimer = MinigameConstants.ANGLER_FISH_ATTACK_COOLDOWN
+            if rng:RandomInt(100) <= MinigameConstants.GLITCH_CHANCE_FOR_QUICK_CHUCK_ATTACK then
+                MinigameTimers.AnglerFishAttackTimer = 5
+            end
         else
             anglerFishSpr:Play("ProjectileLoop", true)
         end
@@ -751,6 +806,9 @@ local function UpdateAnglerFish(anglerFish)
     if anglerFishSpr:IsFinished("SpawnCunts") then
         anglerFishSpr:Play("Idle", true)
         MinigameTimers.AnglerFishAttackTimer = MinigameConstants.ANGLER_FISH_ATTACK_COOLDOWN
+        if rng:RandomInt(100) <= MinigameConstants.GLITCH_CHANCE_FOR_QUICK_CHUCK_ATTACK then
+            MinigameTimers.AnglerFishAttackTimer = 5
+        end
     end
 
     if anglerFishSpr:IsPlaying("ChargeLoop") and
@@ -762,6 +820,9 @@ local function UpdateAnglerFish(anglerFish)
             anglerFish.Position = Vector(anglerFish.Position.X, game:GetPlayer(0).Position.Y)
             SFXManager:Play(MinigameSounds.CHUCK_DASH)
             game:ShakeScreen(25)
+
+            anglerFish:GetData().IsSpeedyCharge = ArcadeCabinetVariables.IsCurrentMinigameGlitched and
+            rng:RandomInt(100) <= MinigameConstants.GLITCH_CHANCE_FOR_SPEEDY_CHUCK_CHARGE
         else
             anglerFishSpr:Play("Idle", true)
             anglerFishSpr:PlayOverlay("IdleTail", true)
@@ -884,42 +945,55 @@ function no_splash:OnEntityDamage(tookDamage, damageAmount)
                 bonerFish:GetSprite():ReplaceSpritesheet(0, "gfx/enemies/ns_bone_fish.png")
             end
             bonerFish:GetSprite():LoadGraphics()
-            bonerFish:GetSprite():Play("Transition", true)
+            if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+                bonerFish:GetSprite():Play("Idle", true)
+            else
+                bonerFish:GetSprite():Play("Transition", true)
+            end
             bonerFish:ClearEntityFlags(EntityFlag.FLAG_APPEAR)
             bonerFish:AddEntityFlags(EntityFlag.FLAG_NO_FLASH_ON_DAMAGE | EntityFlag.FLAG_NO_PHYSICS_KNOCKBACK)
             bonerFish.FlipX = tookDamage.FlipX
             tookDamage:Remove()
         else
             SFXManager:Play(MinigameSounds.BONE_DEAD)
-            local corpse = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.CORPSE, 0, tookDamage.Position, Vector(0, MinigameConstants.CORPSE_VELOCITY), nil)
-            corpse:GetSprite():Play("Fish")
+
+            if not ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+                local corpse = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.CORPSE, 0, tookDamage.Position, Vector(0, MinigameConstants.CORPSE_VELOCITY), nil)
+                corpse:GetSprite():Play("Fish")
+                corpse.DepthOffset = -100
+
+                local explosion = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.BLOOD_EXPLOSION, 0, tookDamage.Position, Vector.Zero, nil)
+                explosion:GetSprite():ReplaceSpritesheet(0, "gfx/effects/no splash/ns_blood_explosion.png")
+                explosion:GetSprite():LoadGraphics()
+                explosion:GetSprite():Play("Idle", true)
+            end
+
+            tookDamage:Remove()
+        end
+    elseif tookDamage.Variant == MinigameEntityVariants.EEL then
+
+        if not ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+            local corpse = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.CORPSE, 0, tookDamage.Position, Vector(0, -MinigameConstants.CORPSE_VELOCITY), nil)
+            corpse:GetSprite():Play("Eel")
             corpse.DepthOffset = -100
 
             local explosion = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.BLOOD_EXPLOSION, 0, tookDamage.Position, Vector.Zero, nil)
             explosion:GetSprite():ReplaceSpritesheet(0, "gfx/effects/no splash/ns_blood_explosion.png")
             explosion:GetSprite():LoadGraphics()
             explosion:GetSprite():Play("Idle", true)
-
-            tookDamage:Remove()
         end
-    elseif tookDamage.Variant == MinigameEntityVariants.EEL then
-        local corpse = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.CORPSE, 0, tookDamage.Position, Vector(0, -MinigameConstants.CORPSE_VELOCITY), nil)
-        corpse:GetSprite():Play("Eel")
-        corpse.DepthOffset = -100
-
-        local explosion = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.BLOOD_EXPLOSION, 0, tookDamage.Position, Vector.Zero, nil)
-        explosion:GetSprite():ReplaceSpritesheet(0, "gfx/effects/no splash/ns_blood_explosion.png")
-        explosion:GetSprite():LoadGraphics()
-        explosion:GetSprite():Play("Idle", true)
 
         SFXManager:Play(MinigameSounds.EEL_DEAD)
 
         tookDamage:Remove()
     elseif tookDamage.Variant == MinigameEntityVariants.CUNT then
         SFXManager:Play(MinigameSounds.CUNT_DEAD)
-        local corpse = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.CORPSE, 0, tookDamage.Position, Vector(0, -MinigameConstants.CORPSE_VELOCITY), nil)
-        corpse:GetSprite():Play("Cunt")
-        corpse.DepthOffset = -100
+
+        if not ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+            local corpse = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.CORPSE, 0, tookDamage.Position, Vector(0, -MinigameConstants.CORPSE_VELOCITY), nil)
+            corpse:GetSprite():Play("Cunt")
+            corpse.DepthOffset = -100
+        end
 
         tookDamage:Remove()
     elseif tookDamage.Variant == MinigameEntityVariants.SPIKED_MINE then
@@ -929,11 +1003,22 @@ function no_splash:OnEntityDamage(tookDamage, damageAmount)
         tookDamage:ToNPC():FireProjectiles(tookDamage.Position, Vector(10, 0), 8, params)
         tookDamage:Remove()
     elseif tookDamage.Variant == MinigameEntityVariants.ANGLER_FISH then
-        local corpse = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.CHUCK_CORPSE, 0, tookDamage.Position, Vector.Zero, nil)
-        corpse:GetSprite():Play("Idle")
-        corpse.DepthOffset = -100
-        corpse.FlipX = tookDamage.FlipX
-        SpawnedFinalExplosions = 0
+        if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+            CurrentMinigameState = MinigameState.WINNING
+            SFXManager:Play(MinigameSounds.WIN)
+            TransitionScreen:Play("Appear", true)
+            for i = 0, game:GetNumPlayers() - 1, 1 do
+                local player = game:GetPlayer(i)
+                player.Velocity = Vector.Zero
+                player.ControlsEnabled = false
+            end
+        else
+            local corpse = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.CHUCK_CORPSE, 0, tookDamage.Position, Vector.Zero, nil)
+            corpse:GetSprite():Play("Idle")
+            corpse.DepthOffset = -100
+            corpse.FlipX = tookDamage.FlipX
+            SpawnedFinalExplosions = 0
+        end
 
         tookDamage:Remove()
     end
@@ -1017,8 +1102,7 @@ end
 function no_splash:OnInput(_, inputHook, buttonAction)
     if CurrentMinigameState ~= MinigameState.SWIMMING then return end
 
-    if buttonAction == ButtonAction.ACTION_UP or buttonAction == ButtonAction.ACTION_DOWN or
-     buttonAction == ButtonAction.ACTION_LEFT or buttonAction == ButtonAction.ACTION_RIGHT then
+    if buttonAction == ButtonAction.ACTION_LEFT or buttonAction == ButtonAction.ACTION_RIGHT then
         if inputHook > InputHook.IS_ACTION_TRIGGERED then
             return 0
         else
@@ -1039,17 +1123,6 @@ function no_splash:OnPlayerUpdate(player)
             fakePlayerSprite:Play("Happy")
         elseif CurrentMinigameState == MinigameState.LOSING then
             fakePlayerSprite:Play("Hurt")
-        elseif CurrentMinigameState == MinigameState.SWIMMING then
-            if (Input.IsActionPressed(ButtonAction.ACTION_LEFT, player.ControllerIndex) or Input.IsActionPressed(ButtonAction.ACTION_RIGHT, player.ControllerIndex)) and not
-            (Input.IsActionPressed(ButtonAction.ACTION_LEFT, player.ControllerIndex) and Input.IsActionPressed(ButtonAction.ACTION_RIGHT, player.ControllerIndex)) then
-                if Input.IsActionPressed(ButtonAction.ACTION_LEFT, player.ControllerIndex) and not fakePlayerSprite:IsPlaying("Left") then
-                    fakePlayerSprite:Play("Left", true)
-                elseif Input.IsActionPressed(ButtonAction.ACTION_RIGHT, player.ControllerIndex) and not fakePlayerSprite:IsPlaying("Right") then
-                    fakePlayerSprite:Play("Right", true)
-                end
-            else
-                fakePlayerSprite:Play("Idle", true)
-            end
         else
             if (Input.IsActionPressed(ButtonAction.ACTION_DOWN, player.ControllerIndex) or Input.IsActionPressed(ButtonAction.ACTION_UP, player.ControllerIndex)) and not
             (Input.IsActionPressed(ButtonAction.ACTION_DOWN, player.ControllerIndex) and Input.IsActionPressed(ButtonAction.ACTION_UP, player.ControllerIndex)) then
