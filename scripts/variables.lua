@@ -64,6 +64,10 @@ ArcadeCabinetVariables.Backdrop2x1Variant = Isaac.GetEntityVariantByName("miniga
 ArcadeCabinetVariables.Backdrop2x2Variant = Isaac.GetEntityVariantByName("minigame backdrop 2x2")
 --#endregion
 
+--#region Constants for the mod
+ArcadeCabinetVariables.CABINET_RADIUS = 22
+ArcadeCabinetVariables.CHANCE_FOR_CABINET_EXPLODING = 30
+ArcadeCabinetVariables.CHANCE_FOR_CABINET_EXPLODING_LUCKY_FOOT = 20
 ArcadeCabinetVariables.GameState = {
     NOT_PLAYING = 1,
     FADE_IN = 2,
@@ -71,17 +75,15 @@ ArcadeCabinetVariables.GameState = {
     PLAYING = 4,
     FADE_OUT = 5
 }
-
-ArcadeCabinetVariables.CurrentGameState = ArcadeCabinetVariables.GameState.NOT_PLAYING
-
 ArcadeCabinetVariables.MinigameResult = {
     WIN = 1,
     LOSE = 2
 }
+--#endregion
+
+ArcadeCabinetVariables.CurrentGameState = ArcadeCabinetVariables.GameState.NOT_PLAYING
 ArcadeCabinetVariables.CurrentMinigameResult = nil
 
-ArcadeCabinetVariables.CabinetRadius = 20
-ArcadeCabinetVariables.MinigameDoor = nil
 ArcadeCabinetVariables.CurrentMinigame = nil
 ArcadeCabinetVariables.CurrentScript = nil
 ArcadeCabinetVariables.IsCurrentMinigameGlitched = nil
@@ -95,8 +97,6 @@ ArcadeCabinetVariables.RepositionPlayers = false
 ArcadeCabinetVariables.TransitionScreen = Sprite()
 ArcadeCabinetVariables.TransitionScreen:Load("gfx/minigame_transition.anm2", true)
 ArcadeCabinetVariables.TransitionFrameCount = -1
-ArcadeCabinetVariables.LastRoomCollectibles = {}
-ArcadeCabinetVariables.MAX_ID_TMTRAINER = 4294967295
 ArcadeCabinetVariables.FadeOutTimer = nil
 
 return ArcadeCabinetVariables

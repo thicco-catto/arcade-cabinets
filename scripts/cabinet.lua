@@ -101,7 +101,7 @@ function CabinetManagement:OnPlayerUpdate(player)
         --If has to be one of our machines and it has to be playing the idle animation
         if IsModdedVariant(slot.Variant) and slot:GetSprite():IsPlaying("Idle") then
             --Distance must be less that the hardcoded radius (like this so we dont have to use player collision callback)
-            if (player.Position - slot.Position):Length() <= ArcadeCabinetVariables.CabinetRadius then
+            if (player.Position - slot.Position):Length() <= ArcadeCabinetVariables.CABINET_RADIUS then
                 player:AddCoins(-5)
                 UseMachine(slot)
             end
@@ -296,11 +296,13 @@ local function DebugRender()
         --Isaac.RenderText(dump(data.collectedItemsOrdered), pos.X, pos.Y + 10, 1, 1, 1, 255)
     end
 
-    for _, entity in ipairs(Isaac.FindByType(889, 2, 0)) do
-        local pos = Isaac.WorldToScreen(entity.Position)
-        local color = entity:GetColor()
+    for _, slot in ipairs(Isaac.FindByType(EntityType.ENTITY_SLOT)) do
+        local pos = Isaac.WorldToScreen(slot.Position)
+        local str = slot:GetDropRNG():GetSeed()
+        local str2 = GetCabinetRNG(slot):GetSeed()
 
-        Isaac.RenderText(dump(color), pos.X, pos.Y, 1, 1, 1, 255)
+        Isaac.RenderText(str, pos.X, pos.Y, 1, 1, 1, 255)
+        Isaac.RenderText(str2, pos.X, pos.Y + 10, 1, 1, 1, 255)
     end
 end
 
@@ -334,7 +336,7 @@ end
 
 
 function CabinetManagement:OnRender()
-    --DebugRender()
+    DebugRender()
 
     --Update the animation here because the anm2 and everything is planned to update on render
     --Incredibly shitty but works
@@ -383,10 +385,41 @@ end
 
 ---@param cabinet Entity
 local function OnCabinetUpdate(cabinet)
+    local cabinetSpr = cabinet:GetSprite()
+
     --Check if it should pay out
-    if cabinet:GetSprite():IsEventTriggered("Prize") then
+    if cabinetSpr:IsEventTriggered("Prize") then
         SpawnCabinetReward(cabinet)
         return
+    end
+
+    if cabinetSpr:IsFinished("Failure") then
+        local anyPlayerHasLuckyFoot = false
+        for i = 0, game:GetNumPlayers() - 1, 1 do
+            local player = game:GetPlayer(i)
+            if player:HasCollectible(CollectibleType.COLLECTIBLE_LUCKY_FOOT) then
+                anyPlayerHasLuckyFoot = true
+                break
+            end
+        end
+
+        local cabinetRNG = GetCabinetRNG(cabinet)
+        local breakingChance = cabinetRNG:RandomInt(100)
+        if breakingChance <= ArcadeCabinetVariables.CHANCE_FOR_CABINET_EXPLODING or
+        anyPlayerHasLuckyFoot and breakingChance <= ArcadeCabinetVariables.CHANCE_FOR_CABINET_EXPLODING_LUCKY_FOOT then
+            SFXManager():Play(SoundEffect.SOUND_BOSS1_EXPLOSIONS)
+            Isaac.Spawn(EntityType.ENTITY_EFFECT, EffectVariant.BOMB_EXPLOSION, 0, cabinet.Position, Vector.Zero, nil)
+            cabinetSpr:Play("Death", true)
+            cabinet:Die()
+        else
+            cabinetSpr:Play("Idle", true)
+        end
+    end
+
+    --If the GridCollisionClass is 5 it means it has been broken
+    if cabinet.GridCollisionClass == 5 and not cabinetSpr:IsPlaying("Broken") or
+    cabinetSpr:IsFinished("Death") then
+        cabinetSpr:Play("Broken")
     end
 end
 
