@@ -8,6 +8,8 @@ local PlayerManagement = {}
 
 local game = Game()
 
+
+--Set up
 function CabinetManagement:Init(mod, variables, cabinet)
     ArcadeCabinetMod = mod
     ArcadeCabinetVariables = variables

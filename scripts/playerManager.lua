@@ -8,6 +8,8 @@ local MinigameManagement = nil
 
 local game = Game()
 
+
+--Set up
 function PlayerManagement:Init(mod, variables, cabinet)
     ArcadeCabinetMod = mod
     ArcadeCabinetVariables = variables

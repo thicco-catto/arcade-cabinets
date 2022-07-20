@@ -38,7 +38,6 @@ end
 
 
 ---Returns the cabinet entity that was used
----@return Entity
 local function FindUsedCabinet()
     for _, cabinet in ipairs(Isaac.FindByType(EntityType.ENTITY_SLOT)) do
         if IsModdedVariant(cabinet.Variant) and
@@ -621,6 +620,7 @@ function MinigameManagement:OnCollectibleUpdate(collectible)
 end
 
 
+--Set up
 function MinigameManagement:Init(mod, variables, cabinet)
     mod:AddCallback(ModCallbacks.MC_POST_PLAYER_UPDATE, MinigameManagement.OnPlayerUpdate)
     mod:AddCallback(ModCallbacks.MC_GET_SHADER_PARAMS, MinigameManagement.GetShaderParams)
