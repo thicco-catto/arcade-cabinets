@@ -91,6 +91,8 @@ ArcadeCabinetVariables.CurrentScript = nil
 ArcadeCabinetVariables.IsCurrentMinigameGlitched = nil
 ArcadeCabinetVariables.CurrentMinigameObject = nil
 
+ArcadeCabinetVariables.LevelStage = nil
+ArcadeCabinetVariables.LevelStageType = nil
 ArcadeCabinetVariables.LevelCurses = nil
 ArcadeCabinetVariables.OptionsChargeBar = nil
 ArcadeCabinetVariables.OptionsActiveCam = nil

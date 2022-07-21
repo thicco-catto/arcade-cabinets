@@ -27,6 +27,7 @@ function PlayerInventoryManager.SavePlayerState(player)
     playerState.RedHearts = player:GetHearts()
     playerState.SoulHearts = player:GetSoulHearts()
     playerState.BlackHearts = player:GetBlackHearts()
+    playerState.GetEternalHearts = player:GetEternalHearts()
     playerState.BoneHearts = player:GetBoneHearts()
     playerState.GoldenHearts = player:GetGoldenHearts()
     playerState.RottenHearts = player:GetRottenHearts()
@@ -113,11 +114,28 @@ function PlayerInventoryManager.RestorePlayerState(player)
         end
     end
 
+    for activeSlot, activeItem in pairs(playerState.ActiveItems) do
+        if activeSlot == ActiveSlot.SLOT_POCKET or activeSlot == ActiveSlot.SLOT_POCKET2 then
+            player:SetPocketActiveItem()
+        end
+    end
+
+    --Pickups
+    player:AddCoins(playerState.Coins - player:GetNumCoins())
+
+    player:AddBombs(playerState.Bombs - player:GetNumBombs())
+    if playerState.HasGoldenBomb then player:AddGoldenBomb() end
+    player:AddGigaBombs(playerState.GigaBombs - player:GetNumGigaBombs())
+
+    player:AddKeys(playerState.Keys - player:GetNumKeys())
+    if playerState.HasGoldenKey then player:AddGoldenKey() end
+
     --Health
     player:AddMaxHearts(playerState.MaxHearts - player:GetMaxHearts(), false)
     player:AddHearts(playerState.RedHearts - player:GetHearts())
     player:AddSoulHearts(playerState.SoulHearts - player:GetSoulHearts())
     player:AddBlackHearts(playerState.BlackHearts)
+    player:AddEternalHearts(playerState.EternalHearts - player:GetEternalHearts())
     player:AddBoneHearts(playerState.BoneHearts - player:GetBoneHearts())
     player:AddGoldenHearts(playerState.GoldenHearts - player:GetGoldenHearts())
     player:AddRottenHearts(playerState.RottenHearts - player:GetRottenHearts())

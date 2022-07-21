@@ -71,6 +71,12 @@ local function FinishTransitionFadeIn()
     --Make hud invisible
     game:GetHUD():SetVisible(false)
 
+    --Store stage stuff to go back and set it to blue womb (no pesky overlays)
+    local level = game:GetLevel()
+    ArcadeCabinetVariables.LevelStage = level:GetStage()
+    ArcadeCabinetVariables.LevelStageType = level:GetStageType()
+    level:SetStage(LevelStage.STAGE4_3, StageType.STAGETYPE_AFTERBIRTH)
+
     --Teleport players to the room
     local roomIndex = ArcadeCabinetVariables.ArcadeCabinetRooms[ArcadeCabinetVariables.CurrentMinigame]
     Isaac.ExecuteCommand("goto s.isaacs." .. roomIndex)
@@ -242,6 +248,10 @@ local function CheckIfEndMinigame()
 
     --Set visible hud
     game:GetHUD():SetVisible(true)
+
+    --Set stage back to original
+    local level = game:GetLevel()
+    level:SetStage(ArcadeCabinetVariables.LevelStage, ArcadeCabinetVariables.LevelStageType)
 
     --Teleport the players back through the door
     local room = game:GetRoom()
