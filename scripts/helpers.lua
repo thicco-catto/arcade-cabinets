@@ -26,6 +26,24 @@ function Helpers:DoesAnyPlayerHasItem(itemType)
 end
 
 
+function Helpers:SpawnRandomCabinet(pos, rng)
+    local i = 1
+    local left = ArcadeCabinetVariables.MINIGAME_NUM
+    local chosenVariant
+
+    for _, variant in pairs(ArcadeCabinetVariables.ArcadeCabinetVariant) do
+        if rng:RandomFloat() <= 1/left then
+            chosenVariant = variant
+            break
+        end
+
+        left = left - 1
+    end
+
+    return Isaac.Spawn(EntityType.ENTITY_SLOT, chosenVariant, 0, pos, Vector.Zero, nil)
+end
+
+
 function Helpers:Init(variables)
     ArcadeCabinetVariables = variables
 end

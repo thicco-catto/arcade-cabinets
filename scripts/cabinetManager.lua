@@ -60,8 +60,15 @@ end
 
 
 function CabinetManagement:OnNewRoom()
+    local room = game:GetRoom()
+
     for _, slot in ipairs(Isaac.FindByType(EntityType.ENTITY_SLOT)) do
-        if Helpers:IsModdedCabinetVariant(slot.Variant) then
+        if slot.Variant == 16 and slot:GetDropRNG():RandomInt(100) <= ArcadeCabinetVariables.CHANCE_FOR_CRANE_TO_CABINET
+        and room:IsFirstVisit() then
+            local cabinet = Helpers:SpawnRandomCabinet(slot.Position, slot:GetDropRNG())
+            SetUpCabinet(cabinet)
+            slot:Remove()
+        elseif Helpers:IsModdedCabinetVariant(slot.Variant) then
             SetUpCabinet(slot)
         end
     end
@@ -70,6 +77,7 @@ end
 
 local function OnCabinetUpdate(cabinet)
     local cabinetSpr = cabinet:GetSprite()
+    local cabinetObject = cabinet:GetData().ArcadeCabinet.CabinetObject
 
     --Check if it should pay out
     if cabinetSpr:IsEventTriggered("Prize") then
@@ -78,24 +86,13 @@ local function OnCabinetUpdate(cabinet)
     end
 
     if cabinetSpr:IsFinished("Failure") then
-        local anyPlayerHasLuckyFoot = false
-        for i = 0, game:GetNumPlayers() - 1, 1 do
-            local player = game:GetPlayer(i)
-            if player:HasCollectible(CollectibleType.COLLECTIBLE_LUCKY_FOOT) then
-                anyPlayerHasLuckyFoot = true
-                break
-            end
-        end
-
-        local cabinetRNG = GetCabinetRNG(cabinet)
-        local breakingChance = cabinetRNG:RandomInt(100)
-        if breakingChance <= ArcadeCabinetVariables.CHANCE_FOR_CABINET_EXPLODING or
-        anyPlayerHasLuckyFoot and breakingChance <= ArcadeCabinetVariables.CHANCE_FOR_CABINET_EXPLODING_LUCKY_FOOT then
+        if cabinetObject:ShouldBeDestroyed() then
             SFXManager():Play(SoundEffect.SOUND_BOSS1_EXPLOSIONS)
             Isaac.Spawn(EntityType.ENTITY_EFFECT, EffectVariant.BOMB_EXPLOSION, 0, cabinet.Position, Vector.Zero, nil)
             cabinetSpr:Play("Death", true)
             cabinet:Die()
         else
+            cabinetObject.numberOfAttempts = cabinetObject.numberOfAttempts + 1
             cabinetSpr:Play("Idle", true)
         end
     end
