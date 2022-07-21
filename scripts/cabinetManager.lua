@@ -75,6 +75,37 @@ function CabinetManagement:OnNewRoom()
 end
 
 
+local function SpawnCabinetReward(cabinet)
+    local cabinetObject = cabinet:GetData().ArcadeCabinet.CabinetObject
+    --Choose the item
+    local chosenCollectible = cabinetObject:GetCollectible()
+
+    --Spawn the item pedestal
+    local pedestal = Isaac.Spawn(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_COLLECTIBLE, chosenCollectible, cabinet.Position, Vector.Zero, nilw)
+
+    --Load the appropiate graphics
+    local collectibleGfx = Isaac.GetItemConfig():GetCollectible(chosenCollectible).GfxFileName
+    pedestal:GetSprite():Load("gfx/cabinet_collectible_pedestal.anm2", true)
+    pedestal:GetSprite():ReplaceSpritesheet(1, collectibleGfx)
+
+    local pedestalGfx = "gfx/slots/" .. ArcadeCabinetVariables.ArcadeCabinetSprite[cabinet.Variant]
+    pedestal:GetSprite():ReplaceSpritesheet(5, pedestalGfx)
+
+    pedestal:GetSprite():LoadGraphics()
+
+    --Play the animations
+    pedestal:GetSprite():Play("Idle", true)
+    pedestal:GetSprite():PlayOverlay("Alternates", true)
+
+    --Set data so we know to set its frame to 0
+    pedestal:GetData().ArcadeCabinet = {}
+    pedestal:GetData().ArcadeCabinet.IsCabinetReward = true
+
+    --Remove the cabinet
+    cabinet:Remove()
+end
+
+
 local function OnCabinetUpdate(cabinet)
     local cabinetSpr = cabinet:GetSprite()
     local cabinetObject = cabinet:GetData().ArcadeCabinet.CabinetObject
@@ -86,7 +117,7 @@ local function OnCabinetUpdate(cabinet)
     end
 
     if cabinetSpr:IsFinished("Failure") then
-        if cabinetObject:ShouldBeDestroyed() then
+        if cabinetObject:ShouldGetDestroyed() then
             SFXManager():Play(SoundEffect.SOUND_BOSS1_EXPLOSIONS)
             Isaac.Spawn(EntityType.ENTITY_EFFECT, EffectVariant.BOMB_EXPLOSION, 0, cabinet.Position, Vector.Zero, nil)
             cabinetSpr:Play("Death", true)
@@ -118,10 +149,20 @@ function CabinetManagement:OnFrameUpdate()
 end
 
 
+---@param collectible EntityPickup
+function CabinetManagement:OnCollectibleUpdate(collectible)
+    if not collectible:GetData().ArcadeCabinet then return end
+    if not collectible:GetData().ArcadeCabinet.IsCabinetReward then return end
+
+    collectible:GetSprite():SetOverlayFrame("Alternates", 0)
+end
+
+
 --Set up
 function CabinetManagement:Init(mod, variables, cabinet, helpers)
     mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, CabinetManagement.OnNewRoom)
     mod:AddCallback(ModCallbacks.MC_POST_UPDATE, CabinetManagement.OnFrameUpdate)
+    mod:AddCallback(ModCallbacks.MC_POST_PICKUP_UPDATE, CabinetManagement.OnCollectibleUpdate, PickupVariant.PICKUP_COLLECTIBLE)
 
     ArcadeCabinetVariables = variables
     Cabinet = cabinet

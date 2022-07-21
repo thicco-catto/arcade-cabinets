@@ -8,6 +8,9 @@ local Cabinet = {
     numberOfRerolls = 0
 }
 local ArcadeCabinetVariables = nil
+
+local Helpers
+
 local game = Game()
 
 
@@ -61,15 +64,15 @@ end
 ---Returns a random CollectibleType from the Crane item pool.
 ---Increase the numberOfRerolls attribute to change this.
 function Cabinet:GetCollectible()
-    local cabinetRng = self:GetRNG()
+    local cabinetRNG = self:GetRNG()
 
     --Iterate once for each reroll so as to change this
     for _ = 1, self.numberOfRerolls, 1 do
-        cabinetRng:Next()
+        cabinetRNG:Next()
     end
 
     --Do the 10000 thing because the collectible doesnt change for small values
-    local seed = cabinetRng:RandomInt(999) * 10000 + 10000
+    local seed = cabinetRNG:RandomInt(999) * 10000 + 10000
     local itemPool = game:GetItemPool()
     local chosenCollectible = itemPool:GetCollectible(ItemPoolType.POOL_CRANE_GAME, false, seed)
 
@@ -80,22 +83,15 @@ end
 ---Returns whether a machine should get destroyed or not.
 ---Will account for lucky foot and changes for each attempt.
 function Cabinet:ShouldGetDestroyed()
-    local cabinetRng = self:GetRNG()
+    local cabinetRNG = self:GetRNG()
 
     --Iterate once for each attemt so as to change this
     for _ = 1, self.numberOfAttempts, 1 do
-        cabinetRng:Next()
+        cabinetRNG:Next()
     end
 
     --Check if any player has lucky foot
-    local anyPlayerHasLuckyFoot = false
-    for i = 0, game:GetNumPlayers() - 1, 1 do
-        local player = game:GetPlayer(i)
-        if player:HasCollectible(CollectibleType.COLLECTIBLE_LUCKY_FOOT) then
-            anyPlayerHasLuckyFoot = true
-            break
-        end
-    end
+    local anyPlayerHasLuckyFoot = Helpers:DoesAnyPlayerHasItem(CollectibleType.COLLECTIBLE_LUCKY_FOOT)
 
     --If any player has lucky foot, the chance if bigger
     local breakingChance = cabinetRNG:RandomInt(100)
@@ -104,8 +100,9 @@ function Cabinet:ShouldGetDestroyed()
 end
 
 
-function Cabinet:Init(variables)
+function Cabinet:Init(variables, helpers)
     ArcadeCabinetVariables = variables
+    Helpers = helpers
 end
 
 return Cabinet

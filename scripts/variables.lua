@@ -89,7 +89,7 @@ ArcadeCabinetVariables.CurrentMinigameResult = nil
 ArcadeCabinetVariables.CurrentMinigame = nil
 ArcadeCabinetVariables.CurrentScript = nil
 ArcadeCabinetVariables.IsCurrentMinigameGlitched = nil
-ArcadeCabinetVariables.CurrentMinigameSeed = nil
+ArcadeCabinetVariables.CurrentMinigameObject = nil
 
 ArcadeCabinetVariables.LevelCurses = nil
 ArcadeCabinetVariables.OptionsChargeBar = nil

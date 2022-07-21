@@ -44,6 +44,36 @@ function Helpers:SpawnRandomCabinet(pos, rng)
 end
 
 
+function Helpers.GetPlayerIndex(player)
+    if player:GetPlayerType() == PlayerType.PLAYER_LAZARUS2_B then
+       return player:GetCollectibleRNG(2):GetSeed()
+    else
+        return player:GetCollectibleRNG(1):GetSeed()
+    end
+end
+
+
+--By Xalum
+function Helpers.GetSmeltedTrinketMultiplier(player, trinket)
+    local totalMultiplier = player:GetTrinketMultiplier(trinket)
+    local playerHasMomsBox = player:HasCollectible(CollectibleType.COLLECTIBLE_MOMS_BOX)
+
+    for i = 0, 1 do
+        local slotTrinket = player:GetTrinket(i)
+        if slotTrinket & ~ TrinketType.TRINKET_GOLDEN_FLAG == trinket then
+            local reduction = playerHasMomsBox and 2 or 1
+            if slotTrinket & TrinketType.TRINKET_GOLDEN_FLAG > 0 then
+                reduction = reduction + 1
+            end
+
+            totalMultiplier = totalMultiplier - reduction
+        end
+    end
+
+    return totalMultiplier
+end
+
+
 function Helpers:Init(variables)
     ArcadeCabinetVariables = variables
 end

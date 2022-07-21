@@ -13,11 +13,14 @@ end
 
 local ArcadeCabinetVariables = loadFile("scripts/variables")
 
-local Cabinet = loadFile("scripts/cabinet")
-Cabinet:Init(ArcadeCabinetVariables)
-
 local Helpers = loadFile("scripts/helpers")
 Helpers:Init(ArcadeCabinetVariables)
+
+local PlayerInventory = loadFile("scripts/player inventory/playerInventory")
+PlayerInventory:Init(ArcadeCabinetMod, Helpers)
+
+local Cabinet = loadFile("scripts/cabinet")
+Cabinet:Init(ArcadeCabinetVariables)
 
 local CabinetManagement = loadFile("scripts/cabinetManager")
 CabinetManagement:Init(ArcadeCabinetMod, ArcadeCabinetVariables, Cabinet, Helpers)
@@ -34,12 +37,12 @@ PlayerManagement:AddOtherManagers(CabinetManagement, MinigameManagement)
 
 
 local function SpawnMachine(variant, pos)
-    local machine = Isaac.Spawn(6, variant, 0, pos, Vector.Zero, nil)
-    local item = GetRoomItem(ItemPoolType.POOL_CRANE_GAME)
-    local itemSprite = Isaac.GetItemConfig():GetCollectible(item).GfxFileName
+    -- local machine = Isaac.Spawn(6, variant, 0, pos, Vector.Zero, nil)
+    -- local item = GetRoomItem(ItemPoolType.POOL_CRANE_GAME)
+    -- local itemSprite = Isaac.GetItemConfig():GetCollectible(item).GfxFileName
 
-    machine:GetSprite():ReplaceSpritesheet(2, itemSprite)
-    machine:GetSprite():LoadGraphics()
+    -- machine:GetSprite():ReplaceSpritesheet(2, itemSprite)
+    -- machine:GetSprite():LoadGraphics()
 end
 
 
