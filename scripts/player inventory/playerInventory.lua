@@ -478,6 +478,17 @@ function PlayerInventoryManager:OnPeffectUpdate(player)
     local playerIndex = Helpers.GetPlayerIndex(player)
     local playerState = CurrentPlayerStates[playerIndex]
 
+    if not playerState then
+        --If for some reason the current state is nil, initialize it again
+        CurrentPlayerStates[playerIndex] = {
+            InventoryOrdered = {},
+            GulpedTrinkets = {},
+            CollectedItems = {}
+        }
+
+        playerState = CurrentPlayerStates[playerIndex]
+    end
+
     CheckCollectedItems(player, playerState)
 
     CheckGulpedTrinkets(player, playerState)
