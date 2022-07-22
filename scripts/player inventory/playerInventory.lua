@@ -27,7 +27,7 @@ function PlayerInventoryManager.SavePlayerState(player)
     playerState.RedHearts = player:GetHearts()
     playerState.SoulHearts = player:GetSoulHearts()
     playerState.BlackHearts = player:GetBlackHearts()
-    playerState.GetEternalHearts = player:GetEternalHearts()
+    playerState.EternalHearts = player:GetEternalHearts()
     playerState.BoneHearts = player:GetBoneHearts()
     playerState.GoldenHearts = player:GetGoldenHearts()
     playerState.RottenHearts = player:GetRottenHearts()
@@ -77,22 +77,74 @@ function PlayerInventoryManager.SavePlayerState(player)
     end
 
     playerState.HoldCards = {}
-    for cardSlot = 1, 0, -1 do
+    for cardSlot = 3, 0, -1 do
         if player:GetCard(cardSlot) ~= 0 then
-            local id = player:GetTrinket(cardSlot)
+            local id = player:GetCard(cardSlot)
             playerState.HoldCards[cardSlot] = {id = id}
         end
     end
 
     playerState.HoldPills = {}
-    for pillSlot = 1, 0, -1 do
-        if player:GetCard(pillSlot) ~= 0 then
+    for pillSlot = 3, 0, -1 do
+        if player:GetPill(pillSlot) ~= 0 then
             local id = player:GetPill(pillSlot)
             playerState.HoldPills[pillSlot] = {id = id}
         end
     end
 
     SavedPlayerStates[playerIndex] = playerState
+end
+
+
+---@param player EntityPlayer
+function PlayerInventoryManager.RemovePlayerState(player)
+    local playerIndex = Helpers.GetPlayerIndex(player)
+    local currentPlayerState = CurrentPlayerStates[playerIndex]
+
+    --Remove eternal hearts and broken hearts because of shenanigans
+    player:AddEternalHearts(-player:GetEternalHearts())
+    player:AddBrokenHearts(-player:GetBrokenHearts())
+
+    --Remove trinkets
+    for trinketSlot = 1, 0, -1 do
+        if player:GetTrinket(trinketSlot) ~= 0 then
+            local id = player:GetTrinket(trinketSlot)
+            player:TryRemoveTrinket(id)
+        end
+    end
+
+    --Remove actives
+    for activeSlot = 3, 0, -1 do
+        if player:GetActiveItem(activeSlot) ~= 0 then
+            local id = player:GetActiveItem(activeSlot)
+            player:RemoveCollectible(id, false, activeSlot)
+        end
+    end
+
+    --Remove pocket items
+    for pocketSlot = 1, 0, -1 do
+        player:SetCard(pocketSlot, 0)
+        player:SetPill(pocketSlot, 0)
+    end
+
+    --Remove items
+    for _, inventoryItem in ipairs(currentPlayerState.InventoryOrdered) do
+        if inventoryItem.type == InventoryType.COLLECTIBLE then
+            player:RemoveCollectible(inventoryItem.id)
+        else
+            player:TryRemoveTrinket(inventoryItem.id)
+        end
+    end
+
+    --Pick ups
+    player:AddCoins(-player:GetNumCoins())
+
+    player:AddBombs(-player:GetNumBombs())
+    player:RemoveGoldenBomb()
+    player:AddGigaBombs(-player:GetNumGigaBombs())
+
+    player:AddKeys(-player:GetNumKeys())
+    player:RemoveGoldenKey()
 end
 
 
@@ -116,7 +168,31 @@ function PlayerInventoryManager.RestorePlayerState(player)
 
     for activeSlot, activeItem in pairs(playerState.ActiveItems) do
         if activeSlot == ActiveSlot.SLOT_POCKET or activeSlot == ActiveSlot.SLOT_POCKET2 then
-            player:SetPocketActiveItem()
+            player:SetPocketActiveItem(activeItem.id, activeSlot, true)
+        else
+            player:AddCollectible(activeItem.id, 0, false, activeSlot)
+        end
+        player:SetActiveCharge(activeItem.charge + activeItem.subcharge, activeSlot)
+    end
+
+    for trinketSlot = 0, 1, 1 do
+        --Do it like this so the trinkets are given in the correct order
+        local trinket = playerState.HoldTrinkets[trinketSlot]
+        if trinket then
+            player:AddTrinket(trinket.id, false)
+        end
+    end
+
+    for pocketSlot = 3, 0, -1 do
+        --Do it like this so they are given in the correct order
+        --Yes, its the opposite of what the trinkets does, this game is stupid
+        local card = playerState.HoldCards[pocketSlot]
+        local pill = playerState.HoldPills[pocketSlot]
+
+        if card then
+            player:AddCard(card.id)
+        elseif pill then
+            player:AddPill(pill.id)
         end
     end
 
@@ -300,6 +376,12 @@ function PlayerInventoryManager:OnCMD(cmd, _)
         for i = 0, game:GetNumPlayers() - 1, 1 do
             local player = game:GetPlayer(i)
             PlayerInventoryManager.SavePlayerState(player)
+        end
+    elseif cmd == "blank" then
+        print("Removing everything")
+        for i = 0, game:GetNumPlayers() - 1, 1 do
+            local player = game:GetPlayer(i)
+            PlayerInventoryManager.RemovePlayerState(player)
         end
     elseif cmd == "restore" then
         print("Restoring saved states")
