@@ -22,6 +22,11 @@ function PlayerInventoryManager.SavePlayerState(player)
     --Player type
     playerState.PlayerType = player:GetPlayerType()
 
+    --Character gimmicks
+    playerState.PoopMana = player:GetPoopMana()
+    playerState.SoulCharge = player:GetSoulCharge()
+    playerState.BloodCharge = player:GetBloodCharge()
+
     --Health
     playerState.MaxHearts = player:GetMaxHearts()
     playerState.RedHearts = player:GetHearts()
@@ -43,6 +48,10 @@ function PlayerInventoryManager.SavePlayerState(player)
     playerState.Keys = player:GetNumKeys()
     playerState.HasGoldenKey = player:HasGoldenKey()
 
+    --Blue flies and spiders
+    playerState.NumBlueFlies = player:GetNumBlueFlies()
+    playerState.NumBlueSpiders = player:GetNumBlueSpiders()
+
     --Inventory
     playerState.Inventory = {}
     for _, inventoryItem in ipairs(currentPlayerState.InventoryOrdered) do
@@ -57,6 +66,7 @@ function PlayerInventoryManager.SavePlayerState(player)
         playerState.GulpedTrinkets[trinketId] = count
     end
 
+    --Active items
     playerState.ActiveItems = {}
     for activeSlot = 3, 0, -1 do
         if player:GetActiveItem(activeSlot) ~= 0 then
@@ -68,6 +78,7 @@ function PlayerInventoryManager.SavePlayerState(player)
         end
     end
 
+    --Held trinkets
     playerState.HoldTrinkets = {}
     for trinketSlot = 1, 0, -1 do
         if player:GetTrinket(trinketSlot) ~= 0 then
@@ -76,6 +87,7 @@ function PlayerInventoryManager.SavePlayerState(player)
         end
     end
 
+    --Held cards
     playerState.HoldCards = {}
     for cardSlot = 3, 0, -1 do
         if player:GetCard(cardSlot) ~= 0 then
@@ -84,6 +96,7 @@ function PlayerInventoryManager.SavePlayerState(player)
         end
     end
 
+    --Held pills
     playerState.HoldPills = {}
     for pillSlot = 3, 0, -1 do
         if player:GetPill(pillSlot) ~= 0 then
@@ -97,9 +110,14 @@ end
 
 
 ---@param player EntityPlayer
-function PlayerInventoryManager.RemovePlayerState(player)
+function PlayerInventoryManager.ClearPlayerState(player)
     local playerIndex = Helpers.GetPlayerIndex(player)
     local currentPlayerState = CurrentPlayerStates[playerIndex]
+
+    --Remove character gimmicks
+    player:AddPoopMana(-player:GetPoopMana())
+    player:AddSoulCharge(-player:GetSoulCharge())
+    player:AddBloodCharge(-player:GetBloodCharge())
 
     --Remove eternal hearts and broken hearts because of shenanigans
     player:AddEternalHearts(-player:GetEternalHearts())
@@ -148,6 +166,35 @@ function PlayerInventoryManager.RemovePlayerState(player)
 end
 
 
+function PlayerInventoryManager.SaveAndClearAllPlayers()
+    --First we save all players
+    for i = 0, game:GetNumPlayers() - 1, 1 do
+        local player = game:GetPlayer(i)
+        PlayerInventoryManager.SavePlayerState(player)
+    end
+
+    --Then we remove everything they have
+    for i = 0, game:GetNumPlayers() - 1, 1 do
+        local player = game:GetPlayer(i)
+        PlayerInventoryManager.ClearPlayerState(player)
+    end
+
+    --Remove all blue flies/spiders
+    for _, blueFly in ipairs(Isaac.FindByType(EntityType.ENTITY_FAMILIAR, FamiliarVariant.BLUE_FLY)) do
+        blueFly:Remove()
+    end
+    for _, blueSpider in ipairs(Isaac.FindByType(EntityType.ENTITY_FAMILIAR, FamiliarVariant.BLUE_SPIDER)) do
+        blueSpider:Remove()
+    end
+
+    --Finally we change their player type to isaac
+    for i = 0, game:GetNumPlayers() - 1, 1 do
+        local player = game:GetPlayer(i)
+        player:ChangePlayerType(PlayerType.PLAYER_ISAAC)
+    end
+end
+
+
 ---@param player EntityPlayer
 function PlayerInventoryManager.RestorePlayerState(player)
     local playerIndex = Helpers.GetPlayerIndex(player)
@@ -155,6 +202,11 @@ function PlayerInventoryManager.RestorePlayerState(player)
 
     --Player type
     player:ChangePlayerType(playerState.PlayerType)
+
+    --Player gimmicks
+    player:AddPoopMana(playerState.PoopMana - player:GetPoopMana())
+    player:AddSoulCharge(playerState.SoulCharge - player:GetSoulCharge())
+    player:AddBloodCharge(playerState.BloodCharge - player:GetBloodCharge())
 
     --Inventory
     for _, inventoryItem in ipairs(playerState.Inventory) do
@@ -205,6 +257,12 @@ function PlayerInventoryManager.RestorePlayerState(player)
 
     player:AddKeys(playerState.Keys - player:GetNumKeys())
     if playerState.HasGoldenKey then player:AddGoldenKey() end
+
+    --Blue flies and spiders
+    player:AddBlueFlies(playerState.NumBlueFlies, player.Position, nil)
+    for _ = 1, playerState.NumBlueSpiders, 1 do
+        player:AddBlueSpider(player.Position)
+    end
 
     --Health
     player:AddMaxHearts(playerState.MaxHearts - player:GetMaxHearts(), false)
@@ -377,12 +435,20 @@ function PlayerInventoryManager:OnCMD(cmd, _)
             local player = game:GetPlayer(i)
             PlayerInventoryManager.SavePlayerState(player)
         end
-    elseif cmd == "blank" then
-        print("Removing everything")
+    elseif cmd == "clear" then
+        print("Clearing states")
         for i = 0, game:GetNumPlayers() - 1, 1 do
             local player = game:GetPlayer(i)
-            PlayerInventoryManager.RemovePlayerState(player)
+            PlayerInventoryManager.ClearPlayerState(player)
         end
+
+        for i = 0, game:GetNumPlayers() - 1, 1 do
+            local player = game:GetPlayer(i)
+            player:ChangePlayerType(PlayerType.PLAYER_ISAAC)
+        end
+    elseif cmd == "saveclear" then
+        print("Saving and clearing states")
+        PlayerInventoryManager.SaveAndClearAllPlayers()
     elseif cmd == "restore" then
         print("Restoring saved states")
         for i = 0, game:GetNumPlayers() - 1, 1 do
