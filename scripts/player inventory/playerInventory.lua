@@ -5,12 +5,22 @@ local Helpers
 local game = Game()
 local CurrentPlayerStates = {}
 local SavedPlayerStates = {}
+local PlayersToRestore = {}
 
 local InventoryType = {
     COLLECTIBLE = 1,
     TRINKET = 2,
 }
 local HasTriggeredStart = false
+
+local ForgottenControllerIndexesToChangeBody = {}
+
+
+print("-=Commands=-")
+print("save: saves the current players states")
+print("clear: clears all items from players")
+print("saveclear: saves AND clears all current player stats + some extras")
+print("restore: restores the previously saved states")
 
 
 ---@param player EntityPlayer
@@ -19,8 +29,26 @@ function PlayerInventoryManager.SavePlayerState(player)
     local currentPlayerState = CurrentPlayerStates[playerIndex]
     local playerState = {}
 
+    --Position
+    playerState.Position = player.Position
+
     --Player type
-    playerState.PlayerType = player:GetPlayerType()
+    if player:GetPlayerType() == PlayerType.PLAYER_THESOUL then
+        playerState.PlayerType = PlayerType.PLAYER_THEFORGOTTEN
+        playerState.SoulPosition = player.Position
+
+        for _, forgorBody in ipairs(Isaac.FindByType(EntityType.ENTITY_FAMILIAR, FamiliarVariant.FORGOTTEN_BODY)) do
+            forgorBody = forgorBody:ToFamiliar()
+            local owner = forgorBody.Player
+            local ownerIndex = Helpers.GetPlayerIndex(owner)
+
+            if ownerIndex == playerIndex then
+                playerState.Position = forgorBody.Position
+            end
+        end
+    else
+        playerState.PlayerType = player:GetPlayerType()
+    end
 
     --Twins
     if player:GetOtherTwin() then
@@ -42,6 +70,20 @@ function PlayerInventoryManager.SavePlayerState(player)
     playerState.GoldenHearts = player:GetGoldenHearts()
     playerState.RottenHearts = player:GetRottenHearts()
     playerState.BrokenHearts = player:GetBrokenHearts()
+
+    if player:GetSubPlayer() then
+        local subPlayer = player:GetSubPlayer()
+
+        playerState.SubMaxHearts = subPlayer:GetMaxHearts()
+        playerState.SubRedHearts = subPlayer:GetHearts()
+        playerState.SubSoulHearts = subPlayer:GetSoulHearts()
+        playerState.SubBlackHearts = subPlayer:GetBlackHearts()
+        playerState.SubEternalHearts = subPlayer:GetEternalHearts()
+        playerState.SubBoneHearts = subPlayer:GetBoneHearts()
+        playerState.SubGoldenHearts = subPlayer:GetGoldenHearts()
+        playerState.SubRottenHearts = subPlayer:GetRottenHearts()
+        playerState.SubBrokenHearts = subPlayer:GetBrokenHearts()
+    end
 
     --Pickups
     playerState.Coins = player:GetNumCoins()
@@ -124,7 +166,7 @@ function PlayerInventoryManager.ClearPlayerState(player)
     player:AddSoulCharge(-player:GetSoulCharge())
     player:AddBloodCharge(-player:GetBloodCharge())
 
-    --Remove eternal hearts and broken hearts because of shenanigans
+    --Remove eternal hearts and broken hearts because of jacob/esau
     player:AddEternalHearts(-player:GetEternalHearts())
     player:AddBrokenHearts(-player:GetBrokenHearts())
 
@@ -201,18 +243,31 @@ end
 
 
 ---@param player EntityPlayer
-function PlayerInventoryManager.RestorePlayerState(player)
+function PlayerInventoryManager.RestorePlayerType(player)
     local playerIndex = Helpers.GetPlayerIndex(player)
     local playerState = SavedPlayerStates[playerIndex]
 
     --Player type
     player:ChangePlayerType(playerState.PlayerType)
 
+    if playerState.SoulPosition then
+        table.insert(ForgottenControllerIndexesToChangeBody, player.ControllerIndex)
+    end
+
     if player:GetOtherTwin() then
         local twin = player:GetOtherTwin()
         local newTwinIndex = Helpers.GetPlayerIndex(twin)
         SavedPlayerStates[newTwinIndex] = SavedPlayerStates[playerState.TwinIndex]
     end
+end
+
+
+---@param player EntityPlayer
+function PlayerInventoryManager.RestorePlayerState(player)
+    local playerIndex = Helpers.GetPlayerIndex(player)
+    local playerState = SavedPlayerStates[playerIndex]
+
+    player.Position = playerState.Position
 
     --Player gimmicks
     player:AddPoopMana(playerState.PoopMana - player:GetPoopMana())
@@ -286,6 +341,20 @@ function PlayerInventoryManager.RestorePlayerState(player)
     player:AddRottenHearts(playerState.RottenHearts - player:GetRottenHearts())
     player:AddBrokenHearts(playerState.BrokenHearts - player:GetBrokenHearts())
 
+    if player:GetSubPlayer() then
+        local subPlayer = player:GetSubPlayer()
+
+        subPlayer:AddMaxHearts(playerState.SubMaxHearts - subPlayer:GetMaxHearts(), false)
+        subPlayer:AddHearts(playerState.SubRedHearts - subPlayer:GetHearts())
+        subPlayer:AddSoulHearts(playerState.SubSoulHearts - subPlayer:GetSoulHearts())
+        subPlayer:AddBlackHearts(playerState.SubBlackHearts)
+        subPlayer:AddEternalHearts(playerState.SubEternalHearts - subPlayer:GetEternalHearts())
+        subPlayer:AddBoneHearts(playerState.SubBoneHearts - subPlayer:GetBoneHearts())
+        subPlayer:AddGoldenHearts(playerState.SubGoldenHearts - subPlayer:GetGoldenHearts())
+        subPlayer:AddRottenHearts(playerState.SubRottenHearts - subPlayer:GetRottenHearts())
+        subPlayer:AddBrokenHearts(playerState.SubBrokenHearts - subPlayer:GetBrokenHearts())
+    end
+
     local currentPlayerState = CurrentPlayerStates[playerIndex]
     for _, inventoryItem in ipairs(playerState.Inventory) do
         table.insert(currentPlayerState.InventoryOrdered, inventoryItem)
@@ -313,7 +382,9 @@ function PlayerInventoryManager.RestoreAllPlayerStates()
             if not restoredPlayers[playerIndex] then
                 playersLeftToRestore = true
                 restoredPlayers[playerIndex] = true
-                PlayerInventoryManager.RestorePlayerState(player)
+
+                PlayerInventoryManager.RestorePlayerType(player)
+                table.insert(PlayersToRestore, playerIndex)
             end
         end
     end
@@ -428,13 +499,48 @@ function PlayerInventoryManager:OnPlayerInit(player)
 end
 
 
-function PlayerInventoryManager:OnGameStart(IsContinue)
-    print("-=Commands=-")
-    print("save: saves the current players states")
-    print("clear: clears all items from players")
-    print("saveclear: saves AND clears all current player stats + some extras")
-    print("restore: restores the previously saved states")
+function PlayerInventoryManager:OnInput(player, inputHook, buttonAction)
+    if buttonAction ~= ButtonAction.ACTION_DROP then return end
+    if #ForgottenControllerIndexesToChangeBody == 0 then return end
+    if not player or not player:ToPlayer() then return end
+    player = player:ToPlayer()
 
+    for index, controller in ipairs(ForgottenControllerIndexesToChangeBody) do
+        if player.ControllerIndex == controller then
+            player:GetData().RestoreSoulPosition = true
+            table.remove(ForgottenControllerIndexesToChangeBody, index)
+
+            if inputHook == InputHook.GET_ACTION_VALUE then
+                return 1.0
+            else
+                return true
+            end
+        end
+    end
+end
+
+
+function PlayerInventoryManager:OnPlayerUpdate(player)
+    local playerIndex = Helpers.GetPlayerIndex(player)
+
+    if player:GetData().RestoreSoulPosition then
+        local savedState = SavedPlayerStates[playerIndex]
+
+        player.Position = savedState.SoulPosition
+
+        player:GetData().RestoreSoulPosition = nil
+    elseif #PlayersToRestore > 0 then
+        for index, playerIndexToRestore in ipairs(PlayersToRestore) do
+            if playerIndex == playerIndexToRestore then
+                PlayerInventoryManager.RestorePlayerState(player)
+                table.remove(PlayersToRestore, index)
+            end
+        end
+    end
+end
+
+
+function PlayerInventoryManager:OnGameStart(IsContinue)
     HasTriggeredStart = true
 
     if IsContinue then
@@ -456,7 +562,7 @@ function PlayerInventoryManager:OnRender()
     -- local playerNum = game:GetNumPlayers()
     -- for i = 0, playerNum - 1, 1 do
     --     local player = game:GetPlayer(i)
-    --     local playerIndex = Helpers.GetPlayerIndex(player)
+    --     local playerIndex = player:GetSoulHearts()
     --     local pos = Isaac.WorldToScreen(player.Position)
 
     --     Isaac.RenderText(playerIndex, pos.X, pos.Y, 1, 1, 1, 255)
@@ -471,7 +577,7 @@ function PlayerInventoryManager:OnCMD(cmd, _)
             local player = game:GetPlayer(i)
             PlayerInventoryManager.SavePlayerState(player)
         end
-    elseif cmd == "clear" then
+    elseif cmd == "blank" then
         print("Clearing states")
         for i = 0, game:GetNumPlayers() - 1, 1 do
             local player = game:GetPlayer(i)
@@ -496,6 +602,8 @@ function PlayerInventoryManager:Init(mod, helpers)
     mod:AddCallback(ModCallbacks.MC_POST_PEFFECT_UPDATE, PlayerInventoryManager.OnPeffectUpdate)
     mod:AddCallback(ModCallbacks.MC_POST_PLAYER_INIT, PlayerInventoryManager.OnPlayerInit)
     mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, PlayerInventoryManager.OnGameStart)
+    mod:AddCallback(ModCallbacks.MC_INPUT_ACTION, PlayerInventoryManager.OnInput)
+    mod:AddCallback(ModCallbacks.MC_POST_PLAYER_UPDATE, PlayerInventoryManager.OnPlayerUpdate)
     mod:AddCallback(ModCallbacks.MC_POST_RENDER, PlayerInventoryManager.OnRender)
     mod:AddCallback(ModCallbacks.MC_EXECUTE_CMD, PlayerInventoryManager.OnCMD)
 
