@@ -22,6 +22,9 @@ function PlayerInventoryManager.SavePlayerState(player)
     --Player type
     playerState.PlayerType = player:GetPlayerType()
 
+    --Twins
+    playerState.TwinIndex = Helpers.GetPlayerIndex(player:GetOtherTwin())
+
     --Character gimmicks
     playerState.PoopMana = player:GetPoopMana()
     playerState.SoulCharge = player:GetSoulCharge()
@@ -203,6 +206,12 @@ function PlayerInventoryManager.RestorePlayerState(player)
     --Player type
     player:ChangePlayerType(playerState.PlayerType)
 
+    if player:GetOtherTwin() then
+        local twin = player:GetOtherTwin()
+        local newTwinIndex = Helpers.GetPlayerIndex(twin)
+        SavedPlayerStates[newTwinIndex] = SavedPlayerStates[playerState.TwinIndex]
+    end
+
     --Player gimmicks
     player:AddPoopMana(playerState.PoopMana - player:GetPoopMana())
     player:AddSoulCharge(playerState.SoulCharge - player:GetSoulCharge())
@@ -284,6 +293,27 @@ function PlayerInventoryManager.RestorePlayerState(player)
     end
     for trinketId, count in pairs(playerState.GulpedTrinkets) do
         currentPlayerState.GulpedTrinkets[trinketId] = count
+    end
+end
+
+
+function PlayerInventoryManager.RestoreAllPlayerStates()
+    local restoredPlayers = {}
+    local playersLeftToRestore = true
+
+    while playersLeftToRestore do
+        playersLeftToRestore = false
+
+        for i = 0, game:GetNumPlayers(), 1 do
+            local player = game:GetPlayer(i)
+            local playerIndex = Helpers.GetPlayerIndex(player)
+
+            if not restoredPlayers[playerIndex] then
+                playersLeftToRestore = true
+                restoredPlayers[playerIndex] = true
+                PlayerInventoryManager.RestorePlayerState(player)
+            end
+        end
     end
 end
 
@@ -425,11 +455,9 @@ function PlayerInventoryManager:OnRender()
     for i = 0, playerNum - 1, 1 do
         local player = game:GetPlayer(i)
         local playerIndex = Helpers.GetPlayerIndex(player)
-        local data = CurrentPlayerStates[playerIndex]
         local pos = Isaac.WorldToScreen(player.Position)
 
-        Isaac.RenderText(dump(data.InventoryOrdered), pos.X, pos.Y, 1, 1, 1, 255)
-        Isaac.RenderText(dump(data.CollectedItems), pos.X, pos.Y + 10, 1, 1, 1, 255)
+        Isaac.RenderText(playerIndex, pos.X, pos.Y, 1, 1, 1, 255)
     end
 end
 
@@ -457,10 +485,7 @@ function PlayerInventoryManager:OnCMD(cmd, _)
         PlayerInventoryManager.SaveAndClearAllPlayers()
     elseif cmd == "restore" then
         print("Restoring saved states")
-        for i = 0, game:GetNumPlayers() - 1, 1 do
-            local player = game:GetPlayer(i)
-            PlayerInventoryManager.RestorePlayerState(player)
-        end
+        PlayerInventoryManager.RestoreAllPlayerStates()
     end
 end
 
