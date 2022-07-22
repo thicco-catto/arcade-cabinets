@@ -19,4 +19,37 @@
 
     <entity Metadata="1" Group="Grid" ID="960" Image="icons/gush_button.png" Kind="Arcade Cabinets" Name="Gush Button" Variant="2120" Subtype="0" NoBlockDoors="1" >
     </entity>
+
+    <entity Metadata="1" Group="Machines" ID="6" Variant="3323" Image="icons/bsw.png" Kind="Arcade Cabinets" Name="bsw" Subtype="0" NoBlockDoors="1" >
+    </entity>
+
+    <entity Metadata="1" Group="Machines" ID="6" Variant="3324" Image="icons/gush.png" Kind="Arcade Cabinets" Name="gush" Subtype="0" NoBlockDoors="1" >
+    </entity>
+
+    <entity Metadata="1" Group="Machines" ID="6" Variant="3325" Image="icons/hs.png" Kind="Arcade Cabinets" Name="hs" Subtype="0" NoBlockDoors="1" >
+    </entity>
+
+    <entity Metadata="1" Group="Machines" ID="6" Variant="3326" Image="icons/jc.png" Kind="Arcade Cabinets" Name="jc" Subtype="0" NoBlockDoors="1" >
+    </entity>
+
+    <entity Metadata="1" Group="Machines" ID="6" Variant="3327" Image="icons/nl.png" Kind="Arcade Cabinets" Name="nl" Subtype="0" NoBlockDoors="1" >
+    </entity>
+
+    <entity Metadata="1" Group="Machines" ID="6" Variant="3328" Image="icons/ns.png" Kind="Arcade Cabinets" Name="ns" Subtype="0" NoBlockDoors="1" >
+    </entity>
+
+    <entity Metadata="1" Group="Machines" ID="6" Variant="3329" Image="icons/tb.png" Kind="Arcade Cabinets" Name="tb" Subtype="0" NoBlockDoors="1" >
+    </entity>
+
+    <entity Metadata="1" Group="Machines" ID="6" Variant="3330" Image="icons/tgb.png" Kind="Arcade Cabinets" Name="tgb" Subtype="0" NoBlockDoors="1" >
+    </entity>
+
+    <entity Metadata="1" Group="Machines" ID="6" Variant="3331" Image="icons/tug.png" Kind="Arcade Cabinets" Name="tug" Subtype="0" NoBlockDoors="1" >
+    </entity>
+
+    <entity Metadata="1" Group="Machines" ID="6" Variant="3332" Image="icons/random.png" Kind="Arcade Cabinets" Name="random" Subtype="0" NoBlockDoors="1" >
+    </entity>
+
+    <entity Metadata="1" Group="Machines" ID="6" Variant="3333" Image="icons/random glitch.png" Kind="Arcade Cabinets" Name="random glitch" Subtype="0" NoBlockDoors="1" >
+    </entity>
 </data>

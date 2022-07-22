@@ -23,7 +23,9 @@ function PlayerInventoryManager.SavePlayerState(player)
     playerState.PlayerType = player:GetPlayerType()
 
     --Twins
-    playerState.TwinIndex = Helpers.GetPlayerIndex(player:GetOtherTwin())
+    if player:GetOtherTwin() then
+        playerState.TwinIndex = Helpers.GetPlayerIndex(player:GetOtherTwin())
+    end
 
     --Character gimmicks
     playerState.PoopMana = player:GetPoopMana()
@@ -451,14 +453,14 @@ end
 
 
 function PlayerInventoryManager:OnRender()
-    local playerNum = game:GetNumPlayers()
-    for i = 0, playerNum - 1, 1 do
-        local player = game:GetPlayer(i)
-        local playerIndex = Helpers.GetPlayerIndex(player)
-        local pos = Isaac.WorldToScreen(player.Position)
+    -- local playerNum = game:GetNumPlayers()
+    -- for i = 0, playerNum - 1, 1 do
+    --     local player = game:GetPlayer(i)
+    --     local playerIndex = Helpers.GetPlayerIndex(player)
+    --     local pos = Isaac.WorldToScreen(player.Position)
 
-        Isaac.RenderText(playerIndex, pos.X, pos.Y, 1, 1, 1, 255)
-    end
+    --     Isaac.RenderText(playerIndex, pos.X, pos.Y, 1, 1, 1, 255)
+    -- end
 end
 
 
