@@ -397,6 +397,12 @@ end
 
 
 function PlayerInventoryManager:OnGameStart(IsContinue)
+    print("-=Commands=-")
+    print("save: saves the current players states")
+    print("clear: clears all items from players")
+    print("saveclear: saves AND clears all current player stats + some extras")
+    print("restore: restores the previously saved states")
+
     HasTriggeredStart = true
 
     if IsContinue then
