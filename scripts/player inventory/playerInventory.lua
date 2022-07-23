@@ -15,7 +15,7 @@ local HasTriggeredStart = false
 local ShouldSaveAndClearPlayers = false
 
 local ForgottenControllerIndexesToChangeBody = {}
-local DeadTaintedLazIndexes = {}
+local DeadTaintedLazPositions = {}
 
 
 print("-=Commands=-")
@@ -57,10 +57,28 @@ function PlayerInventoryManager.SavePlayerState(player)
         playerState.TwinIndex = Helpers.GetPlayerIndex(player:GetOtherTwin())
     end
 
-    if DeadTaintedLazIndexes[playerIndex] then
-        print("hola")
-        playerState.WasDeadTaintedLaz = true
-        DeadTaintedLazIndexes[playerIndex] = nil
+    if #DeadTaintedLazPositions > 0 then
+        for index, deadTaintedLazPosition in ipairs(DeadTaintedLazPositions) do
+            local playerDistanceToLaz = (player.Position - deadTaintedLazPosition):Length()
+            local hasToTransformIntoDeadLaz = true
+
+            for i = 0, game:GetNumPlayers() - 1, 1 do
+                local playerToCheckDistance = game:GetPlayer(i)
+                local playerToCheckDistanceIndex = Helpers.GetPlayerIndex(playerToCheckDistance)
+
+                if playerToCheckDistanceIndex ~= playerIndex then
+                    if (playerToCheckDistance.Position - deadTaintedLazPosition):Length() < playerDistanceToLaz then
+                        hasToTransformIntoDeadLaz = false
+                        break
+                    end
+                end
+            end
+
+            if hasToTransformIntoDeadLaz then
+                playerState.WasDeadTaintedLaz = true
+                table.remove(DeadTaintedLazPositions, index)
+            end
+        end
     end
 
     --Character gimmicks
@@ -228,8 +246,7 @@ function PlayerInventoryManager.PreparePlayersForSaveAndClear()
         if player:GetPlayerType() == PlayerType.PLAYER_LAZARUS2_B then
             player:UseActiveItem(CollectibleType.COLLECTIBLE_FLIP, UseFlag.USE_NOANIM | UseFlag.USE_NOCOSTUME)
 
-            local playerIndex = Helpers.GetPlayerIndex(player, true)
-            DeadTaintedLazIndexes[playerIndex] = true
+            table.insert(DeadTaintedLazPositions, player.Position)
         end
     end
 
@@ -380,7 +397,6 @@ function PlayerInventoryManager.RestorePlayerState(player)
     end
 
     if playerState.WasDeadTaintedLaz then
-        print("hola")
         player:UseActiveItem(CollectibleType.COLLECTIBLE_FLIP, UseFlag.USE_NOANIM | UseFlag.USE_NOCOSTUME)
     end
 
@@ -525,7 +541,6 @@ end
 
 
 function PlayerInventoryManager:OnPlayerInit(player)
-    print(player:IsSubPlayer())
     if not HasTriggeredStart then return end
 
     local playerIndex = Helpers.GetPlayerIndex(player)
@@ -609,14 +624,14 @@ end
 
 
 function PlayerInventoryManager:OnRender()
-    -- local playerNum = game:GetNumPlayers()
-    -- for i = 0, playerNum - 1, 1 do
-    --     local player = game:GetPlayer(i)
-    --     local playerIndex = Helpers.GetPlayerIndex(player, true, true)
-    --     local pos = Isaac.WorldToScreen(player.Position)
+    local playerNum = game:GetNumPlayers()
+    for i = 0, playerNum - 1, 1 do
+        local player = game:GetPlayer(i)
+        local playerIndex = Helpers.GetPlayerIndex(player, true, true)
+        local pos = Isaac.WorldToScreen(player.Position)
 
-    --     Isaac.RenderText(playerIndex, pos.X, pos.Y, 1, 1, 1, 255)
-    -- end
+        Isaac.RenderText(playerIndex, pos.X, pos.Y, 1, 1, 1, 255)
+    end
 end
 
 
