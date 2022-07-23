@@ -6,6 +6,7 @@ local game = Game()
 local CurrentPlayerStates = {}
 local SavedPlayerStates = {}
 local PlayersToRestore = {}
+local StrawmansToRestore = {}
 
 local InventoryType = {
     COLLECTIBLE = 1,
@@ -55,6 +56,19 @@ function PlayerInventoryManager.SavePlayerState(player)
     --Twins
     if player:GetOtherTwin() then
         playerState.TwinIndex = Helpers.GetPlayerIndex(player:GetOtherTwin())
+    end
+
+    if player.Parent and player:GetPlayerType() == PlayerType.PLAYER_KEEPER then
+        --It should be strawman
+        local parentPlayer = player.Parent:ToPlayer()
+        local parentIndex = Helpers.GetPlayerIndex(parentPlayer)
+        local parentState = SavedPlayerStates[parentIndex]
+
+        if parentState.StrawmansIndexes then
+            table.insert(parentState.StrawmansIndexes, playerIndex)
+        else
+            parentState.StrawmansIndexes = {playerIndex}
+        end
     end
 
     if #DeadTaintedLazPositions > 0 then
@@ -221,7 +235,9 @@ function PlayerInventoryManager.ClearPlayerState(player)
     --Remove items
     for _, inventoryItem in ipairs(currentPlayerState.InventoryOrdered) do
         if inventoryItem.type == InventoryType.COLLECTIBLE then
-            player:RemoveCollectible(inventoryItem.id)
+            if inventoryItem.id ~= CollectibleType.COLLECTIBLE_STRAW_MAN then
+                player:RemoveCollectible(inventoryItem.id)
+            end
         else
             player:TryRemoveTrinket(inventoryItem.id)
         end
@@ -275,6 +291,16 @@ function PlayerInventoryManager.SaveAndClearAllPlayers()
         blueSpider:Remove()
     end
 
+    --We remove strawman items here so they dont get removed
+    for i = 0, game:GetNumPlayers() - 1, 1 do
+        local player = game:GetPlayer(i)
+        local strawmanNum = player:GetCollectibleNum(CollectibleType.COLLECTIBLE_STRAW_MAN)
+
+        for _ = 1, strawmanNum, 1 do
+            player:RemoveCollectible(CollectibleType.COLLECTIBLE_STRAW_MAN)
+        end
+    end
+
     --Finally we change their player type to isaac
     for i = 0, game:GetNumPlayers() - 1, 1 do
         local player = game:GetPlayer(i)
@@ -319,6 +345,14 @@ function PlayerInventoryManager.RestorePlayerState(player)
     for _, inventoryItem in ipairs(playerState.Inventory) do
         if inventoryItem.type == InventoryType.COLLECTIBLE then
             player:AddCollectible(inventoryItem.id, 0, false)
+
+            if inventoryItem.id == CollectibleType.COLLECTIBLE_STRAW_MAN then
+                if StrawmansToRestore[playerIndex] then
+                    StrawmansToRestore[playerIndex] = StrawmansToRestore[playerIndex] + 1
+                else
+                    StrawmansToRestore[playerIndex] = 1
+                end
+            end
         else
             player:AddTrinket(inventoryItem.id)
             player:UseActiveItem(CollectibleType.COLLECTIBLE_SMELTER, UseFlag.USE_NOANIM | UseFlag.USE_NOANNOUNCER)
@@ -578,6 +612,19 @@ end
 
 function PlayerInventoryManager:OnPlayerUpdate(player)
     local playerIndex = Helpers.GetPlayerIndex(player)
+
+    if player.Parent and player:GetPlayerType() == PlayerType.PLAYER_KEEPER and not player:GetData().AlreadyRestoredStrawman then
+        player:GetData().AlreadyRestoredStrawman = true
+        local parentPlayer = player.Parent:ToPlayer()
+        local parentIndex = Helpers.GetPlayerIndex(parentPlayer)
+        local parentState = SavedPlayerStates[parentIndex]
+
+        if parentState and parentState.StrawmansIndexes and #parentState.StrawmansIndexes > 0 then
+            table.insert(PlayersToRestore, playerIndex)
+            SavedPlayerStates[playerIndex] = SavedPlayerStates[parentState.StrawmansIndexes[#parentState.StrawmansIndexes]]
+            parentState.StrawmansIndexes[#parentState.StrawmansIndexes] = nil
+        end
+    end
 
     if player:GetData().RestoreSoulPosition then
         local savedState = SavedPlayerStates[playerIndex]
