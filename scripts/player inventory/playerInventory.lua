@@ -12,8 +12,10 @@ local InventoryType = {
     TRINKET = 2,
 }
 local HasTriggeredStart = false
+local ShouldSaveAndClearPlayers = false
 
 local ForgottenControllerIndexesToChangeBody = {}
+local DeadTaintedLazIndexes = {}
 
 
 print("-=Commands=-")
@@ -53,6 +55,12 @@ function PlayerInventoryManager.SavePlayerState(player)
     --Twins
     if player:GetOtherTwin() then
         playerState.TwinIndex = Helpers.GetPlayerIndex(player:GetOtherTwin())
+    end
+
+    if DeadTaintedLazIndexes[playerIndex] then
+        print("hola")
+        playerState.WasDeadTaintedLaz = true
+        DeadTaintedLazIndexes[playerIndex] = nil
     end
 
     --Character gimmicks
@@ -213,6 +221,22 @@ function PlayerInventoryManager.ClearPlayerState(player)
 end
 
 
+function PlayerInventoryManager.PreparePlayersForSaveAndClear()
+    --Special check for t laz
+    for i = 0, game:GetNumPlayers() - 1, 1 do
+        local player = game:GetPlayer(i)
+        if player:GetPlayerType() == PlayerType.PLAYER_LAZARUS2_B then
+            player:UseActiveItem(CollectibleType.COLLECTIBLE_FLIP, UseFlag.USE_NOANIM | UseFlag.USE_NOCOSTUME)
+
+            local playerIndex = Helpers.GetPlayerIndex(player, true)
+            DeadTaintedLazIndexes[playerIndex] = true
+        end
+    end
+
+    ShouldSaveAndClearPlayers = true
+end
+
+
 function PlayerInventoryManager.SaveAndClearAllPlayers()
     --First we save all players
     for i = 0, game:GetNumPlayers() - 1, 1 do
@@ -353,6 +377,11 @@ function PlayerInventoryManager.RestorePlayerState(player)
         subPlayer:AddGoldenHearts(playerState.SubGoldenHearts - subPlayer:GetGoldenHearts())
         subPlayer:AddRottenHearts(playerState.SubRottenHearts - subPlayer:GetRottenHearts())
         subPlayer:AddBrokenHearts(playerState.SubBrokenHearts - subPlayer:GetBrokenHearts())
+    end
+
+    if playerState.WasDeadTaintedLaz then
+        print("hola")
+        player:UseActiveItem(CollectibleType.COLLECTIBLE_FLIP, UseFlag.USE_NOANIM | UseFlag.USE_NOCOSTUME)
     end
 
     local currentPlayerState = CurrentPlayerStates[playerIndex]
@@ -496,6 +525,7 @@ end
 
 
 function PlayerInventoryManager:OnPlayerInit(player)
+    print(player:IsSubPlayer())
     if not HasTriggeredStart then return end
 
     local playerIndex = Helpers.GetPlayerIndex(player)
@@ -551,6 +581,15 @@ function PlayerInventoryManager:OnPlayerUpdate(player)
 end
 
 
+function PlayerInventoryManager:OnFrameUpdate()
+    if ShouldSaveAndClearPlayers then
+        ShouldSaveAndClearPlayers = false
+
+        PlayerInventoryManager.SaveAndClearAllPlayers()
+    end
+end
+
+
 function PlayerInventoryManager:OnGameStart(IsContinue)
     HasTriggeredStart = true
 
@@ -573,7 +612,7 @@ function PlayerInventoryManager:OnRender()
     -- local playerNum = game:GetNumPlayers()
     -- for i = 0, playerNum - 1, 1 do
     --     local player = game:GetPlayer(i)
-    --     local playerIndex = player:GetSoulHearts()
+    --     local playerIndex = Helpers.GetPlayerIndex(player, true, true)
     --     local pos = Isaac.WorldToScreen(player.Position)
 
     --     Isaac.RenderText(playerIndex, pos.X, pos.Y, 1, 1, 1, 255)
@@ -601,7 +640,7 @@ function PlayerInventoryManager:OnCMD(cmd, _)
         end
     elseif cmd == "saveclear" then
         print("Saving and clearing states")
-        PlayerInventoryManager.SaveAndClearAllPlayers()
+        PlayerInventoryManager.PreparePlayersForSaveAndClear()
     elseif cmd == "restore" then
         print("Restoring saved states")
         PlayerInventoryManager.RestoreAllPlayerStates()
@@ -615,6 +654,7 @@ function PlayerInventoryManager:Init(mod, helpers)
     mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, PlayerInventoryManager.OnGameStart)
     mod:AddCallback(ModCallbacks.MC_INPUT_ACTION, PlayerInventoryManager.OnInput)
     mod:AddCallback(ModCallbacks.MC_POST_PLAYER_UPDATE, PlayerInventoryManager.OnPlayerUpdate)
+    mod:AddCallback(ModCallbacks.MC_POST_UPDATE, PlayerInventoryManager.OnFrameUpdate)
     mod:AddCallback(ModCallbacks.MC_POST_RENDER, PlayerInventoryManager.OnRender)
     mod:AddCallback(ModCallbacks.MC_EXECUTE_CMD, PlayerInventoryManager.OnCMD)
 

@@ -128,6 +128,24 @@ end
 ArcadeCabinetMod:AddCallback(ModCallbacks.MC_EXECUTE_CMD, ArcadeCabinetMod.OnCMD)
 
 
+function ArcadeCabinetMod:OnGameStart()
+	if MinimapAPI then
+		local iconID = "arcade cabinet icon"
+
+		local iconSprite = Sprite()
+		iconSprite:Load("gfx/arcade_cabinets_minimap_icon.anm2", true)
+
+		MinimapAPI:AddIcon(iconID, iconSprite, "Idle", 0)
+
+		for _, variant in pairs(ArcadeCabinetVariables.ArcadeCabinetVariant) do
+			local cabinetID = ArcadeCabinetVariables.ArcadeCabinetMinimapAPIIconID[variant]
+
+			MinimapAPI:AddPickup(cabinetID, iconID, EntityType.ENTITY_SLOT, variant, nil, MinimapAPI.PickupSlotMachineNotBroken, "slots", 14000 + variant)
+		end
+	end
+end
+ArcadeCabinetMod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, ArcadeCabinetMod.OnGameStart)
+
 
 -------
 --DUUMPPPPPPPPPPPPPPPPPPPPPPPPPPP

@@ -44,9 +44,12 @@ function Helpers:SpawnRandomCabinet(pos, rng)
 end
 
 
-function Helpers.GetPlayerIndex(player)
-    if player:GetPlayerType() == PlayerType.PLAYER_LAZARUS2_B then
-       return player:GetCollectibleRNG(2):GetSeed()
+function Helpers.GetPlayerIndex(player, ignoreTaintedLaz, pp)
+    if not ignoreTaintedLaz and player:GetPlayerType() == PlayerType.PLAYER_LAZARUS2_B then
+        if pp then
+        print("Inside = " .. tostring(ignoreTaintedLaz))
+        end
+        return player:GetCollectibleRNG(2):GetSeed()
     else
         return player:GetCollectibleRNG(1):GetSeed()
     end
