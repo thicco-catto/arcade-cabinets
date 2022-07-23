@@ -153,6 +153,54 @@ function PlayerInventoryManager.SavePlayerState(player)
         playerState.GulpedTrinkets[trinketId] = count
     end
 
+    --Temporary effects
+    local playerEffects = player:GetEffects()
+
+    --Temporary collectible effects
+    playerState.CollectibleEffects = {}
+    local itemConfig = Isaac.GetItemConfig()
+    local itemList = itemConfig:GetCollectibles()
+
+    for id = 1, itemList.Size - 1, 1 do
+        local item = itemConfig:GetCollectible(id)
+        if item and item.Type ~= ItemType.ITEM_ACTIVE then
+            local effectNum = playerEffects:GetCollectibleEffectNum(item.ID)
+            table.insert(playerState.CollectibleEffects, {id=item.ID, num=effectNum})
+        end
+    end
+
+    --Temporary null item effects
+    playerState.NullItemEffects = {}
+    local nullitemList = itemConfig:GetCollectibles()
+
+    for id = 1, nullitemList.Size - 1, 1 do
+        local nullItem = itemConfig:GetNullItem(id)
+        if nullItem and nullItem.Type ~= ItemType.ITEM_ACTIVE then
+            local effectNum = playerEffects:GetNullEffectNum(nullItem.ID)
+            table.insert(playerState.NullItemEffects, {id=nullItem.ID, num=effectNum})
+        end
+    end
+
+    --Temporary trinkets effects
+    playerState.TrinketEffects = {}
+    local trinketList = itemConfig:GetTrinkets()
+
+    for id = 1, trinketList.Size - 1, 1 do
+        local trinket = itemConfig:GetTrinket(id)
+        if trinket then
+            local effectNum = playerEffects:GetTrinketEffectNum(trinket.ID)
+            table.insert(playerState.TrinketEffects, {id=trinket.ID, num=effectNum})
+        end
+    end
+
+    --Wisps
+    playerState.ItemWisps = {}
+    for _, itemWisp in ipairs(Isaac.FindByType(EntityType.ENTITY_FAMILIAR, FamiliarVariant.ITEM_WISP)) do
+        local id = itemWisp.SubType
+        table.insert(playerState.ItemWisps, id)
+        itemWisp:Kill()
+    end
+
     --Active items
     playerState.ActiveItems = {}
     for activeSlot = 3, 0, -1 do
@@ -242,6 +290,9 @@ function PlayerInventoryManager.ClearPlayerState(player)
             player:TryRemoveTrinket(inventoryItem.id)
         end
     end
+
+    --Clear effects
+    player:GetEffects():ClearEffects()
 
     --Pick ups
     player:AddCoins(-player:GetNumCoins())
@@ -341,6 +392,11 @@ function PlayerInventoryManager.RestorePlayerState(player)
     player:AddSoulCharge(playerState.SoulCharge - player:GetSoulCharge())
     player:AddBloodCharge(playerState.BloodCharge - player:GetBloodCharge())
 
+    --Wisps
+    for _, wisp in ipairs(playerState.ItemWisps) do
+        player:AddItemWisp(wisp, player.Position)
+    end
+
     --Inventory
     for _, inventoryItem in ipairs(playerState.Inventory) do
         if inventoryItem.type == InventoryType.COLLECTIBLE then
@@ -389,6 +445,39 @@ function PlayerInventoryManager.RestorePlayerState(player)
         end
     end
 
+    --Temporary effects
+    local playerEffects = player:GetEffects()
+
+    for _, temporaryItem in ipairs(playerState.CollectibleEffects) do
+        local difference = temporaryItem.num - playerEffects:GetCollectibleEffectNum(temporaryItem.id)
+
+        if difference > 0 then
+            playerEffects:AddCollectibleEffect(temporaryItem.id, false, difference)
+        elseif difference < 0 then
+            playerEffects:RemoveCollectibleEffect(temporaryItem.id, false, math.abs(difference))
+        end
+    end
+
+    for _, temporaryItem in ipairs(playerState.NullItemEffects) do
+        local difference = temporaryItem.num - playerEffects:GetNullEffectNum(temporaryItem.id)
+
+        if difference > 0 then
+            playerEffects:AddNullEffect(temporaryItem.id, false, difference)
+        elseif difference < 0 then
+            playerEffects:RemoveNullEffect(temporaryItem.id, false, math.abs(difference))
+        end
+    end
+
+    for _, temporaryItem in ipairs(playerState.TrinketEffects) do
+        local difference = temporaryItem.num - playerEffects:GetTrinketEffectNum(temporaryItem.id)
+
+        if difference > 0 then
+            playerEffects:AddTrinketEffect(temporaryItem.id, false, difference)
+        elseif difference < 0 then
+            playerEffects:RemoveTrinketEffect(temporaryItem.id, false, math.abs(difference))
+        end
+    end
+
     --Pickups
     player:AddCoins(playerState.Coins - player:GetNumCoins())
 
@@ -433,6 +522,8 @@ function PlayerInventoryManager.RestorePlayerState(player)
     if playerState.WasDeadTaintedLaz then
         player:UseActiveItem(CollectibleType.COLLECTIBLE_FLIP, UseFlag.USE_NOANIM | UseFlag.USE_NOCOSTUME)
     end
+
+    player:RespawnFamiliars()
 
     local currentPlayerState = CurrentPlayerStates[playerIndex]
     for _, inventoryItem in ipairs(playerState.Inventory) do
