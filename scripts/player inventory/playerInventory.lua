@@ -108,7 +108,11 @@ function PlayerInventoryManager.SavePlayerState(player)
     playerState.MaxHearts = player:GetMaxHearts()
     playerState.RedHearts = player:GetHearts()
     playerState.SoulHearts = player:GetSoulHearts()
-    playerState.BlackHearts = player:GetBlackHearts()
+    playerState.BlackHearts = Helpers.CountBits(player:GetBlackHearts())
+    if playerState.SoulHearts % 2 == 1 and player:IsBlackHeart(math.ceil(playerState.SoulHearts / 2)) then
+        playerState.BlackHearts = playerState.BlackHearts - 1
+    end
+    playerState.SoulHearts = playerState.SoulHearts - playerState.BlackHearts
     playerState.EternalHearts = player:GetEternalHearts()
     playerState.BoneHearts = player:GetBoneHearts()
     playerState.GoldenHearts = player:GetGoldenHearts()
@@ -121,7 +125,7 @@ function PlayerInventoryManager.SavePlayerState(player)
         playerState.SubMaxHearts = subPlayer:GetMaxHearts()
         playerState.SubRedHearts = subPlayer:GetHearts()
         playerState.SubSoulHearts = subPlayer:GetSoulHearts()
-        playerState.SubBlackHearts = subPlayer:GetBlackHearts()
+        playerState.SubBlackHearts = Helpers.CountBits(subPlayer:GetBlackHearts())
         playerState.SubEternalHearts = subPlayer:GetEternalHearts()
         playerState.SubBoneHearts = subPlayer:GetBoneHearts()
         playerState.SubGoldenHearts = subPlayer:GetGoldenHearts()
@@ -646,10 +650,17 @@ function PlayerInventoryManager.RestorePlayerState(player)
     end
 
     --Health
+    local actualSoulHeartsNum = player:GetSoulHearts()
+    local actualBlackHeartsNum = Helpers.CountBits(player:GetBlackHearts())
+    if actualSoulHeartsNum % 2 == 1 and player:IsBlackHeart(math.ceil(actualSoulHeartsNum / 2)) then
+        actualBlackHeartsNum = actualBlackHeartsNum - 1
+    end
+    actualSoulHeartsNum = actualSoulHeartsNum - actualBlackHeartsNum
+
     player:AddMaxHearts(playerState.MaxHearts - player:GetMaxHearts(), false)
     player:AddHearts(playerState.RedHearts - player:GetHearts())
-    player:AddSoulHearts(playerState.SoulHearts - player:GetSoulHearts())
-    player:AddBlackHearts(playerState.BlackHearts)
+    player:AddSoulHearts(playerState.SoulHearts - actualSoulHeartsNum)
+    player:AddBlackHearts(playerState.BlackHearts - actualBlackHeartsNum)
     player:AddEternalHearts(playerState.EternalHearts - player:GetEternalHearts())
     player:AddBoneHearts(playerState.BoneHearts - player:GetBoneHearts())
     player:AddGoldenHearts(playerState.GoldenHearts - player:GetGoldenHearts())
@@ -662,7 +673,7 @@ function PlayerInventoryManager.RestorePlayerState(player)
         subPlayer:AddMaxHearts(playerState.SubMaxHearts - subPlayer:GetMaxHearts(), false)
         subPlayer:AddHearts(playerState.SubRedHearts - subPlayer:GetHearts())
         subPlayer:AddSoulHearts(playerState.SubSoulHearts - subPlayer:GetSoulHearts())
-        subPlayer:AddBlackHearts(playerState.SubBlackHearts)
+        subPlayer:AddBlackHearts(playerState.SubBlackHearts - Helpers.CountBits(subPlayer:GetBlackHearts()))
         subPlayer:AddEternalHearts(playerState.SubEternalHearts - subPlayer:GetEternalHearts())
         subPlayer:AddBoneHearts(playerState.SubBoneHearts - subPlayer:GetBoneHearts())
         subPlayer:AddGoldenHearts(playerState.SubGoldenHearts - subPlayer:GetGoldenHearts())

@@ -86,6 +86,18 @@ function Helpers.CopyTable(target, toCopy)
 end
 
 
+--By Xalum
+function Helpers.CountBits(mask)
+    local count = 0
+    while mask ~= 0 do
+        count = count + 1
+        mask = mask & mask - 1
+    end
+
+    return count
+end
+
+
 function Helpers:Init(variables)
     ArcadeCabinetVariables = variables
 end
