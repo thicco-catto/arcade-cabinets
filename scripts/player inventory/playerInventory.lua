@@ -32,6 +32,10 @@ function PlayerInventoryManager.SavePlayerState(player)
     local currentPlayerState = CurrentPlayerStates[playerIndex]
     local playerState = {}
 
+    playerState.PlayerData = {}
+    playerState.PlayerData = Helpers.CopyTable(playerState.PlayerData, player:GetData())
+    print(playerState.PlayerData.Loser)
+
     --Position
     playerState.Position = player.Position
 
@@ -255,6 +259,46 @@ function PlayerInventoryManager.SavePlayerState(player)
         end
     end
 
+    --Locusts
+    playerState.Locusts = {}
+    for _, locust in ipairs(Isaac.FindByType(EntityType.ENTITY_FAMILIAR, FamiliarVariant.ABYSS_LOCUST)) do
+        local parentIndex = Helpers.GetPlayerIndex(locust:ToFamiliar().Player)
+
+        if parentIndex == playerIndex then
+            local id = locust.SubType
+            table.insert(playerState.Locusts, id)
+            locust:Remove()
+        end
+    end
+
+    --Special blue flies
+    playerState.SpecialBlueFlies = {}
+    for _, blueFly in ipairs(Isaac.FindByType(EntityType.ENTITY_FAMILIAR, FamiliarVariant.BLUE_FLY)) do
+        local parentIndex = Helpers.GetPlayerIndex(blueFly:ToFamiliar().Player)
+
+        if parentIndex == playerIndex and blueFly.SubType ~= 0 then
+            if playerState.SpecialBlueFlies[blueFly.SubType] then
+                playerState.SpecialBlueFlies[blueFly.SubType] = playerState.SpecialBlueFlies[blueFly.SubType] + 1
+            else
+                playerState.SpecialBlueFlies[blueFly.SubType] = 1
+            end
+        end
+    end
+
+    --Special blue flies
+    playerState.SpecialBlueSpiders = {}
+    for _, blueSpider in ipairs(Isaac.FindByType(EntityType.ENTITY_FAMILIAR, FamiliarVariant.BLUE_SPIDER)) do
+        local parentIndex = Helpers.GetPlayerIndex(blueSpider:ToFamiliar().Player)
+
+        if parentIndex == playerIndex and blueSpider.SubType ~= 0 then
+            if playerState.SpecialBlueSpiders[blueSpider.SubType] then
+                playerState.SpecialBlueSpiders[blueSpider.SubType] = playerState.SpecialBlueSpiders[blueSpider.SubType] + 1
+            else
+                playerState.SpecialBlueSpiders[blueSpider.SubType] = 1
+            end
+        end
+    end
+
     --Active items
     playerState.ActiveItems = {}
     for activeSlot = 3, 0, -1 do
@@ -302,6 +346,11 @@ end
 function PlayerInventoryManager.ClearPlayerState(player)
     local playerIndex = Helpers.GetPlayerIndex(player)
     local currentPlayerState = CurrentPlayerStates[playerIndex]
+
+    --Remove data
+    for key, _ in pairs(player:GetData()) do
+        player:GetData()[key] = nil
+    end
 
     --Remove character gimmicks
     player:AddPoopMana(-player:GetPoopMana())
@@ -470,10 +519,33 @@ function PlayerInventoryManager.RestorePlayerState(player)
         minisaacEntity.HitPoints = minisaac.hp
     end
 
+    --Dips
     for _, dip in ipairs(playerState.Dips) do
         local dipEntity = Isaac.Spawn(EntityType.ENTITY_FAMILIAR, FamiliarVariant.DIP, dip.subtype, player.Position, Vector.Zero, player)
         dipEntity:ToFamiliar().Player = player
         dipEntity.HitPoints = dip.hp
+    end
+
+    --Locusts
+    for _, locustSubType in ipairs(playerState.Locusts) do
+        local locust = Isaac.Spawn(EntityType.ENTITY_FAMILIAR, FamiliarVariant.ABYSS_LOCUST, locustSubType, player.Position, Vector.Zero, player)
+        locust:ToFamiliar().Player = player
+    end
+
+    --Special blue flies
+    for blueFlySubType, count in pairs(playerState.SpecialBlueFlies) do
+        for _ = 1, count, 1 do
+            local fly = Isaac.Spawn(EntityType.ENTITY_FAMILIAR, FamiliarVariant.BLUE_FLY, blueFlySubType, player.Position, Vector.Zero, player)
+            fly:ToFamiliar().Player = player
+        end
+    end
+
+    --Special blue spiders
+    for blueSpiderSubType, count in pairs(playerState.SpecialBlueSpiders) do
+        for _ = 1, count, 1 do
+            local spider = Isaac.Spawn(EntityType.ENTITY_FAMILIAR, FamiliarVariant.BLUE_SPIDER, blueSpiderSubType, player.Position, Vector.Zero, player)
+            spider:ToFamiliar().Player = player
+        end
     end
 
     --Inventory
@@ -603,6 +675,11 @@ function PlayerInventoryManager.RestorePlayerState(player)
     end
 
     player:RespawnFamiliars()
+
+    --Restore data
+    for key, value in pairs(playerState.PlayerData) do
+        player:GetData()[key] = value
+    end
 
     local currentPlayerState = CurrentPlayerStates[playerIndex]
     for _, inventoryItem in ipairs(playerState.Inventory) do

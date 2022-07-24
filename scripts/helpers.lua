@@ -44,11 +44,8 @@ function Helpers:SpawnRandomCabinet(pos, rng)
 end
 
 
-function Helpers.GetPlayerIndex(player, ignoreTaintedLaz, pp)
+function Helpers.GetPlayerIndex(player, ignoreTaintedLaz)
     if not ignoreTaintedLaz and player:GetPlayerType() == PlayerType.PLAYER_LAZARUS2_B then
-        if pp then
-        print("Inside = " .. tostring(ignoreTaintedLaz))
-        end
         return player:GetCollectibleRNG(2):GetSeed()
     else
         return player:GetCollectibleRNG(1):GetSeed()
@@ -74,6 +71,18 @@ function Helpers.GetSmeltedTrinketMultiplier(player, trinket)
     end
 
     return totalMultiplier
+end
+
+
+function Helpers.CopyTable(target, toCopy)
+    --Make sure target is empty
+    target = {}
+
+    for key, value in pairs(toCopy) do
+        target[key] = value
+    end
+
+    return target
 end
 
 

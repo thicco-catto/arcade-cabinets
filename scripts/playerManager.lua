@@ -124,43 +124,43 @@ function PlayerManagement:OnPlayerUpdate(player)
 end
 
 
----@param player EntityPlayer
-function CheckCollectedItems(player)
-    local data = player:GetData().ArcadeCabinet
-    local itemConfig = Isaac.GetItemConfig()
-    ---@type ItemConfigList
-    local itemList = itemConfig:GetCollectibles()
+-- ---@param player EntityPlayer
+-- function CheckCollectedItems(player)
+--     local data = player:GetData().ArcadeCabinet
+--     local itemConfig = Isaac.GetItemConfig()
+--     ---@type ItemConfigList
+--     local itemList = itemConfig:GetCollectibles()
 
-    for id = 1, itemList.Size - 1, 1 do
-        local item = itemConfig:GetCollectible(id)
-        if item and item.Type ~= ItemType.ITEM_ACTIVE then
-            local itemId = item.ID
-            local collectedItems = data.collectedItems[itemId] or 0
-            local collectibleNum = player:GetCollectibleNum(itemId, true)
+--     for id = 1, itemList.Size - 1, 1 do
+--         local item = itemConfig:GetCollectible(id)
+--         if item and item.Type ~= ItemType.ITEM_ACTIVE then
+--             local itemId = item.ID
+--             local collectedItems = data.collectedItems[itemId] or 0
+--             local collectibleNum = player:GetCollectibleNum(itemId, true)
 
-            if collectibleNum > collectedItems then
-                --Player has picked up an item
-                data.collectedItems[itemId] = collectibleNum
-                table.insert(data.collectedItemsOrdered, itemId)
-                print(itemId)
-            elseif collectibleNum < collectedItems then
-                --Player has lost an item
-                data.collectedItems[itemId] = collectibleNum
-                for i = 1, #data.collectedItemsOrdered, 1 do
-                    if data.collectedItemsOrdered[i] == itemId then
-                        table.remove(data.collectedItemsOrdered, i)
-                        break
-                    end
-                end
-            end
-        end
-    end
-end
+--             if collectibleNum > collectedItems then
+--                 --Player has picked up an item
+--                 data.collectedItems[itemId] = collectibleNum
+--                 table.insert(data.collectedItemsOrdered, itemId)
+--                 print(itemId)
+--             elseif collectibleNum < collectedItems then
+--                 --Player has lost an item
+--                 data.collectedItems[itemId] = collectibleNum
+--                 for i = 1, #data.collectedItemsOrdered, 1 do
+--                     if data.collectedItemsOrdered[i] == itemId then
+--                         table.remove(data.collectedItemsOrdered, i)
+--                         break
+--                     end
+--                 end
+--             end
+--         end
+--     end
+-- end
 
 
 ---@param player EntityPlayer
 function PlayerManagement:OnPeffectUpdate(player)
-    CheckCollectedItems(player)
+    --CheckCollectedItems(player)
 
     --If we're in transition and the player has controls enabled (because of moving to another room), disable them
     if ArcadeCabinetVariables.CurrentGameState == ArcadeCabinetVariables.GameState.TRANSITION and player.ControlsEnabled then
