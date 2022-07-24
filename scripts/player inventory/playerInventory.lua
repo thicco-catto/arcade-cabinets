@@ -196,25 +196,50 @@ function PlayerInventoryManager.SavePlayerState(player)
     --Wisps
     playerState.Wisps = {}
     for _, wisp in ipairs(Isaac.FindByType(EntityType.ENTITY_FAMILIAR,FamiliarVariant.WISP)) do
-        local id = wisp.SubType
-        table.insert(playerState.Wisps, id)
-        wisp:Remove()
+        local parentIndex = Helpers.GetPlayerIndex(wisp:ToFamiliar().Player)
+
+        if parentIndex == playerIndex then
+            local id = wisp.SubType
+            table.insert(playerState.Wisps, id)
+            wisp:Remove()
+        end
     end
 
     playerState.ItemWisps = {}
     for _, itemWisp in ipairs(Isaac.FindByType(EntityType.ENTITY_FAMILIAR, FamiliarVariant.ITEM_WISP)) do
-        local id = itemWisp.SubType
-        table.insert(playerState.ItemWisps, id)
-        itemWisp:Kill()
+        local parentIndex = Helpers.GetPlayerIndex(itemWisp:ToFamiliar().Player)
+
+        if parentIndex == playerIndex then
+            local id = itemWisp.SubType
+            table.insert(playerState.ItemWisps, id)
+            itemWisp:Kill()
+        end
     end
 
     --Clots
     playerState.Clots = {}
     for _, clot in ipairs(Isaac.FindByType(EntityType.ENTITY_FAMILIAR, FamiliarVariant.BLOOD_BABY)) do
-        local id = clot.SubType
-        local hp = clot.HitPoints
-        table.insert(playerState.Clots, {subtype = id, hp = hp})
-        clot:Remove()
+        local parentIndex = Helpers.GetPlayerIndex(clot:ToFamiliar().Player)
+
+        if parentIndex == playerIndex then
+            local id = clot.SubType
+            local hp = clot.HitPoints
+            table.insert(playerState.Clots, {subtype = id, hp = hp})
+            clot:Remove()
+        end
+    end
+
+    --Minisaacs
+    playerState.Minisaacs = {}
+    for _, minisaac in ipairs(Isaac.FindByType(EntityType.ENTITY_FAMILIAR, FamiliarVariant.MINISAAC)) do
+        local parentIndex = Helpers.GetPlayerIndex(minisaac:ToFamiliar().Player)
+
+        if parentIndex == playerIndex then
+            local id = minisaac.SubType
+            local hp = minisaac.HitPoints
+            table.insert(playerState.Minisaacs, {subtype = id, hp = hp})
+            minisaac:Remove()
+        end
     end
 
     --Active items
@@ -411,7 +436,7 @@ function PlayerInventoryManager.RestorePlayerState(player)
     --Wisps
     for _, wispSubType in ipairs(playerState.Wisps) do
         local wisp = Isaac.Spawn(EntityType.ENTITY_FAMILIAR, FamiliarVariant.WISP, wispSubType, player.Position, Vector.Zero, player)
-        wisp.Parent = player
+        wisp:ToFamiliar().Player = player
     end
 
     for _, id in ipairs(playerState.ItemWisps) do
@@ -421,7 +446,15 @@ function PlayerInventoryManager.RestorePlayerState(player)
     --Clots
     for _, clot in ipairs(playerState.Clots) do
         local clotEntity = Isaac.Spawn(EntityType.ENTITY_FAMILIAR, FamiliarVariant.BLOOD_BABY, clot.subtype, player.Position, Vector.Zero, player)
+        clotEntity:ToFamiliar().Player = player
         clotEntity.HitPoints = clot.hp
+    end
+
+    --Minisaacs
+    for _, minisaac in ipairs(playerState.Minisaacs) do
+        local minisaacEntity = Isaac.Spawn(EntityType.ENTITY_FAMILIAR, FamiliarVariant.MINISAAC, minisaac.subtype, player.Position, Vector.Zero, player)
+        minisaacEntity:ToFamiliar().Player = player
+        minisaacEntity.HitPoints = minisaac.hp
     end
 
     --Inventory
