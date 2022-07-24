@@ -163,10 +163,10 @@ function PlayerInventoryManager.SavePlayerState(player)
 
     --Temporary effects
     local playerEffects = player:GetEffects()
+    local itemConfig = Isaac.GetItemConfig()
 
     --Temporary collectible effects
     playerState.CollectibleEffects = {}
-    local itemConfig = Isaac.GetItemConfig()
     local itemList = itemConfig:GetCollectibles()
 
     for id = 1, itemList.Size - 1, 1 do
@@ -179,7 +179,7 @@ function PlayerInventoryManager.SavePlayerState(player)
 
     --Temporary null item effects
     playerState.NullItemEffects = {}
-    local nullitemList = itemConfig:GetCollectibles()
+    local nullitemList = itemConfig:GetNullItems()
 
     for id = 1, nullitemList.Size - 1, 1 do
         local nullItem = itemConfig:GetNullItem(id)
@@ -350,6 +350,7 @@ end
 function PlayerInventoryManager.ClearPlayerState(player)
     local playerIndex = Helpers.GetPlayerIndex(player)
     local currentPlayerState = CurrentPlayerStates[playerIndex]
+    local playerState = SavedPlayerStates[playerIndex]
 
     --Remove data
     for key, _ in pairs(player:GetData()) do
@@ -400,6 +401,10 @@ function PlayerInventoryManager.ClearPlayerState(player)
 
     --Clear effects
     player:GetEffects():ClearEffects()
+
+    for _, temporaryItem in ipairs(playerState.NullItemEffects) do
+        player:GetEffects():RemoveNullEffect(temporaryItem.id, temporaryItem.num)
+    end
 
     --Pick ups
     player:AddCoins(-player:GetNumCoins())
@@ -607,9 +612,9 @@ function PlayerInventoryManager.RestorePlayerState(player)
         local difference = temporaryItem.num - playerEffects:GetCollectibleEffectNum(temporaryItem.id)
 
         if difference > 0 then
-            playerEffects:AddCollectibleEffect(temporaryItem.id, false, difference)
+            playerEffects:AddCollectibleEffect(temporaryItem.id, true, difference)
         elseif difference < 0 then
-            playerEffects:RemoveCollectibleEffect(temporaryItem.id, false, math.abs(difference))
+            playerEffects:RemoveCollectibleEffect(temporaryItem.id, math.abs(difference))
         end
     end
 
@@ -617,9 +622,9 @@ function PlayerInventoryManager.RestorePlayerState(player)
         local difference = temporaryItem.num - playerEffects:GetNullEffectNum(temporaryItem.id)
 
         if difference > 0 then
-            playerEffects:AddNullEffect(temporaryItem.id, false, difference)
+            playerEffects:AddNullEffect(temporaryItem.id, true, difference)
         elseif difference < 0 then
-            playerEffects:RemoveNullEffect(temporaryItem.id, false, math.abs(difference))
+            playerEffects:RemoveNullEffect(temporaryItem.id, math.abs(difference))
         end
     end
 
@@ -629,7 +634,7 @@ function PlayerInventoryManager.RestorePlayerState(player)
         if difference > 0 then
             playerEffects:AddTrinketEffect(temporaryItem.id, false, difference)
         elseif difference < 0 then
-            playerEffects:RemoveTrinketEffect(temporaryItem.id, false, math.abs(difference))
+            playerEffects:RemoveTrinketEffect(temporaryItem.id, math.abs(difference))
         end
     end
 
