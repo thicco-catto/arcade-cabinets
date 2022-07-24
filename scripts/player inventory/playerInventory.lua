@@ -242,6 +242,19 @@ function PlayerInventoryManager.SavePlayerState(player)
         end
     end
 
+    --Dips
+    playerState.Dips = {}
+    for _, dip in ipairs(Isaac.FindByType(EntityType.ENTITY_FAMILIAR, FamiliarVariant.DIP)) do
+        local parentIndex = Helpers.GetPlayerIndex(dip:ToFamiliar().Player)
+
+        if parentIndex == playerIndex then
+            local id = dip.SubType
+            local hp = dip.HitPoints
+            table.insert(playerState.Dips, {subtype = id, hp = hp})
+            dip:Remove()
+        end
+    end
+
     --Active items
     playerState.ActiveItems = {}
     for activeSlot = 3, 0, -1 do
@@ -455,6 +468,12 @@ function PlayerInventoryManager.RestorePlayerState(player)
         local minisaacEntity = Isaac.Spawn(EntityType.ENTITY_FAMILIAR, FamiliarVariant.MINISAAC, minisaac.subtype, player.Position, Vector.Zero, player)
         minisaacEntity:ToFamiliar().Player = player
         minisaacEntity.HitPoints = minisaac.hp
+    end
+
+    for _, dip in ipairs(playerState.Dips) do
+        local dipEntity = Isaac.Spawn(EntityType.ENTITY_FAMILIAR, FamiliarVariant.DIP, dip.subtype, player.Position, Vector.Zero, player)
+        dipEntity:ToFamiliar().Player = player
+        dipEntity.HitPoints = dip.hp
     end
 
     --Inventory
