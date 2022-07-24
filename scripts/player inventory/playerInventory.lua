@@ -208,6 +208,15 @@ function PlayerInventoryManager.SavePlayerState(player)
         itemWisp:Kill()
     end
 
+    --Clots
+    playerState.Clots = {}
+    for _, clot in ipairs(Isaac.FindByType(EntityType.ENTITY_FAMILIAR, FamiliarVariant.BLOOD_BABY)) do
+        local id = clot.SubType
+        local hp = clot.HitPoints
+        table.insert(playerState.Clots, {subtype = id, hp = hp})
+        clot:Remove()
+    end
+
     --Active items
     playerState.ActiveItems = {}
     for activeSlot = 3, 0, -1 do
@@ -407,6 +416,12 @@ function PlayerInventoryManager.RestorePlayerState(player)
 
     for _, id in ipairs(playerState.ItemWisps) do
         player:AddItemWisp(id, player.Position, true)
+    end
+
+    --Clots
+    for _, clot in ipairs(playerState.Clots) do
+        local clotEntity = Isaac.Spawn(EntityType.ENTITY_FAMILIAR, FamiliarVariant.BLOOD_BABY, clot.subtype, player.Position, Vector.Zero, player)
+        clotEntity.HitPoints = clot.hp
     end
 
     --Inventory
@@ -774,14 +789,21 @@ end
 
 
 function PlayerInventoryManager:OnRender()
-    local playerNum = game:GetNumPlayers()
-    for i = 0, playerNum - 1, 1 do
-        local player = game:GetPlayer(i)
-        local playerIndex = Helpers.GetPlayerIndex(player, true, true)
-        local pos = Isaac.WorldToScreen(player.Position)
+    -- local playerNum = game:GetNumPlayers()
+    -- for i = 0, playerNum - 1, 1 do
+    --     local player = game:GetPlayer(i)
+    --     local playerIndex = Helpers.GetPlayerIndex(player, true, true)
+    --     local pos = Isaac.WorldToScreen(player.Position)
 
-        Isaac.RenderText(playerIndex, pos.X, pos.Y, 1, 1, 1, 255)
-    end
+    --     Isaac.RenderText(playerIndex, pos.X, pos.Y, 1, 1, 1, 255)
+    -- end
+
+    -- for _, entity in ipairs(Isaac.GetRoomEntities()) do
+    --     local playerIndex = entity.Type .. ", " .. entity.Variant .. ", " .. entity.SubType
+    --     local pos = Isaac.WorldToScreen(entity.Position)
+
+    --     Isaac.RenderText(playerIndex, pos.X, pos.Y, 1, 1, 1, 255)
+    -- end
 end
 
 
