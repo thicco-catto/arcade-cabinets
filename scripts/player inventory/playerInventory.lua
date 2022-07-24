@@ -194,6 +194,13 @@ function PlayerInventoryManager.SavePlayerState(player)
     end
 
     --Wisps
+    playerState.Wisps = {}
+    for _, wisp in ipairs(Isaac.FindByType(EntityType.ENTITY_FAMILIAR,FamiliarVariant.WISP)) do
+        local id = wisp.SubType
+        table.insert(playerState.Wisps, id)
+        wisp:Remove()
+    end
+
     playerState.ItemWisps = {}
     for _, itemWisp in ipairs(Isaac.FindByType(EntityType.ENTITY_FAMILIAR, FamiliarVariant.ITEM_WISP)) do
         local id = itemWisp.SubType
@@ -393,8 +400,13 @@ function PlayerInventoryManager.RestorePlayerState(player)
     player:AddBloodCharge(playerState.BloodCharge - player:GetBloodCharge())
 
     --Wisps
-    for _, wisp in ipairs(playerState.ItemWisps) do
-        player:AddItemWisp(wisp, player.Position)
+    for _, wispSubType in ipairs(playerState.Wisps) do
+        local wisp = Isaac.Spawn(EntityType.ENTITY_FAMILIAR, FamiliarVariant.WISP, wispSubType, player.Position, Vector.Zero, player)
+        wisp.Parent = player
+    end
+
+    for _, id in ipairs(playerState.ItemWisps) do
+        player:AddItemWisp(id, player.Position, true)
     end
 
     --Inventory
