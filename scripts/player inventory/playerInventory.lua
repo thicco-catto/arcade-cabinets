@@ -95,6 +95,7 @@ function PlayerInventoryManager.SavePlayerState(player)
     playerState.PoopMana = player:GetPoopMana()
     playerState.SoulCharge = player:GetSoulCharge()
     playerState.BloodCharge = player:GetBloodCharge()
+    playerState.BerserkCharge = player.SamsonBerserkCharge
 
     --Health
     playerState.MaxHearts = player:GetMaxHearts()
@@ -594,6 +595,7 @@ function PlayerInventoryManager.RestorePlayerState(player)
     player:AddPoopMana(playerState.PoopMana - player:GetPoopMana())
     player:AddSoulCharge(playerState.SoulCharge - player:GetSoulCharge())
     player:AddBloodCharge(playerState.BloodCharge - player:GetBloodCharge())
+    player.SamsonBerserkCharge = playerState.BerserkCharge
 
     --Wisps
     for _, wispData in ipairs(playerState.Wisps) do
