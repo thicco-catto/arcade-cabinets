@@ -217,7 +217,6 @@ function PlayerInventoryManager.SavePlayerState(player)
         familiar = familiar:ToFamiliar()
 
         if Helpers.GetPlayerIndex(familiar.Player) == playerIndex then
-            print(familiar.Variant)
             local variant = familiar.Variant
             local subtype = familiar.SubType
             local position = familiar.Position
@@ -240,6 +239,17 @@ function PlayerInventoryManager.SavePlayerState(player)
                 roomCount = roomCount,
                 data = data
             })
+        end
+    end
+
+    --Lost soul
+    playerState.LostSouls = 0
+    for _, familiar in ipairs(Isaac.FindByType(EntityType.ENTITY_FAMILIAR, FamiliarVariant.LOST_SOUL)) do
+        ---@type EntityFamiliar
+        familiar = familiar:ToFamiliar()
+
+        if Helpers.GetPlayerIndex(familiar.Player) == playerIndex then
+            playerState.LostSouls = playerState.LostSouls + 1
         end
     end
 
@@ -939,6 +949,20 @@ function PlayerInventoryManager.RestorePlayerState(player)
     --Do this again just in case
     player:RespawnFamiliars()
 
+    --Kill lost souls
+    for _, familiar in ipairs(Isaac.FindByType(EntityType.ENTITY_FAMILIAR, FamiliarVariant.LOST_SOUL)) do
+        ---@type EntityFamiliar
+        familiar = familiar:ToFamiliar()
+
+        if Helpers.GetPlayerIndex(familiar.Player) == playerIndex then
+            if playerState.LostSouls == 0 then
+                --Do it twice for holy mantle
+                familiar:TakeDamage(1, 0, EntityRef(player), 0)
+                familiar:TakeDamage(1, 0, EntityRef(player), 0)
+            end
+        end
+    end
+
     --Restore data
     for key, value in pairs(playerState.PlayerData) do
         player:GetData()[key] = value
@@ -979,6 +1003,7 @@ function PlayerInventoryManager.RestoreAllPlayerStates()
     end
 end
 
+
 local function CheckCollectedItems(player, playerState)
     local itemConfig = Isaac.GetItemConfig()
     local itemList = itemConfig:GetCollectibles()
@@ -1016,6 +1041,7 @@ local function CheckCollectedItems(player, playerState)
         end
     end
 end
+
 
 local function CheckGulpedTrinkets(player, playerState)
     local itemConfig = Isaac.GetItemConfig()
@@ -1058,6 +1084,7 @@ local function CheckGulpedTrinkets(player, playerState)
     end
 end
 
+
 function PlayerInventoryManager:OnPeffectUpdate(player)
     if not HasTriggeredStart then return end
 
@@ -1080,6 +1107,7 @@ function PlayerInventoryManager:OnPeffectUpdate(player)
     CheckGulpedTrinkets(player, playerState)
 end
 
+
 function PlayerInventoryManager:OnPlayerInit(player)
     if not HasTriggeredStart then return end
 
@@ -1093,6 +1121,7 @@ function PlayerInventoryManager:OnPlayerInit(player)
         }
     end
 end
+
 
 function PlayerInventoryManager:OnInput(player, inputHook, buttonAction)
     if buttonAction ~= ButtonAction.ACTION_DROP then return end
@@ -1113,6 +1142,7 @@ function PlayerInventoryManager:OnInput(player, inputHook, buttonAction)
         end
     end
 end
+
 
 function PlayerInventoryManager:OnPlayerUpdate(player)
     local playerIndex = Helpers.GetPlayerIndex(player)
@@ -1148,13 +1178,21 @@ function PlayerInventoryManager:OnPlayerUpdate(player)
     end
 end
 
+
 function PlayerInventoryManager:OnFrameUpdate()
+    for i = 1, 800, 1 do
+        if SFXManager():IsPlaying(i) then
+            print(i)
+        end
+    end
+
     if ShouldSaveAndClearPlayers then
         ShouldSaveAndClearPlayers = false
 
         PlayerInventoryManager.SaveAndClearAllPlayers()
     end
 end
+
 
 function PlayerInventoryManager:OnGameStart(IsContinue)
     HasTriggeredStart = true
@@ -1172,6 +1210,7 @@ function PlayerInventoryManager:OnGameStart(IsContinue)
         PlayerInventoryManager:OnPlayerInit(player)
     end
 end
+
 
 function PlayerInventoryManager:OnRender()
     -- local playerNum = game:GetNumPlayers()
@@ -1197,6 +1236,7 @@ function PlayerInventoryManager:OnRender()
     --     Isaac.RenderText(playerIndex, pos.X, pos.Y, 1, 1, 1, 255)
     -- end
 end
+
 
 function PlayerInventoryManager:OnCMD(cmd, _)
     if cmd == "save" then
@@ -1234,6 +1274,7 @@ function PlayerInventoryManager:OnCMD(cmd, _)
     end
 end
 
+
 function PlayerInventoryManager:Init(mod, helpers)
     mod:AddCallback(ModCallbacks.MC_POST_PEFFECT_UPDATE, PlayerInventoryManager.OnPeffectUpdate)
     mod:AddCallback(ModCallbacks.MC_POST_PLAYER_INIT, PlayerInventoryManager.OnPlayerInit)
@@ -1246,5 +1287,6 @@ function PlayerInventoryManager:Init(mod, helpers)
 
     Helpers = helpers
 end
+
 
 return PlayerInventoryManager
