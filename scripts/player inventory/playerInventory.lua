@@ -70,7 +70,7 @@ function PlayerInventoryManager.SavePlayerState(player)
         if parentState.StrawmansIndexes then
             table.insert(parentState.StrawmansIndexes, playerIndex)
         else
-            parentState.StrawmansIndexes = {playerIndex}
+            parentState.StrawmansIndexes = { playerIndex }
         end
     end
 
@@ -172,7 +172,7 @@ function PlayerInventoryManager.SavePlayerState(player)
         local item = itemConfig:GetCollectible(id)
         if item and item.Type ~= ItemType.ITEM_ACTIVE then
             local effectNum = playerEffects:GetCollectibleEffectNum(item.ID)
-            table.insert(playerState.CollectibleEffects, {id=item.ID, num=effectNum})
+            table.insert(playerState.CollectibleEffects, { id = item.ID, num = effectNum })
         end
     end
 
@@ -184,7 +184,7 @@ function PlayerInventoryManager.SavePlayerState(player)
         local nullItem = itemConfig:GetNullItem(id)
         if nullItem and nullItem.Type ~= ItemType.ITEM_ACTIVE then
             local effectNum = playerEffects:GetNullEffectNum(nullItem.ID)
-            table.insert(playerState.NullItemEffects, {id=nullItem.ID, num=effectNum})
+            table.insert(playerState.NullItemEffects, { id = nullItem.ID, num = effectNum })
         end
     end
 
@@ -196,21 +196,52 @@ function PlayerInventoryManager.SavePlayerState(player)
         local trinket = itemConfig:GetTrinket(id)
         if trinket then
             local effectNum = playerEffects:GetTrinketEffectNum(trinket.ID)
-            table.insert(playerState.TrinketEffects, {id=trinket.ID, num=effectNum})
+            table.insert(playerState.TrinketEffects, { id = trinket.ID, num = effectNum })
+        end
+    end
+
+    --Track all familiars
+    playerState.Familiars = {}
+    for _, familiar in ipairs(Isaac.FindByType(EntityType.ENTITY_FAMILIAR)) do
+        ---@type EntityFamiliar
+        familiar = familiar:ToFamiliar()
+
+        if Helpers.GetPlayerIndex(familiar.Player) == playerIndex then
+            local variant = familiar.Variant
+            local subtype = familiar.SubType
+            local position = familiar.Position
+            local state = familiar.State
+            local coins = familiar.Coins
+            local keys = familiar.Keys
+            local hearts = familiar.Hearts
+            local roomCount = familiar.RoomClearCount
+            local data = {}
+            Helpers.CopyTable(data, familiar:GetData())
+
+            table.insert(playerState.Familiars, {
+                variant = variant,
+                subtype = subtype,
+                position = position,
+                state = state,
+                coins = coins,
+                keys = keys,
+                hearts = hearts,
+                roomCount = roomCount,
+                data = data
+            })
         end
     end
 
     --Wisps
     playerState.Wisps = {}
-    for _, wisp in ipairs(Isaac.FindByType(EntityType.ENTITY_FAMILIAR,FamiliarVariant.WISP)) do
+    for _, wisp in ipairs(Isaac.FindByType(EntityType.ENTITY_FAMILIAR, FamiliarVariant.WISP)) do
         local parentIndex = Helpers.GetPlayerIndex(wisp:ToFamiliar().Player)
 
         if parentIndex == playerIndex then
             local id = wisp.SubType
             local data = {}
             Helpers.CopyTable(data, wisp:GetData())
-            table.insert(playerState.Wisps, {subtype = id, data = data})
-            wisp:Remove()
+            table.insert(playerState.Wisps, { subtype = id, data = data })
         end
     end
 
@@ -222,8 +253,7 @@ function PlayerInventoryManager.SavePlayerState(player)
             local id = itemWisp.SubType
             local data = {}
             Helpers.CopyTable(data, wisp:GetData())
-            table.insert(playerState.ItemWisps, {subtype = id, data = data})
-            itemWisp:Kill()
+            table.insert(playerState.ItemWisps, { subtype = id, data = data })
         end
     end
 
@@ -237,8 +267,7 @@ function PlayerInventoryManager.SavePlayerState(player)
             local hp = clot.HitPoints
             local data = {}
             Helpers.CopyTable(data, wisp:GetData())
-            table.insert(playerState.Clots, {subtype = id, hp = hp, data = data})
-            clot:Remove()
+            table.insert(playerState.Clots, { subtype = id, hp = hp, data = data })
         end
     end
 
@@ -252,8 +281,7 @@ function PlayerInventoryManager.SavePlayerState(player)
             local hp = minisaac.HitPoints
             local data = {}
             Helpers.CopyTable(data, wisp:GetData())
-            table.insert(playerState.Minisaacs, {subtype = id, hp = hp, data = data})
-            minisaac:Remove()
+            table.insert(playerState.Minisaacs, { subtype = id, hp = hp, data = data })
         end
     end
 
@@ -267,8 +295,7 @@ function PlayerInventoryManager.SavePlayerState(player)
             local hp = dip.HitPoints
             local data = {}
             Helpers.CopyTable(data, wisp:GetData())
-            table.insert(playerState.Dips, {subtype = id, hp = hp, data = data})
-            dip:Remove()
+            table.insert(playerState.Dips, { subtype = id, hp = hp, data = data })
         end
     end
 
@@ -281,8 +308,7 @@ function PlayerInventoryManager.SavePlayerState(player)
             local id = locust.SubType
             local data = {}
             Helpers.CopyTable(data, wisp:GetData())
-            table.insert(playerState.Locusts, {subtype = id, data = data})
-            locust:Remove()
+            table.insert(playerState.Locusts, { subtype = id, data = data })
         end
     end
 
@@ -307,26 +333,11 @@ function PlayerInventoryManager.SavePlayerState(player)
 
         if parentIndex == playerIndex and blueSpider.SubType ~= 0 then
             if playerState.SpecialBlueSpiders[blueSpider.SubType] then
-                playerState.SpecialBlueSpiders[blueSpider.SubType] = playerState.SpecialBlueSpiders[blueSpider.SubType] + 1
+                playerState.SpecialBlueSpiders[blueSpider.SubType] = playerState.SpecialBlueSpiders[blueSpider.SubType] +
+                    1
             else
                 playerState.SpecialBlueSpiders[blueSpider.SubType] = 1
             end
-        end
-    end
-
-    --Other familiars
-    playerState.OtherFamiliars = {}
-    for _, familiar in ipairs(Isaac.FindByType(EntityType.ENTITY_FAMILIAR)) do
-        ---@type EntityFamiliar
-        familiar = familiar:ToFamiliar()
-
-        if Helpers.GetPlayerIndex(familiar.Player) == playerIndex then
-            local variant = familiar.Variant
-            local subtype = familiar.SubType
-            local data = {}
-            Helpers.CopyTable(data, familiar:GetData())
-
-            table.insert(playerState.OtherFamiliars, {variant = variant, subtype = subtype, data = data})
         end
     end
 
@@ -334,7 +345,7 @@ function PlayerInventoryManager.SavePlayerState(player)
     playerState.CharmedEnemies = {}
     for _, entity in ipairs(Isaac.GetRoomEntities()) do
         if entity:ToNPC() and entity:HasEntityFlags(EntityFlag.FLAG_CHARM) and entity.SpawnerEntity:ToPlayer() and
-        Helpers.GetPlayerIndex(entity.SpawnerEntity:ToPlayer()) == playerIndex then
+            Helpers.GetPlayerIndex(entity.SpawnerEntity:ToPlayer()) == playerIndex then
             local type = entity.Type
             local variant = entity.Variant
             local subtype = entity.SubType
@@ -342,19 +353,21 @@ function PlayerInventoryManager.SavePlayerState(player)
             local data = {}
             Helpers.CopyTable(data, entity:GetData())
 
-            table.insert(playerState.CharmedEnemies, {type = type, variant = variant, subtype = subtype, flags = flags, data = data})
+            table.insert(playerState.CharmedEnemies,
+                { type = type, variant = variant, subtype = subtype, flags = flags, data = data })
         end
     end
 
     --Active items
     playerState.ActiveItems = {}
     for activeSlot = 3, 0, -1 do
-        if player:GetActiveItem(activeSlot) ~= 0 then
+        if player:GetActiveItem(activeSlot) ~= 0 and
+        player:GetActiveItem(activeSlot) ~= CollectibleType.COLLECTIBLE_BOOK_OF_VIRTUES then
             local id = player:GetActiveItem(activeSlot)
             local charge = player:GetActiveCharge(activeSlot)
             local subcharge = player:GetBatteryCharge(activeSlot)
 
-            playerState.ActiveItems[activeSlot] = {id = id, charge = charge, subcharge = subcharge}
+            playerState.ActiveItems[activeSlot] = { id = id, charge = charge, subcharge = subcharge }
         end
     end
 
@@ -363,7 +376,7 @@ function PlayerInventoryManager.SavePlayerState(player)
     for trinketSlot = 1, 0, -1 do
         if player:GetTrinket(trinketSlot) ~= 0 then
             local id = player:GetTrinket(trinketSlot)
-            playerState.HoldTrinkets[trinketSlot] = {id = id}
+            playerState.HoldTrinkets[trinketSlot] = { id = id }
         end
     end
 
@@ -372,7 +385,7 @@ function PlayerInventoryManager.SavePlayerState(player)
     for cardSlot = 3, 0, -1 do
         if player:GetCard(cardSlot) ~= 0 then
             local id = player:GetCard(cardSlot)
-            playerState.HoldCards[cardSlot] = {id = id}
+            playerState.HoldCards[cardSlot] = { id = id }
         end
     end
 
@@ -381,13 +394,12 @@ function PlayerInventoryManager.SavePlayerState(player)
     for pillSlot = 3, 0, -1 do
         if player:GetPill(pillSlot) ~= 0 then
             local id = player:GetPill(pillSlot)
-            playerState.HoldPills[pillSlot] = {id = id}
+            playerState.HoldPills[pillSlot] = { id = id }
         end
     end
 
     SavedPlayerStates[playerIndex] = playerState
 end
-
 
 ---@param player EntityPlayer
 function PlayerInventoryManager.ClearPlayerState(player)
@@ -467,7 +479,6 @@ function PlayerInventoryManager.ClearPlayerState(player)
     player:RemoveGoldenKey()
 end
 
-
 ---@param player EntityPlayer
 function PlayerInventoryManager.ClearPlayerStateAfterPlayerType(player)
     local playerIndex = Helpers.GetPlayerIndex(player)
@@ -480,11 +491,15 @@ function PlayerInventoryManager.ClearPlayerStateAfterPlayerType(player)
         familiar = familiar:ToFamiliar()
 
         if Helpers.GetPlayerIndex(familiar.Player) == playerIndex then
-            familiar:Remove()
+            if familiar.Variant == FamiliarVariant.ITEM_WISP then
+                --If you dont kill them the item effect stays there
+                familiar:Kill()
+            else
+                familiar:Remove()
+            end
         end
     end
 end
-
 
 function PlayerInventoryManager.PreparePlayersForSaveAndClear()
     --Special check for t laz
@@ -499,7 +514,6 @@ function PlayerInventoryManager.PreparePlayersForSaveAndClear()
 
     ShouldSaveAndClearPlayers = true
 end
-
 
 function PlayerInventoryManager.SaveAndClearAllPlayers()
     --First we save all players
@@ -537,7 +551,6 @@ function PlayerInventoryManager.SaveAndClearAllPlayers()
     end
 end
 
-
 ---@param player EntityPlayer
 function PlayerInventoryManager.RestorePlayerType(player)
     local playerIndex = Helpers.GetPlayerIndex(player)
@@ -557,7 +570,6 @@ function PlayerInventoryManager.RestorePlayerType(player)
     end
 end
 
-
 ---@param player EntityPlayer
 function PlayerInventoryManager.RestorePlayerState(player)
     local playerIndex = Helpers.GetPlayerIndex(player)
@@ -573,7 +585,8 @@ function PlayerInventoryManager.RestorePlayerState(player)
     --Wisps
     for _, wispData in ipairs(playerState.Wisps) do
         local subtype = wispData.subtype
-        local wisp = Isaac.Spawn(EntityType.ENTITY_FAMILIAR, FamiliarVariant.WISP, subtype, player.Position, Vector.Zero, player)
+        local wisp = Isaac.Spawn(EntityType.ENTITY_FAMILIAR, FamiliarVariant.WISP, subtype, player.Position, Vector.Zero
+            , player)
         wisp:ToFamiliar().Player = player
 
         local data = wispData.data
@@ -594,7 +607,8 @@ function PlayerInventoryManager.RestorePlayerState(player)
 
     --Clots
     for _, clot in ipairs(playerState.Clots) do
-        local clotEntity = Isaac.Spawn(EntityType.ENTITY_FAMILIAR, FamiliarVariant.BLOOD_BABY, clot.subtype, player.Position, Vector.Zero, player)
+        local clotEntity = Isaac.Spawn(EntityType.ENTITY_FAMILIAR, FamiliarVariant.BLOOD_BABY, clot.subtype,
+            player.Position, Vector.Zero, player)
         clotEntity:ToFamiliar().Player = player
         clotEntity.HitPoints = clot.hp
 
@@ -606,7 +620,8 @@ function PlayerInventoryManager.RestorePlayerState(player)
 
     --Minisaacs
     for _, minisaac in ipairs(playerState.Minisaacs) do
-        local minisaacEntity = Isaac.Spawn(EntityType.ENTITY_FAMILIAR, FamiliarVariant.MINISAAC, minisaac.subtype, player.Position, Vector.Zero, player)
+        local minisaacEntity = Isaac.Spawn(EntityType.ENTITY_FAMILIAR, FamiliarVariant.MINISAAC, minisaac.subtype,
+            player.Position, Vector.Zero, player)
         minisaacEntity:ToFamiliar().Player = player
         minisaacEntity.HitPoints = minisaac.hp
 
@@ -618,7 +633,8 @@ function PlayerInventoryManager.RestorePlayerState(player)
 
     --Dips
     for _, dip in ipairs(playerState.Dips) do
-        local dipEntity = Isaac.Spawn(EntityType.ENTITY_FAMILIAR, FamiliarVariant.DIP, dip.subtype, player.Position, Vector.Zero, player)
+        local dipEntity = Isaac.Spawn(EntityType.ENTITY_FAMILIAR, FamiliarVariant.DIP, dip.subtype, player.Position,
+            Vector.Zero, player)
         dipEntity:ToFamiliar().Player = player
         dipEntity.HitPoints = dip.hp
 
@@ -631,7 +647,8 @@ function PlayerInventoryManager.RestorePlayerState(player)
     --Locusts
     for _, locustData in ipairs(playerState.Locusts) do
         local subtype = locustData.subtype
-        local locust = Isaac.Spawn(EntityType.ENTITY_FAMILIAR, FamiliarVariant.ABYSS_LOCUST, subtype, player.Position, Vector.Zero, player)
+        local locust = Isaac.Spawn(EntityType.ENTITY_FAMILIAR, FamiliarVariant.ABYSS_LOCUST, subtype, player.Position,
+            Vector.Zero, player)
         locust:ToFamiliar().Player = player
 
         local data = locustData.data
@@ -643,7 +660,8 @@ function PlayerInventoryManager.RestorePlayerState(player)
     --Special blue flies
     for blueFlySubType, count in pairs(playerState.SpecialBlueFlies) do
         for _ = 1, count, 1 do
-            local fly = Isaac.Spawn(EntityType.ENTITY_FAMILIAR, FamiliarVariant.BLUE_FLY, blueFlySubType, player.Position, Vector.Zero, player)
+            local fly = Isaac.Spawn(EntityType.ENTITY_FAMILIAR, FamiliarVariant.BLUE_FLY, blueFlySubType, player.Position
+                , Vector.Zero, player)
             fly:ToFamiliar().Player = player
         end
     end
@@ -651,17 +669,19 @@ function PlayerInventoryManager.RestorePlayerState(player)
     --Special blue spiders
     for blueSpiderSubType, count in pairs(playerState.SpecialBlueSpiders) do
         for _ = 1, count, 1 do
-            local spider = Isaac.Spawn(EntityType.ENTITY_FAMILIAR, FamiliarVariant.BLUE_SPIDER, blueSpiderSubType, player.Position, Vector.Zero, player)
+            local spider = Isaac.Spawn(EntityType.ENTITY_FAMILIAR, FamiliarVariant.BLUE_SPIDER, blueSpiderSubType,
+                player.Position, Vector.Zero, player)
             spider:ToFamiliar().Player = player
         end
     end
 
     --Charmed enemies
     for _, charmedEntity in ipairs(playerState.CharmedEnemies) do
-        local entity = Isaac.Spawn(charmedEntity.type, charmedEntity.variant, charmedEntity.subtype, player.Position, Vector.Zero, player)
+        local entity = Isaac.Spawn(charmedEntity.type, charmedEntity.variant, charmedEntity.subtype, player.Position,
+            Vector.Zero, player)
         entity:ClearEntityFlags(EntityFlag.FLAG_APPEAR)
         entity:AddEntityFlags(charmedEntity.flags)
-        
+
         for key, value in pairs(charmedEntity.data) do
             entity:GetData()[key] = value
         end
@@ -802,21 +822,56 @@ function PlayerInventoryManager.RestorePlayerState(player)
 
     player:RespawnFamiliars()
 
-    --Other familiars
+    --Check correctly spawned familiars
     for _, familiar in ipairs(Isaac.FindByType(EntityType.ENTITY_FAMILIAR)) do
         ---@type EntityFamiliar
         familiar = familiar:ToFamiliar()
 
         if Helpers.GetPlayerIndex(familiar.Player) == playerIndex then
-            for index, familiarData in ipairs(playerState.OtherFamiliars) do
+            for index, familiarData in ipairs(playerState.Familiars) do
                 if familiar.Variant == familiarData.variant and familiar.SubType == familiarData.subtype then
+                    familiar.Coins = familiarData.coins
+                    familiar.Keys = familiarData.keys
+                    familiar.Hearts = familiarData.hearts
+                    familiar.RoomClearCount = familiarData.roomCount
+                    familiar.State = familiarData.state
                     local data = familiarData.data
 
                     for key, value in pairs(data) do
                         familiar:GetData()[key] = value
                     end
 
-                    table.remove(playerState.OtherFamiliars, index)
+                    familiar:GetData().HasAlreadyBeenRestored = true
+
+                    table.remove(playerState.Familiars, index)
+                    break
+                end
+            end
+        end
+    end
+
+    --Assume that familiars with the same variant but different subtype are the same
+    for _, familiar in ipairs(Isaac.FindByType(EntityType.ENTITY_FAMILIAR)) do
+        ---@type EntityFamiliar
+        familiar = familiar:ToFamiliar()
+
+        if Helpers.GetPlayerIndex(familiar.Player) == playerIndex and not familiar:GetData().HasAlreadyBeenRestored then
+            for index, familiarData in ipairs(playerState.Familiars) do
+                if familiar.Variant == familiarData.variant then
+                    familiar.Coins = familiarData.coins
+                    familiar.Keys = familiarData.keys
+                    familiar.Hearts = familiarData.hearts
+                    familiar.RoomClearCount = familiarData.roomCount
+                    familiar.State = familiarData.state
+                    local data = familiarData.data
+
+                    for key, value in pairs(data) do
+                        familiar:GetData()[key] = value
+                    end
+
+                    familiar:GetData().HasAlreadyBeenRestored = true
+
+                    table.remove(playerState.Familiars, index)
                     break
                 end
             end
@@ -824,7 +879,7 @@ function PlayerInventoryManager.RestorePlayerState(player)
     end
 
     --Spawn remaining familiars
-    for _, familiarData in ipairs(playerState.OtherFamiliars) do
+    for _, familiarData in ipairs(playerState.Familiars) do
         local variant = familiarData.variant
         local subtype = familiarData.subtype
 
@@ -834,12 +889,32 @@ function PlayerInventoryManager.RestorePlayerState(player)
 
         familiar.Player = player
 
+        familiar.Coins = familiarData.coins
+        familiar.Keys = familiarData.keys
+        familiar.Hearts = familiarData.hearts
+        familiar.RoomClearCount = familiarData.roomCount
+        familiar.State = familiarData.state
         local data = familiarData.data
 
         for key, value in pairs(data) do
             familiar:GetData()[key] = value
         end
+
+        familiar:GetData().HasAlreadyBeenRestored = true
     end
+
+    --Remove remaining familiars that arent on the list
+    for _, familiar in ipairs(Isaac.FindByType(EntityType.ENTITY_FAMILIAR)) do
+        ---@type EntityFamiliar
+        familiar = familiar:ToFamiliar()
+
+        if Helpers.GetPlayerIndex(familiar.Player) == playerIndex and not familiar:GetData().HasAlreadyBeenRestored then
+            familiar:Remove()
+        end
+    end
+
+    --Do this again just in case
+    player:RespawnFamiliars()
 
     --Restore data
     for key, value in pairs(playerState.PlayerData) do
@@ -881,7 +956,6 @@ function PlayerInventoryManager.RestoreAllPlayerStates()
     end
 end
 
-
 local function CheckCollectedItems(player, playerState)
     local itemConfig = Isaac.GetItemConfig()
     local itemList = itemConfig:GetCollectibles()
@@ -900,7 +974,7 @@ local function CheckCollectedItems(player, playerState)
                 --If the actual num is bigger than what we had, player has picked up an item
                 playerState.CollectedItems[itemId] = actualCollectibleNum
                 for _ = 1, actualCollectibleNum - pastCollectibleNum, 1 do
-                    table.insert(playerState.InventoryOrdered, {type = InventoryType.COLLECTIBLE, id = itemId})
+                    table.insert(playerState.InventoryOrdered, { type = InventoryType.COLLECTIBLE, id = itemId })
                 end
             elseif actualCollectibleNum < pastCollectibleNum then
                 --If the actual num is smaller than what we had, player has lost an item
@@ -920,7 +994,6 @@ local function CheckCollectedItems(player, playerState)
     end
 end
 
-
 local function CheckGulpedTrinkets(player, playerState)
     local itemConfig = Isaac.GetItemConfig()
     local trinketList = itemConfig:GetTrinkets()
@@ -939,8 +1012,8 @@ local function CheckGulpedTrinkets(player, playerState)
                 --If the actual num is bigger than what we had, player has gulped a trinket
                 playerState.GulpedTrinkets[trinketId] = actualGulpedNum
 
-                for _ = 1, actualGulpedNum - pastGulpedNum, 1 do   
-                    table.insert(playerState.InventoryOrdered, {type = InventoryType.TRINKET, id = trinketId})
+                for _ = 1, actualGulpedNum - pastGulpedNum, 1 do
+                    table.insert(playerState.InventoryOrdered, { type = InventoryType.TRINKET, id = trinketId })
                 end
             elseif actualGulpedNum < pastGulpedNum then
                 --If the actual num is smaller than what we had, player has lost an item
@@ -961,7 +1034,6 @@ local function CheckGulpedTrinkets(player, playerState)
         end
     end
 end
-
 
 function PlayerInventoryManager:OnPeffectUpdate(player)
     if not HasTriggeredStart then return end
@@ -985,7 +1057,6 @@ function PlayerInventoryManager:OnPeffectUpdate(player)
     CheckGulpedTrinkets(player, playerState)
 end
 
-
 function PlayerInventoryManager:OnPlayerInit(player)
     if not HasTriggeredStart then return end
 
@@ -999,7 +1070,6 @@ function PlayerInventoryManager:OnPlayerInit(player)
         }
     end
 end
-
 
 function PlayerInventoryManager:OnInput(player, inputHook, buttonAction)
     if buttonAction ~= ButtonAction.ACTION_DROP then return end
@@ -1021,11 +1091,11 @@ function PlayerInventoryManager:OnInput(player, inputHook, buttonAction)
     end
 end
 
-
 function PlayerInventoryManager:OnPlayerUpdate(player)
     local playerIndex = Helpers.GetPlayerIndex(player)
 
-    if player.Parent and player:GetPlayerType() == PlayerType.PLAYER_KEEPER and not player:GetData().AlreadyRestoredStrawman then
+    if player.Parent and player:GetPlayerType() == PlayerType.PLAYER_KEEPER and
+        not player:GetData().AlreadyRestoredStrawman then
         player:GetData().AlreadyRestoredStrawman = true
         local parentPlayer = player.Parent:ToPlayer()
         local parentIndex = Helpers.GetPlayerIndex(parentPlayer)
@@ -1033,7 +1103,8 @@ function PlayerInventoryManager:OnPlayerUpdate(player)
 
         if parentState and parentState.StrawmansIndexes and #parentState.StrawmansIndexes > 0 then
             table.insert(PlayersToRestore, playerIndex)
-            SavedPlayerStates[playerIndex] = SavedPlayerStates[parentState.StrawmansIndexes[#parentState.StrawmansIndexes]]
+            SavedPlayerStates[playerIndex] = SavedPlayerStates[
+                parentState.StrawmansIndexes[#parentState.StrawmansIndexes]]
             parentState.StrawmansIndexes[#parentState.StrawmansIndexes] = nil
         end
     end
@@ -1054,7 +1125,6 @@ function PlayerInventoryManager:OnPlayerUpdate(player)
     end
 end
 
-
 function PlayerInventoryManager:OnFrameUpdate()
     if ShouldSaveAndClearPlayers then
         ShouldSaveAndClearPlayers = false
@@ -1062,7 +1132,6 @@ function PlayerInventoryManager:OnFrameUpdate()
         PlayerInventoryManager.SaveAndClearAllPlayers()
     end
 end
-
 
 function PlayerInventoryManager:OnGameStart(IsContinue)
     HasTriggeredStart = true
@@ -1081,7 +1150,6 @@ function PlayerInventoryManager:OnGameStart(IsContinue)
     end
 end
 
-
 function PlayerInventoryManager:OnRender()
     -- local playerNum = game:GetNumPlayers()
     -- for i = 0, playerNum - 1, 1 do
@@ -1098,8 +1166,15 @@ function PlayerInventoryManager:OnRender()
 
     --     Isaac.RenderText(playerIndex, pos.X, pos.Y, 1, 1, 1, 255)
     -- end
-end
 
+    for _, entity in ipairs(Isaac.FindByType(EntityType.ENTITY_FAMILIAR)) do
+        local familiar = entity:ToFamiliar()
+        local playerIndex = familiar.Variant .. ", " .. familiar.SubType
+        local pos = Isaac.WorldToScreen(entity.Position)
+
+        Isaac.RenderText(playerIndex, pos.X, pos.Y, 1, 1, 1, 255)
+    end
+end
 
 function PlayerInventoryManager:OnCMD(cmd, _)
     if cmd == "save" then
@@ -1127,7 +1202,6 @@ function PlayerInventoryManager:OnCMD(cmd, _)
         PlayerInventoryManager.RestoreAllPlayerStates()
     end
 end
-
 
 function PlayerInventoryManager:Init(mod, helpers)
     mod:AddCallback(ModCallbacks.MC_POST_PEFFECT_UPDATE, PlayerInventoryManager.OnPeffectUpdate)
