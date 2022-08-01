@@ -19,13 +19,6 @@ local ForgottenControllerIndexesToChangeBody = {}
 local DeadTaintedLazPositions = {}
 
 
-print("-=Commands=-")
-print("save: saves the current players states")
-print("clear: clears all items from players")
-print("saveclear: saves AND clears all current player stats + some extras")
-print("restore: restores the previously saved states")
-
-
 ---@param player EntityPlayer
 function PlayerInventoryManager.SavePlayerState(player)
     local playerIndex = Helpers.GetPlayerIndex(player)
@@ -200,6 +193,22 @@ function PlayerInventoryManager.SavePlayerState(player)
         end
     end
 
+    --Dark esaus
+    playerState.ExtraDarkEsauNum = 0
+    for _, entity in ipairs(Isaac.FindByType(EntityType.ENTITY_DARK_ESAU, 0)) do
+        if entity.SpawnerEntity and Helpers.GetPlayerIndex(entity.SpawnerEntity:ToPlayer()) == playerIndex then
+            playerState.ExtraDarkEsauNum = playerState.ExtraDarkEsauNum + 1
+        end
+    end
+
+    if player:GetPlayerType() == PlayerType.PLAYER_JACOB_B or player:GetPlayerType() == PlayerType.PLAYER_JACOB2_B then
+        if player:HasCollectible(CollectibleType.COLLECTIBLE_BIRTHRIGHT) then
+            playerState.ExtraDarkEsauNum = playerState.ExtraDarkEsauNum - 2
+        else
+            playerState.ExtraDarkEsauNum = playerState.ExtraDarkEsauNum - 1
+        end
+    end
+
     --Track all familiars
     playerState.Familiars = {}
     for _, familiar in ipairs(Isaac.FindByType(EntityType.ENTITY_FAMILIAR)) do
@@ -207,6 +216,7 @@ function PlayerInventoryManager.SavePlayerState(player)
         familiar = familiar:ToFamiliar()
 
         if Helpers.GetPlayerIndex(familiar.Player) == playerIndex then
+            print(familiar.Variant)
             local variant = familiar.Variant
             local subtype = familiar.SubType
             local position = familiar.Position
@@ -501,6 +511,7 @@ function PlayerInventoryManager.ClearPlayerStateAfterPlayerType(player)
     end
 end
 
+
 function PlayerInventoryManager.PreparePlayersForSaveAndClear()
     --Special check for t laz
     for i = 0, game:GetNumPlayers() - 1, 1 do
@@ -514,6 +525,7 @@ function PlayerInventoryManager.PreparePlayersForSaveAndClear()
 
     ShouldSaveAndClearPlayers = true
 end
+
 
 function PlayerInventoryManager.SaveAndClearAllPlayers()
     --First we save all players
@@ -569,6 +581,7 @@ function PlayerInventoryManager.RestorePlayerType(player)
         SavedPlayerStates[newTwinIndex] = SavedPlayerStates[playerState.TwinIndex]
     end
 end
+
 
 ---@param player EntityPlayer
 function PlayerInventoryManager.RestorePlayerState(player)
@@ -754,7 +767,10 @@ function PlayerInventoryManager.RestorePlayerState(player)
         if difference > 0 then
             playerEffects:AddNullEffect(temporaryItem.id, true, difference)
         elseif difference < 0 then
-            playerEffects:RemoveNullEffect(temporaryItem.id, math.abs(difference))
+            --Dont remove the jacobs curse, or else dark esau wont spawn
+            if temporaryItem.id ~= NullItemID.ID_JACOBS_CURSE then
+                playerEffects:RemoveNullEffect(temporaryItem.id, math.abs(difference))
+            end
         end
     end
 
@@ -766,6 +782,11 @@ function PlayerInventoryManager.RestorePlayerState(player)
         elseif difference < 0 then
             playerEffects:RemoveTrinketEffect(temporaryItem.id, math.abs(difference))
         end
+    end
+
+    --Dark esaus
+    for _ = 1, playerState.ExtraDarkEsauNum, 1 do
+        Isaac.Spawn(EntityType.ENTITY_DARK_ESAU, 0, 0, game:GetRoom():GetCenterPos(), Vector.Zero, player)
     end
 
     --Pickups
@@ -1167,13 +1188,12 @@ function PlayerInventoryManager:OnRender()
     --     Isaac.RenderText(playerIndex, pos.X, pos.Y, 1, 1, 1, 255)
     -- end
 
-    for _, entity in ipairs(Isaac.FindByType(EntityType.ENTITY_FAMILIAR)) do
-        local familiar = entity:ToFamiliar()
-        local playerIndex = familiar.Variant .. ", " .. familiar.SubType
-        local pos = Isaac.WorldToScreen(entity.Position)
+    -- for _, entity in ipairs(Isaac.FindByType(EntityType.ENTITY_DARK_ESAU)) do
+    --     local playerIndex = Helpers.GetPlayerIndex(entity.SpawnerEntity:ToPlayer())
+    --     local pos = Isaac.WorldToScreen(entity.Position)
 
-        Isaac.RenderText(playerIndex, pos.X, pos.Y, 1, 1, 1, 255)
-    end
+    --     Isaac.RenderText(playerIndex, pos.X, pos.Y, 1, 1, 1, 255)
+    -- end
 end
 
 function PlayerInventoryManager:OnCMD(cmd, _)
@@ -1200,6 +1220,15 @@ function PlayerInventoryManager:OnCMD(cmd, _)
     elseif cmd == "restore" then
         print("Restoring saved states")
         PlayerInventoryManager.RestoreAllPlayerStates()
+    elseif cmd == "1" then
+        local effects = Isaac.GetPlayer(0):GetEffects():GetEffectsList()
+        for i = 0, effects.Size - 1, 1 do
+            local item = effects:Get(i)
+            local type = "Collectible"
+
+            print()
+        end
+        print(Isaac.GetPlayer(0):GetEffects():GetEffectsList():Get(0).Item:IsNull())
     end
 end
 
