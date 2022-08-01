@@ -14,7 +14,7 @@ end
 local ArcadeCabinetVariables = loadFile("scripts/variables")
 
 local Helpers = loadFile("scripts/helpers")
-Helpers:Init(ArcadeCabinetVariables)
+Helpers.Init(ArcadeCabinetVariables)
 
 local PlayerInventory = loadFile("scripts/player inventory/playerInventory")
 PlayerInventory:Init(ArcadeCabinetMod, Helpers)

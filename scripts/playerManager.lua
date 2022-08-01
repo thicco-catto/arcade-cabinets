@@ -113,7 +113,7 @@ function PlayerManagement:OnPlayerUpdate(player)
 
     for _, slot in pairs(Isaac.FindByType(EntityType.ENTITY_SLOT)) do
         --If has to be one of our machines and it has to be playing the idle animation
-        if Helpers:IsModdedCabinetVariant(slot.Variant) and slot:GetSprite():IsPlaying("Idle") then
+        if Helpers.IsModdedCabinetVariant(slot.Variant) and slot:GetSprite():IsPlaying("Idle") then
             --Distance must be less that the hardcoded radius (like this so we dont have to use player collision callback)
             if (player.Position - slot.Position):Length() <= ArcadeCabinetVariables.CABINET_RADIUS then
                 player:AddCoins(-5)

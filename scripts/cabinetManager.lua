@@ -21,7 +21,7 @@ local function SetUpCabinet(cabinet)
     local level = game:GetLevel()
     local roomVariant = level:GetCurrentRoomDesc().Data.Variant
 
-    local isGlitched = Helpers:DoesAnyPlayerHasItem(CollectibleType.COLLECTIBLE_TMTRAINER)
+    local isGlitched = Helpers.DoesAnyPlayerHasItem(CollectibleType.COLLECTIBLE_TMTRAINER)
 
     local cabinetObject = Cabinet:New(gridIndex, isGlitched, gameSeed + roomVariant)
 
@@ -65,10 +65,10 @@ function CabinetManagement:OnNewRoom()
     for _, slot in ipairs(Isaac.FindByType(EntityType.ENTITY_SLOT)) do
         if slot.Variant == 16 and slot:GetDropRNG():RandomInt(100) <= ArcadeCabinetVariables.CHANCE_FOR_CRANE_TO_CABINET
         and room:IsFirstVisit() then
-            local cabinet = Helpers:SpawnRandomCabinet(slot.Position, slot:GetDropRNG())
+            local cabinet = Helpers.SpawnRandomCabinet(slot.Position, slot:GetDropRNG())
             SetUpCabinet(cabinet)
             slot:Remove()
-        elseif Helpers:IsModdedCabinetVariant(slot.Variant) then
+        elseif Helpers.IsModdedCabinetVariant(slot.Variant) then
             SetUpCabinet(slot)
         end
     end
@@ -142,7 +142,7 @@ end
 
 function CabinetManagement:OnFrameUpdate()
     for _, slot in ipairs(Isaac.FindByType(EntityType.ENTITY_SLOT)) do
-        if Helpers:IsModdedCabinetVariant(slot.Variant) then
+        if Helpers.IsModdedCabinetVariant(slot.Variant) then
             OnCabinetUpdate(slot)
         end
     end

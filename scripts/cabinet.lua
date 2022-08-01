@@ -91,7 +91,7 @@ function Cabinet:ShouldGetDestroyed()
     end
 
     --Check if any player has lucky foot
-    local anyPlayerHasLuckyFoot = Helpers:DoesAnyPlayerHasItem(CollectibleType.COLLECTIBLE_LUCKY_FOOT)
+    local anyPlayerHasLuckyFoot = Helpers.DoesAnyPlayerHasItem(CollectibleType.COLLECTIBLE_LUCKY_FOOT)
 
     --If any player has lucky foot, the chance if bigger
     local breakingChance = cabinetRNG:RandomInt(100)

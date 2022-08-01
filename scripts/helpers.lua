@@ -3,7 +3,7 @@ local ArcadeCabinetVariables
 local game = Game()
 
 
-function Helpers:IsModdedCabinetVariant(machineVariant)
+function Helpers.IsModdedCabinetVariant(machineVariant)
     for _, variant in pairs(ArcadeCabinetVariables.ArcadeCabinetVariant) do
         if machineVariant == variant then
             return true
@@ -14,7 +14,7 @@ function Helpers:IsModdedCabinetVariant(machineVariant)
 end
 
 
-function Helpers:DoesAnyPlayerHasItem(itemType)
+function Helpers.DoesAnyPlayerHasItem(itemType)
     for i = 0, game:GetNumPlayers() - 1, 1 do
         local player = game:GetPlayer(i)
         if player:HasCollectible(itemType) then
@@ -26,7 +26,7 @@ function Helpers:DoesAnyPlayerHasItem(itemType)
 end
 
 
-function Helpers:SpawnRandomCabinet(pos, rng)
+function Helpers.SpawnRandomCabinet(pos, rng)
     local i = 1
     local left = ArcadeCabinetVariables.MINIGAME_NUM
     local chosenVariant
@@ -98,7 +98,7 @@ function Helpers.CountBits(mask)
 end
 
 
-function Helpers:Init(variables)
+function Helpers.Init(variables)
     ArcadeCabinetVariables = variables
 end
 

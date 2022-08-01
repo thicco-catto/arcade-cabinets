@@ -13,7 +13,7 @@ local game = Game()
 ---Returns the cabinet entity that was used
 local function FindUsedCabinet()
     for _, cabinet in ipairs(Isaac.FindByType(EntityType.ENTITY_SLOT)) do
-        if Helpers:IsModdedCabinetVariant(cabinet.Variant) then
+        if Helpers.IsModdedCabinetVariant(cabinet.Variant) then
             local room = game:GetRoom()
             local gridIndex = room:GetGridIndex(cabinet.Position)
             local cabinetObject = Cabinet:New(gridIndex, false, 1)
