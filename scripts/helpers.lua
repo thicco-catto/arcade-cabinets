@@ -26,18 +26,51 @@ function Helpers.DoesAnyPlayerHasItem(itemType)
 end
 
 
+local function GetCabinetVariantsInRoom()
+    local variantsInRoom = {}
+    local variantsInRoomToCheck = {}
+
+    for _, slot in ipairs(Isaac.FindByType(EntityType.ENTITY_SLOT)) do
+        if Helpers.IsModdedCabinetVariant(slot.Variant) and not variantsInRoomToCheck[slot.Variant] then
+            variantsInRoomToCheck[slot.Variant] = true
+            table.insert(variantsInRoom, slot.Variant)
+        end
+    end
+
+    return variantsInRoom
+end
+
+
 function Helpers.SpawnRandomCabinet(pos, rng)
-    local i = 1
-    local left = ArcadeCabinetVariables.MINIGAME_NUM
+    local cabinetVariantsInRoom = GetCabinetVariantsInRoom()
+    local left = ArcadeCabinetVariables.MINIGAME_NUM - #cabinetVariantsInRoom
+
+    --If we have spawned all variants then just repeat
+    if left <= 0 then
+        cabinetVariantsInRoom = {}
+        left = ArcadeCabinetVariables.MINIGAME_NUM
+    end
+
     local chosenVariant
 
     for _, variant in pairs(ArcadeCabinetVariables.ArcadeCabinetVariant) do
-        if rng:RandomFloat() <= 1/left then
-            chosenVariant = variant
-            break
+        --First check if this variant is already in the room
+        local isRepeatedVariant = false
+        for i = 1, #cabinetVariantsInRoom, 1 do
+            if variant == cabinetVariantsInRoom[i] then
+                isRepeatedVariant = true
+            end
         end
 
-        left = left - 1
+        --If it is repeated, dont try to check
+        if not isRepeatedVariant then
+            if rng:RandomFloat() <= 1/left then
+                chosenVariant = variant
+                break
+            end
+
+            left = left - 1
+        end
     end
 
     return Isaac.Spawn(EntityType.ENTITY_SLOT, chosenVariant, 0, pos, Vector.Zero, nil)
