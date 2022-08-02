@@ -37,12 +37,12 @@ PlayerManagement:AddOtherManagers(CabinetManagement, MinigameManagement)
 
 
 local function SpawnMachine(variant, pos)
-    -- local machine = Isaac.Spawn(6, variant, 0, pos, Vector.Zero, nil)
-    -- local item = GetRoomItem(ItemPoolType.POOL_CRANE_GAME)
-    -- local itemSprite = Isaac.GetItemConfig():GetCollectible(item).GfxFileName
+    local machine = Isaac.Spawn(6, variant, 0, pos, Vector.Zero, nil)
+    local item = GetRoomItem(ItemPoolType.POOL_CRANE_GAME)
+    local itemSprite = Isaac.GetItemConfig():GetCollectible(item).GfxFileName
 
-    -- machine:GetSprite():ReplaceSpritesheet(2, itemSprite)
-    -- machine:GetSprite():LoadGraphics()
+    machine:GetSprite():ReplaceSpritesheet(2, itemSprite)
+    machine:GetSprite():LoadGraphics()
 end
 
 

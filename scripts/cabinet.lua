@@ -83,6 +83,16 @@ end
 ---Returns whether a machine should get destroyed or not.
 ---Will account for lucky foot and changes for each attempt.
 function Cabinet:ShouldGetDestroyed()
+    --Check if any player has lucky foot
+    local anyPlayerHasLuckyFoot = Helpers.DoesAnyPlayerHasItem(CollectibleType.COLLECTIBLE_LUCKY_FOOT)
+
+    --If there has been 3 attempts and no explosion, force it
+    --5 attempts if any player has lucky foot
+    if self.numberOfAttempts == 3 and not anyPlayerHasLuckyFooty or
+    self.numberOfAttempts == 5 and anyPlayerHasLuckyFoot then
+        return true
+    end
+
     local cabinetRNG = self:GetRNG()
 
     --Iterate once for each attemt so as to change this
@@ -90,12 +100,9 @@ function Cabinet:ShouldGetDestroyed()
         cabinetRNG:Next()
     end
 
-    --Check if any player has lucky foot
-    local anyPlayerHasLuckyFoot = Helpers.DoesAnyPlayerHasItem(CollectibleType.COLLECTIBLE_LUCKY_FOOT)
-
-    --If any player has lucky foot, the chance if bigger
+    --If any player has lucky foot, the chance is bigger
     local breakingChance = cabinetRNG:RandomInt(100)
-    return breakingChance <= ArcadeCabinetVariables.CHANCE_FOR_CABINET_EXPLODING or
+    return not anyPlayerHasLuckyFoot and breakingChance <= ArcadeCabinetVariables.CHANCE_FOR_CABINET_EXPLODING or
     anyPlayerHasLuckyFoot and breakingChance <= ArcadeCabinetVariables.CHANCE_FOR_CABINET_EXPLODING_LUCKY_FOOT
 end
 
