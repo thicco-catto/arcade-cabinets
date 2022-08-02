@@ -50,9 +50,13 @@ local function SetUpCabinet(cabinet, forceGlitch)
     end
 
     --Show collectible
-    local chosenCollectible = cabinetObject:GetCollectible()
-    local itemSprite = Isaac.GetItemConfig():GetCollectible(chosenCollectible).GfxFileName
-    cabinet:GetSprite():ReplaceSpritesheet(2, itemSprite)
+    if Helpers.DoesAnyPlayerHasItem(CollectibleType.COLLECTIBLE_TMTRAINER) then
+        cabinet:GetSprite():ReplaceSpritesheet(2, "gfx/slots/glitch_item_icon.png")
+    else
+        local chosenCollectible = cabinetObject:GetCollectible()
+        local itemSprite = Isaac.GetItemConfig():GetCollectible(chosenCollectible).GfxFileName
+        cabinet:GetSprite():ReplaceSpritesheet(2, itemSprite)
+    end
 
     cabinet:GetSprite():LoadGraphics()
 

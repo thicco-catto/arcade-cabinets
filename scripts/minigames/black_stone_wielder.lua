@@ -581,7 +581,7 @@ function black_stone_wielder:OnNPCUpdate(entity)
 
         if not entity:GetData().HasReplacedGlitchedSprites then
             entity:GetData().HasReplacedGlitchedSprites = true
-            
+
             if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
                 entity:GetSprite():ReplaceSpritesheet(0, "gfx/enemies/bsw_glitch_lunatic_body.png")
                 entity:GetSprite():ReplaceSpritesheet(1, "gfx/enemies/bsw_glitch_lunatic_head.png")
