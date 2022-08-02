@@ -578,6 +578,18 @@ function black_stone_wielder:OnNPCUpdate(entity)
     if entity.Variant == 2 then
         entity:SetColor(Color(1, 1, 1), 10, -10, false, true)
         entity.Scale = 1
+
+        if not entity:GetData().HasReplacedGlitchedSprites then
+            entity:GetData().HasReplacedGlitchedSprites = true
+            
+            if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+                entity:GetSprite():ReplaceSpritesheet(0, "gfx/enemies/bsw_glitch_lunatic_body.png")
+                entity:GetSprite():ReplaceSpritesheet(1, "gfx/enemies/bsw_glitch_lunatic_head.png")
+                entity:GetSprite():ReplaceSpritesheet(2, "gfx/enemies/bsw_glitch_lunatic_body.png")
+            end
+
+            entity:GetSprite():LoadGraphics()
+        end
     end
 end
 

@@ -20,7 +20,7 @@ local PlayerInventory = loadFile("scripts/player inventory/playerInventory")
 PlayerInventory:Init(ArcadeCabinetMod, Helpers)
 
 local Cabinet = loadFile("scripts/cabinet")
-Cabinet:Init(ArcadeCabinetVariables)
+Cabinet:Init(ArcadeCabinetVariables, Helpers)
 
 local CabinetManagement = loadFile("scripts/cabinetManager")
 CabinetManagement:Init(ArcadeCabinetMod, ArcadeCabinetVariables, PlayerInventory, Cabinet, Helpers)
