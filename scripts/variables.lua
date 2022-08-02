@@ -121,7 +121,7 @@ ArcadeCabinetVariables.LevelCurses = nil
 ArcadeCabinetVariables.OptionsChargeBar = nil
 ArcadeCabinetVariables.OptionsActiveCam = nil
 ArcadeCabinetVariables.OptionsFilter = nil
-ArcadeCabinetVariables.RepositionPlayers = false
+ArcadeCabinetVariables.RestorePlayers = false
 ArcadeCabinetVariables.TransitionScreen = Sprite()
 ArcadeCabinetVariables.TransitionScreen:Load("gfx/minigame_transition.anm2", true)
 ArcadeCabinetVariables.TransitionFrameCount = -1

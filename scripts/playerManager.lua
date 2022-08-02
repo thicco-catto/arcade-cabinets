@@ -6,102 +6,15 @@ local Helpers
 
 local CabinetManagement
 local MinigameManagement
+local PlayerInventory
 
 local game = Game()
 
 
 ---@param player EntityPlayer
 function PlayerManagement.InitPlayerForMinigame(player)
-    local data = player:GetData().ArcadeCabinet
-
-    --Store the previous character
-    data.playerType = player:GetPlayerType()
-
-    --Transform them to Isaac
-    player:ChangePlayerType(PlayerType.PLAYER_ISAAC)
-
-    --Store player position
-    data.position = player.Position
-
-    --Store their pickups
-    data.coins = player:GetNumCoins()
-    data.bombs = player:GetNumBombs()
-    data.keys = player:GetNumKeys()
-
-    --Remove their pickups
-    player:AddCoins(-player:GetNumCoins())
-    player:AddBombs(-player:GetNumBombs())
-    player:AddKeys(-player:GetNumKeys())
-
-    --TODO: Smelted trinkets
-    --TODO: Golden trinkets
-    --Store their trinkets
-    data.trinkets = {}
-    for i = 1, 0, -1 do
-        if player:GetTrinket(i) ~= 0 then
-            data.trinkets[i] = player:GetTrinket(i)
-            player:TryRemoveTrinket(player:GetTrinket(i))
-        end
-    end
-
-    --Store their active items
-    data.activeItems = {}
-    data.activeItemsCharges = {}
-    for i = 3, 0, -1 do
-        if player:GetActiveItem(i) ~= 0 then
-            data.activeItems[i] = player:GetActiveItem(i)
-            data.activeItemsCharges[i] = player:GetActiveCharge(i)
-            player:RemoveCollectible(player:GetActiveItem(i), false, i)
-        end
-    end
-
     --Remove their items
     player:FlushQueueItem()
-    for i = 1, #data.collectedItemsOrdered, 1 do
-        player:RemoveCollectible(tonumber(data.collectedItemsOrdered[i]))
-    end
-end
-
-
----@param player EntityPlayer
-function PlayerManagement.RestorePlayerFromMinigame(player)
-    local data = player:GetData().ArcadeCabinet
-
-    --Disable controls while the fade out is happening
-    player.ControlsEnabled = false
-
-    --Transform them to their old player type
-    player:ChangePlayerType(data.playerType)
-
-    --Give their items back
-    for i = #data.collectedItemsOrdered, 1, -1 do
-        print(data.collectedItemsOrdered[i])
-        player:AddCollectible(tonumber(data.collectedItemsOrdered[i]))
-    end
-
-    --Give their active items back
-    for slot, item in pairs(data.activeItems) do
-        if item then
-            player:AddCollectible(item, data.activeItemsCharges[slot], false, slot)
-        end
-    end
-
-    --Give their trinkets back
-    for i = 0, #data.trinkets, 1 do
-        if data.trinkets[i] then
-            player:AddTrinket(data.trinkets[i])
-        end
-    end
-
-    --Remove pickups gained from items
-    player:AddCoins(-player:GetNumCoins())
-    player:AddBombs(-player:GetNumBombs())
-    player:AddKeys(-player:GetNumKeys())
-
-    --Give their pickups back
-    player:AddCoins(data.coins)
-    player:AddBombs(data.bombs)
-    player:AddKeys(data.keys)
 end
 
 
@@ -124,40 +37,6 @@ function PlayerManagement:OnPlayerUpdate(player)
 end
 
 
--- ---@param player EntityPlayer
--- function CheckCollectedItems(player)
---     local data = player:GetData().ArcadeCabinet
---     local itemConfig = Isaac.GetItemConfig()
---     ---@type ItemConfigList
---     local itemList = itemConfig:GetCollectibles()
-
---     for id = 1, itemList.Size - 1, 1 do
---         local item = itemConfig:GetCollectible(id)
---         if item and item.Type ~= ItemType.ITEM_ACTIVE then
---             local itemId = item.ID
---             local collectedItems = data.collectedItems[itemId] or 0
---             local collectibleNum = player:GetCollectibleNum(itemId, true)
-
---             if collectibleNum > collectedItems then
---                 --Player has picked up an item
---                 data.collectedItems[itemId] = collectibleNum
---                 table.insert(data.collectedItemsOrdered, itemId)
---                 print(itemId)
---             elseif collectibleNum < collectedItems then
---                 --Player has lost an item
---                 data.collectedItems[itemId] = collectibleNum
---                 for i = 1, #data.collectedItemsOrdered, 1 do
---                     if data.collectedItemsOrdered[i] == itemId then
---                         table.remove(data.collectedItemsOrdered, i)
---                         break
---                     end
---                 end
---             end
---         end
---     end
--- end
-
-
 ---@param player EntityPlayer
 function PlayerManagement:OnPeffectUpdate(player)
     --CheckCollectedItems(player)
@@ -169,14 +48,25 @@ function PlayerManagement:OnPeffectUpdate(player)
 end
 
 
+function PlayerManagement:OnNewRoom()
+    if ArcadeCabinetVariables.RestorePlayers then
+        ArcadeCabinetVariables.RestorePlayers = false
+
+        PlayerInventory.RestoreAllPlayerStates()
+    end
+end
+
+
 --Set up
-function PlayerManagement:Init(mod, variables, cabinet, helpers)
+function PlayerManagement:Init(mod, variables, inventory, cabinet, helpers)
     mod:AddCallback(ModCallbacks.MC_POST_PLAYER_UPDATE, PlayerManagement.OnPlayerUpdate)
     mod:AddCallback(ModCallbacks.MC_POST_PEFFECT_UPDATE, PlayerManagement.OnPeffectUpdate)
+    mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, PlayerManagement.OnNewRoom)
 
     ArcadeCabinetVariables = variables
     Cabinet = cabinet
     Helpers = helpers
+    PlayerInventory = inventory
 end
 
 

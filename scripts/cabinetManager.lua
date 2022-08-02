@@ -6,6 +6,7 @@ local Helpers
 
 local MinigameManagement
 local PlayerManagement
+local PlayerInventory
 
 local game = Game()
 
@@ -173,7 +174,7 @@ end
 
 
 --Set up
-function CabinetManagement:Init(mod, variables, cabinet, helpers)
+function CabinetManagement:Init(mod, variables, inventory, cabinet, helpers)
     mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, CabinetManagement.OnNewRoom)
     mod:AddCallback(ModCallbacks.MC_POST_UPDATE, CabinetManagement.OnFrameUpdate)
     mod:AddCallback(ModCallbacks.MC_POST_PICKUP_UPDATE, CabinetManagement.OnCollectibleUpdate, PickupVariant.PICKUP_COLLECTIBLE)
@@ -181,6 +182,7 @@ function CabinetManagement:Init(mod, variables, cabinet, helpers)
     ArcadeCabinetVariables = variables
     Cabinet = cabinet
     Helpers = helpers
+    PlayerInventory = inventory
 end
 
 

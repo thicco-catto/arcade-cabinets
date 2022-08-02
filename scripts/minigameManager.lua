@@ -6,6 +6,7 @@ local Helpers
 
 local CabinetManagement
 local PlayerManagement
+local PlayerInventory
 
 local game = Game()
 
@@ -19,7 +20,6 @@ local function FindUsedCabinet()
             local cabinetObject = Cabinet:New(gridIndex, false, 1)
 
             if cabinetObject:Equals(ArcadeCabinetVariables.CurrentMinigameObject) then
-                print("found")
                 return cabinet
             end
         end
@@ -71,15 +71,11 @@ local function FinishTransitionFadeIn()
     --Make hud invisible
     game:GetHUD():SetVisible(false)
 
-    --Store stage stuff to go back and set it to blue womb (no pesky overlays)
+    --Store stage stuff to go back and set it to the null stage
     local level = game:GetLevel()
     ArcadeCabinetVariables.LevelStage = level:GetStage()
     ArcadeCabinetVariables.LevelStageType = level:GetStageType()
     level:SetStage(LevelStage.STAGE4_3, StageType.STAGETYPE_AFTERBIRTH)
-
-    --Teleport players to the room
-    local roomIndex = ArcadeCabinetVariables.ArcadeCabinetRooms[ArcadeCabinetVariables.CurrentMinigame]
-    Isaac.ExecuteCommand("goto s.isaacs." .. roomIndex)
 
     --Set options like chargebar and filter
     ArcadeCabinetVariables.OptionsChargeBar = Options.ChargeBars
@@ -95,6 +91,8 @@ local function FinishTransitionFadeIn()
     for i = 0, playerNum - 1, 1 do
         PlayerManagement.InitPlayerForMinigame(game:GetPlayer(i))
     end
+
+    PlayerInventory.PreparePlayersForSaveAndClear()
 end
 
 
@@ -217,6 +215,19 @@ local function IsAnyPlayerPressingStart()
 end
 
 
+local function CheckForTeleportToRoom()
+    --We only need to run this function if we are on the minigame transition
+    if ArcadeCabinetVariables.CurrentGameState ~= ArcadeCabinetVariables.GameState.TRANSITION then return end
+
+    --Teleport only if the frame is 10, to leave some time to prepare the players
+    if game:GetFrameCount() - ArcadeCabinetVariables.TransitionFrameCount ~= 10 then return end
+
+    --Teleport players to the room
+    local roomIndex = ArcadeCabinetVariables.ArcadeCabinetRooms[ArcadeCabinetVariables.CurrentMinigame]
+    Isaac.ExecuteCommand("goto s.isaacs." .. roomIndex)
+end
+
+
 local function CheckIfStartMinigame()
     --We only need to run this function if we are on the minigame transition
     if ArcadeCabinetVariables.CurrentGameState ~= ArcadeCabinetVariables.GameState.TRANSITION then return end
@@ -249,6 +260,11 @@ local function CheckIfEndMinigame()
     --Set visible hud
     game:GetHUD():SetVisible(true)
 
+    --Set all options to what they were
+    Options.ChargeBars = ArcadeCabinetVariables.OptionsChargeBar
+    Options.Filter = ArcadeCabinetVariables.OptionsFilter
+    Options.CameraStyle = ArcadeCabinetVariables.OptionsActiveCam
+
     --Set stage back to original
     local level = game:GetLevel()
     level:SetStage(ArcadeCabinetVariables.LevelStage, ArcadeCabinetVariables.LevelStageType)
@@ -280,23 +296,14 @@ local function CheckIfEndMinigame()
     game:GetPlayer(0).Position = openDoor.Position
     game:GetPlayer(0):AddVelocity(extraVelocity)
 
-    --Restore the options
-    Options.ChargeBars = ArcadeCabinetVariables.OptionsChargeBar
-    Options.Filter = ArcadeCabinetVariables.OptionsFilter
-    Options.CameraStyle = ArcadeCabinetVariables.OptionsActiveCam
-
-    --Restore the players' states
-    local playerNum = game:GetNumPlayers()
-    for i = 0, playerNum - 1, 1 do
-        PlayerManagement.RestorePlayerFromMinigame(game:GetPlayer(i))
-    end
-
     --Set the restore positions flag for next on new room callback
-    ArcadeCabinetVariables.RepositionPlayers = true
+    ArcadeCabinetVariables.RestorePlayers = true
 end
 
 
 function MinigameManagement:OnFrameUpdate()
+    CheckForTeleportToRoom()
+
     CheckIfStartMinigame()
 
     CheckIfEndMinigame()
@@ -314,7 +321,7 @@ end
 
 
 --Set up
-function MinigameManagement:Init(mod, variables, cabinet, helpers)
+function MinigameManagement:Init(mod, variables, inventory, cabinet, helpers)
     mod:AddCallback(ModCallbacks.MC_GET_SHADER_PARAMS, MinigameManagement.GetShaderParams)
     mod:AddCallback(ModCallbacks.MC_POST_RENDER, MinigameManagement.OnRender)
     mod:AddCallback(ModCallbacks.MC_POST_UPDATE, MinigameManagement.OnFrameUpdate)
@@ -323,6 +330,7 @@ function MinigameManagement:Init(mod, variables, cabinet, helpers)
     ArcadeCabinetVariables = variables
     Cabinet = cabinet
     Helpers = helpers
+    PlayerInventory = inventory
 end
 
 

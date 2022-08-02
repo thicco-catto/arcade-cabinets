@@ -1180,12 +1180,6 @@ end
 
 
 function PlayerInventoryManager:OnFrameUpdate()
-    for i = 1, 800, 1 do
-        if SFXManager():IsPlaying(i) then
-            print(i)
-        end
-    end
-
     if ShouldSaveAndClearPlayers then
         ShouldSaveAndClearPlayers = false
 
