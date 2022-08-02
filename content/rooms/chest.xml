@@ -1,0 +1,10 @@
+<?xml version="1.0" ?>
+<rooms>
+	<room variant="289" name="rare_cabinet" type="1" subtype="0" shape="2" width="13" height="7" difficulty="10" weight="0.10000000149011612">
+		<door exists="True" x="-1" y="3"/>
+		<door exists="False" x="13" y="3"/>
+		<spawn x="11" y="3">
+			<entity type="6" variant="3332" subtype="0" weight="1.0"/>
+		</spawn>
+	</room>
+</rooms>
