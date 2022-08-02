@@ -119,6 +119,21 @@ function Helpers.CopyTable(target, toCopy)
 end
 
 
+function Helpers.IsAnyPlayerOfType(playerType)
+    local isPlayerOfType = false
+
+    for i = 0, game:GetNumPlayers() - 1, 1 do
+        local player = game:GetPlayer(i)
+
+        if player:GetPlayerType() == playerType then
+            isPlayerOfType = true
+        end
+    end
+
+    return isPlayerOfType
+end
+
+
 --By Xalum
 function Helpers.CountBits(mask)
     local count = 0

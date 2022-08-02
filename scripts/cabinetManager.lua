@@ -11,6 +11,15 @@ local PlayerInventory
 local game = Game()
 
 
+local function DestroyCabinet(cabinet)
+    SFXManager():Play(SoundEffect.SOUND_BOSS1_EXPLOSIONS)
+    Isaac.Spawn(EntityType.ENTITY_EFFECT, EffectVariant.BOMB_EXPLOSION, 0, cabinet.Position, Vector.Zero, nil)
+    cabinet:GetSprite():Play("Death", true)
+    cabinet:Die()
+end
+
+
+
 local function SetUpCabinet(cabinet, forceGlitch)
     cabinet:GetData().ArcadeCabinet = {}
 
@@ -137,10 +146,7 @@ local function OnCabinetUpdate(cabinet)
 
     if cabinetSpr:IsFinished("Failure") then
         if cabinetObject:ShouldGetDestroyed() then
-            SFXManager():Play(SoundEffect.SOUND_BOSS1_EXPLOSIONS)
-            Isaac.Spawn(EntityType.ENTITY_EFFECT, EffectVariant.BOMB_EXPLOSION, 0, cabinet.Position, Vector.Zero, nil)
-            cabinetSpr:Play("Death", true)
-            cabinet:Die()
+            DestroyCabinet(cabinet)
         else
             cabinetObject.numberOfAttempts = cabinetObject.numberOfAttempts + 1
             cabinetSpr:Play("Idle", true)
@@ -160,6 +166,24 @@ end
 
 
 function CabinetManagement:OnFrameUpdate()
+    if Helpers.IsAnyPlayerOfType(PlayerType.PLAYER_JACOB2_B) then
+        local closestCabinet = nil
+        local closestDistance = math.maxinteger
+
+        for _, slot in ipairs(Isaac.FindByType(EntityType.ENTITY_SLOT)) do
+            if Helpers.IsModdedCabinetVariant(slot.Variant) and slot:GetSprite():IsPlaying("Idle") then
+                if (Isaac.GetPlayer(0).Position - slot.Position):Length() < closestDistance then
+                    closestCabinet = slot
+                    closestDistance = (Isaac.GetPlayer(0).Position - slot.Position):Length()
+                end
+            end
+        end
+
+        if closestCabinet then
+            DestroyCabinet(closestCabinet)
+        end
+    end
+
     for _, slot in ipairs(Isaac.FindByType(EntityType.ENTITY_SLOT)) do
         if Helpers.IsModdedCabinetVariant(slot.Variant) then
             OnCabinetUpdate(slot)
