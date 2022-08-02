@@ -10,7 +10,7 @@ local PlayerManagement
 local game = Game()
 
 
-local function SetUpCabinet(cabinet)
+local function SetUpCabinet(cabinet, forceGlitch)
     cabinet:GetData().ArcadeCabinet = {}
 
     local room = game:GetRoom()
@@ -21,7 +21,7 @@ local function SetUpCabinet(cabinet)
     local level = game:GetLevel()
     local roomVariant = level:GetCurrentRoomDesc().Data.Variant
 
-    local isGlitched = Helpers.DoesAnyPlayerHasItem(CollectibleType.COLLECTIBLE_TMTRAINER)
+    local isGlitched = Helpers.DoesAnyPlayerHasItem(CollectibleType.COLLECTIBLE_TMTRAINER) or forceGlitch
 
     local cabinetObject = Cabinet:New(gridIndex, isGlitched, gameSeed + roomVariant)
 
@@ -63,12 +63,26 @@ function CabinetManagement:OnNewRoom()
     local room = game:GetRoom()
 
     for _, slot in ipairs(Isaac.FindByType(EntityType.ENTITY_SLOT)) do
-        if slot.Variant == 16 and slot:GetDropRNG():RandomInt(100) <= ArcadeCabinetVariables.CHANCE_FOR_CRANE_TO_CABINET
+        local slotRNG = slot:GetDropRNG()
+
+        if slot.Variant == 16 and slotRNG:RandomInt(100) <= ArcadeCabinetVariables.CHANCE_FOR_CRANE_TO_CABINET
         and room:IsFirstVisit() then
-            local cabinet = Helpers.SpawnRandomCabinet(slot.Position, slot:GetDropRNG())
+            --If its a crane slot have a chance to replace it with a random cabinet
+            local cabinet = Helpers.SpawnRandomCabinet(slot.Position, slotRNG)
             SetUpCabinet(cabinet)
             slot:Remove()
+        elseif slot.Variant == ArcadeCabinetVariables.RANDOM_CABINET_VARIANT then
+            --If its a random cabinet, spawn it
+            local cabinet = Helpers.SpawnRandomCabinet(slot.Position, slotRNG)
+            SetUpCabinet(cabinet)
+            slot:Remove()
+        elseif slot.Variant == ArcadeCabinetVariables.RANDOM_GLITCH_CABINET_VARIANT then
+            --If its a random cabinet glitched, force it to be glitch
+            local cabinet = Helpers.SpawnRandomCabinet(slot.Position, slotRNG)
+            SetUpCabinet(cabinet, true)
+            slot:Remove()
         elseif Helpers.IsModdedCabinetVariant(slot.Variant) then
+            --If its already a normal cabinet, set it up normally
             SetUpCabinet(slot)
         end
     end

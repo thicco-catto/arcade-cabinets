@@ -88,6 +88,8 @@ ArcadeCabinetVariables.Backdrop2x2Variant = Isaac.GetEntityVariantByName("miniga
 
 --#region Constants for the mod
 ArcadeCabinetVariables.MINIGAME_NUM = 8
+ArcadeCabinetVariables.RANDOM_CABINET_VARIANT = Isaac.GetEntityVariantByName("Arcade Cabinet RANDOM")
+ArcadeCabinetVariables.RANDOM_GLITCH_CABINET_VARIANT = Isaac.GetEntityVariantByName("Arcade Cabinet RANDOM GLITCH")
 ArcadeCabinetVariables.CABINET_RADIUS = 22
 ArcadeCabinetVariables.CHANCE_FOR_CRANE_TO_CABINET = 5
 ArcadeCabinetVariables.CHANCE_FOR_CABINET_EXPLODING = 30
