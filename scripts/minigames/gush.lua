@@ -145,7 +145,7 @@ local MinigameConstants = {
 
     --Glitched stuff
     GLITCH_INTRO_ROOM = 80,
-    GLITCH_MAX_LEVEL = 1,
+    GLITCH_MAX_LEVEL = 4,
     GLITCH_ROOM_POOL = {
         81,
         82,
@@ -982,7 +982,7 @@ local function SpawnExplosion()
     local spawningPos = Isaac.FindByType(EntityType.ENTITY_EFFECT, MinigameEntityVariants.MACHINE)[1].Position
     spawningPos = spawningPos + Vector(rng:RandomInt(100) - 50, rng:RandomInt(100) - 50)
 
-    local explosion = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.END_EXPLOSION, 0, spawningPos, Vector.Zero, nil)
+    local explosion = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.END_EXPLOSION, 0, spawningPos, Vector.Zero, nil)
     explosion:GetSprite():Play("Idle", true)
 
     game:ShakeScreen(4)
@@ -993,7 +993,7 @@ end
 
 
 local function RemoveEndExplosions()
-    for _, explosion in ipairs(Isaac.FindByType(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.END_EXPLOSION, 0)) do
+    for _, explosion in ipairs(Isaac.FindByType(EntityType.ENTITY_EFFECT, MinigameEntityVariants.END_EXPLOSION, 0)) do
         if explosion:GetSprite():IsFinished("Idle") then
             if CurrentMinigameState == MinigameState.WINNING and explosion:GetData().IsLastExplosion then
                 SFXManager:Play(MinigameSounds.WIN)
@@ -1013,7 +1013,7 @@ end
 
 
 local function SpawnEndExplosions()
-    if #Isaac.FindByType(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.END_EXPLOSION, 0) >= MinigameConstants.MAX_END_EXPLOSIONS or
+    if #Isaac.FindByType(EntityType.ENTITY_EFFECT, MinigameEntityVariants.END_EXPLOSION, 0) >= MinigameConstants.MAX_END_EXPLOSIONS or
     game:GetFrameCount() % MinigameConstants.FRAMES_BETWEEN_END_EXPLOSIONS ~= 0 and not (rng:RandomFloat() <= 0.01) then return end
 
     if EndExplosionsCounter >= MinigameConstants.NUM_EXPLOSION_TO_BIG_EXPLOSION then
