@@ -109,7 +109,7 @@ local function SpawnCabinetReward(cabinet)
     local chosenCollectible = cabinetObject:GetCollectible()
 
     --Spawn the item pedestal
-    local pedestal = Isaac.Spawn(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_COLLECTIBLE, chosenCollectible, cabinet.Position, Vector.Zero, nilw)
+    local pedestal = Isaac.Spawn(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_COLLECTIBLE, chosenCollectible, cabinet.Position + Vector(0, -10), Vector.Zero, nilw)
 
     --Load the appropiate graphics
     local collectibleGfx = Isaac.GetItemConfig():GetCollectible(chosenCollectible).GfxFileName
@@ -131,6 +131,27 @@ local function SpawnCabinetReward(cabinet)
 
     --Remove the cabinet
     cabinet:Remove()
+end
+
+
+local function DestroyCabinetsIfTaintedJacob()
+    if not Helpers.IsAnyPlayerOfType(PlayerType.PLAYER_JACOB2_B) then return end
+
+    local closestCabinet = nil
+    local closestDistance = math.maxinteger
+
+    for _, slot in ipairs(Isaac.FindByType(EntityType.ENTITY_SLOT)) do
+        if Helpers.IsModdedCabinetVariant(slot.Variant) and slot:GetSprite():IsPlaying("Idle") then
+            if (Isaac.GetPlayer(0).Position - slot.Position):Length() < closestDistance then
+                closestCabinet = slot
+                closestDistance = (Isaac.GetPlayer(0).Position - slot.Position):Length()
+            end
+        end
+    end
+
+    if closestCabinet then
+        DestroyCabinet(closestCabinet)
+    end
 end
 
 
@@ -166,23 +187,7 @@ end
 
 
 function CabinetManagement:OnFrameUpdate()
-    if Helpers.IsAnyPlayerOfType(PlayerType.PLAYER_JACOB2_B) then
-        local closestCabinet = nil
-        local closestDistance = math.maxinteger
-
-        for _, slot in ipairs(Isaac.FindByType(EntityType.ENTITY_SLOT)) do
-            if Helpers.IsModdedCabinetVariant(slot.Variant) and slot:GetSprite():IsPlaying("Idle") then
-                if (Isaac.GetPlayer(0).Position - slot.Position):Length() < closestDistance then
-                    closestCabinet = slot
-                    closestDistance = (Isaac.GetPlayer(0).Position - slot.Position):Length()
-                end
-            end
-        end
-
-        if closestCabinet then
-            DestroyCabinet(closestCabinet)
-        end
-    end
+    DestroyCabinetsIfTaintedJacob()
 
     for _, slot in ipairs(Isaac.FindByType(EntityType.ENTITY_SLOT)) do
         if Helpers.IsModdedCabinetVariant(slot.Variant) then

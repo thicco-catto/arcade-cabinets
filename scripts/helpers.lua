@@ -17,7 +17,7 @@ end
 function Helpers.DoesAnyPlayerHasItem(itemType)
     for i = 0, game:GetNumPlayers() - 1, 1 do
         local player = game:GetPlayer(i)
-        if player:HasCollectible(itemType) then
+        if player:HasCollectible(itemType, true) then
             return true
         end
     end
@@ -131,6 +131,21 @@ function Helpers.IsAnyPlayerOfType(playerType)
     end
 
     return isPlayerOfType
+end
+
+
+function Helpers.DoesAnyPlayerHasCollectibleEffect(CollectibleEffectId)
+    local doesAnyPlayerHasEffect = false
+
+    for i = 0, game:GetNumPlayers() - 1, 1 do
+        local player = game:GetPlayer(i)
+
+        if player:GetEffects():HasCollectibleEffect(CollectibleEffectId) then
+            doesAnyPlayerHasEffect = true
+        end
+    end
+
+    return doesAnyPlayerHasEffect
 end
 
 
