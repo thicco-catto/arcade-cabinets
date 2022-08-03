@@ -164,7 +164,7 @@ function PlayerInventoryManager.SavePlayerState(player)
 
     for id = 1, itemList.Size - 1, 1 do
         local item = itemConfig:GetCollectible(id)
-        if item and item.Type ~= ItemType.ITEM_ACTIVE then
+        if item then
             local effectNum = playerEffects:GetCollectibleEffectNum(item.ID)
             table.insert(playerState.CollectibleEffects, { id = item.ID, num = effectNum })
         end
@@ -478,8 +478,16 @@ function PlayerInventoryManager.ClearPlayerState(player)
     --Clear effects
     player:GetEffects():ClearEffects()
 
+    for _, temporaryItem in ipairs(playerState.CollectibleEffects) do
+        player:GetEffects():RemoveCollectibleEffect(temporaryItem.id, temporaryItem.num)
+    end
+
     for _, temporaryItem in ipairs(playerState.NullItemEffects) do
         player:GetEffects():RemoveNullEffect(temporaryItem.id, temporaryItem.num)
+    end
+
+    for _, temporaryItem in ipairs(playerState.TrinketEffects) do
+        player:GetEffects():RemoveTrinketEffect(temporaryItem.id, temporaryItem.num)
     end
 
     --Charmed entities
