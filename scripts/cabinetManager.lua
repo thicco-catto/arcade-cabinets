@@ -112,22 +112,15 @@ local function SpawnCabinetReward(cabinet)
     local pedestal = Isaac.Spawn(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_COLLECTIBLE, chosenCollectible, cabinet.Position + Vector(0, -10), Vector.Zero, nilw)
 
     --Load the appropiate graphics
-    local collectibleGfx = Isaac.GetItemConfig():GetCollectible(chosenCollectible).GfxFileName
-    pedestal:GetSprite():Load("gfx/cabinet_collectible_pedestal.anm2", true)
-    pedestal:GetSprite():ReplaceSpritesheet(1, collectibleGfx)
-
-    local pedestalGfx = "gfx/slots/" .. ArcadeCabinetVariables.ArcadeCabinetSprite[cabinet.Variant]
+    local pedestalGfx = "gfx/items/altar_" .. ArcadeCabinetVariables.ArcadeCabinetSprite[cabinet.Variant]
     pedestal:GetSprite():ReplaceSpritesheet(5, pedestalGfx)
 
     pedestal:GetSprite():LoadGraphics()
 
-    --Play the animations
-    pedestal:GetSprite():Play("Idle", true)
-    pedestal:GetSprite():PlayOverlay("Alternates", true)
-
-    --Set data so we know to set its frame to 0
+    --Set data so we know to set its frame
     pedestal:GetData().ArcadeCabinet = {}
     pedestal:GetData().ArcadeCabinet.IsCabinetReward = true
+    pedestal:GetSprite():SetOverlayFrame("Alternates", 1)
 
     --Remove the cabinet
     cabinet:Remove()
@@ -202,7 +195,7 @@ function CabinetManagement:OnCollectibleUpdate(collectible)
     if not collectible:GetData().ArcadeCabinet then return end
     if not collectible:GetData().ArcadeCabinet.IsCabinetReward then return end
 
-    collectible:GetSprite():SetOverlayFrame("Alternates", 0)
+    collectible:GetSprite():SetOverlayFrame("Alternates", 1)
 end
 
 
