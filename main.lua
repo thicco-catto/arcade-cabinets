@@ -206,7 +206,7 @@ function ArcadeCabinetMod:OnNewLevel()
             print(totalRooms .. " rooms were generated, out of which " .. totalModRooms .. " were modded")
         else
             local modRoomsPercentage = totalModRooms / totalRooms * 100
-            print(totalRooms .. " rooms swere generated, out of which " .. totalModRooms .. " (".. modRoomsPercentage .."%) were modded, and out of which")
+            print(totalRooms .. " rooms swere generated, out of which " .. totalModRooms .. " (".. modRoomsPercentage .."%) were modded, and out of which:")
 
             local arcadeRoomsPercentage = arcadeRooms / totalModRooms * 100
             print("-" .. arcadeRooms .. " were arcade rooms (" .. arcadeRoomsPercentage .. "%)")
