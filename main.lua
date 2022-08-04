@@ -94,6 +94,7 @@ local floorsAnalyzed = 0
 local totalFloorsAnalyzed = 0
 local arcadeRooms = 0
 local secretRooms = 0
+local superSecretRooms = 0
 local otherRooms = 0
 local totalRooms = 0
 local moddedRoomsPerFloors = {}
@@ -129,6 +130,7 @@ function ArcadeCabinetMod:OnCMD(cmd, args)
 
         arcadeRooms = 0
         secretRooms = 0
+        superSecretRooms = 0
         otherRooms = 0
         totalRooms = 0
         moddedRoomsPerFloors = {}
@@ -160,8 +162,10 @@ function ArcadeCabinetMod:OnNewLevel()
 
                 if roomData.Type == RoomType.ROOM_ARCADE then
                     arcadeRooms = arcadeRooms + 1
-                elseif roomData.Type == RoomType.ROOM_SECRET or roomData.Type == RoomType.ROOM_SUPERSECRET then
-                    secretRooms = secretRooms + 1
+                elseif roomData.Type == RoomType.ROOM_SECRET then
+                	secretRooms = secretRooms + 1
+              	elseif roomData.Type == RoomType.ROOM_SUPERSECRET then
+                    superSecretRooms = superSecretRooms + 1
                 else
                     otherRooms = otherRooms + 1
                 end
@@ -201,7 +205,7 @@ function ArcadeCabinetMod:OnNewLevel()
 
         print("\n")
 
-        local totalModRooms = arcadeRooms + secretRooms + otherRooms
+        local totalModRooms = arcadeRooms + secretRooms + superSecretRooms + otherRooms
         if totalModRooms == 0 then
             print(totalRooms .. " rooms were generated, out of which " .. totalModRooms .. " were modded")
         else
@@ -210,8 +214,13 @@ function ArcadeCabinetMod:OnNewLevel()
 
             local arcadeRoomsPercentage = arcadeRooms / totalModRooms * 100
             print("-" .. arcadeRooms .. " were arcade rooms (" .. arcadeRoomsPercentage .. "%)")
+
             local secretRoomsPercentage = secretRooms / totalModRooms * 100
             print("-" .. secretRooms .. " were secret rooms (" .. secretRoomsPercentage .. "%)")
+
+			local superSecretRoomsPercentage = superSecretRooms / totalModRooms * 100
+            print("-" .. superSecretRooms .. " were super secret rooms (" .. superSecretRoomsPercentage .. "%)")
+
             local otherRoomsPercentage = otherRooms / totalModRooms * 100
             print("-" .. otherRooms .. " were other type of rooms (" .. otherRoomsPercentage .. "%)")
         end
