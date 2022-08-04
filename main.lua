@@ -187,7 +187,7 @@ function ArcadeCabinetMod:OnNewLevel()
 
     if floorsAnalyzed == 0 then
         Isaac.ExecuteCommand("clear")
-        print(totalFloorsAnalyzed .. " were analyzed, out of which:")
+        print(totalFloorsAnalyzed .. " floors were analyzed, out of which:")
 
         local biggestKey = 0
         for key, _ in pairs(moddedRoomsPerFloors) do
@@ -210,7 +210,7 @@ function ArcadeCabinetMod:OnNewLevel()
             print(totalRooms .. " rooms were generated, out of which " .. totalModRooms .. " were modded")
         else
             local modRoomsPercentage = totalModRooms / totalRooms * 100
-            print(totalRooms .. " rooms swere generated, out of which " .. totalModRooms .. " (".. modRoomsPercentage .."%) were modded, and out of which:")
+            print(totalRooms .. " rooms were generated, out of which " .. totalModRooms .. " (".. modRoomsPercentage .."%) were modded, and out of which:")
 
             local arcadeRoomsPercentage = arcadeRooms / totalModRooms * 100
             print("-" .. arcadeRooms .. " were arcade rooms (" .. arcadeRoomsPercentage .. "%)")
