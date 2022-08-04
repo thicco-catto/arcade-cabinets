@@ -78,6 +78,27 @@ function GetRoomItem(defaultPool, AllowActives, MinQuality)
 end
 
 
+---@param player EntityPlayer
+function ArcadeCabinetMod:OnPlayerInit(player)
+    --Initialize the custom data table for each player
+    player:GetData().ArcadeCabinet = {}
+    player:GetData().ArcadeCabinet.collectedItems = {}
+    player:GetData().ArcadeCabinet.collectedItemsOrdered = {}
+    player:AddCoins(20)
+    player:AddTrinket(TrinketType.TRINKET_DOOR_STOP, true)
+end
+ArcadeCabinetMod:AddCallback(ModCallbacks.MC_POST_PLAYER_INIT, ArcadeCabinetMod.OnPlayerInit)
+
+
+local floorsAnalyzed = 0
+local totalFloorsAnalyzed = 0
+local arcadeRooms = 0
+local secretRooms = 0
+local otherRooms = 0
+local totalRooms = 0
+local moddedRoomsPerFloors = {}
+
+
 function ArcadeCabinetMod:OnFrameUpdate()
     if game:GetFrameCount() == 1 and ArcadeCabinetVariables.CurrentGameState == ArcadeCabinetVariables.GameState.NOT_PLAYING then
         SpawnMachine(ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_BLACKSTONEWIELDER, Vector(100, 150))
@@ -92,40 +113,119 @@ function ArcadeCabinetMod:OnFrameUpdate()
         SpawnMachine(ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_THEGROUNDBELOW, Vector(100, 250))
         SpawnMachine(ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_TOOUNDERGROUND, Vector(540, 250))
     end
+
+    if floorsAnalyzed > 0 then
+        ArcadeCabinetMod:OnNewLevel()
+        Isaac.ExecuteCommand("reseed")
+    end
 end
 ArcadeCabinetMod:AddCallback(ModCallbacks.MC_POST_UPDATE, ArcadeCabinetMod.OnFrameUpdate)
 
 
----@param player EntityPlayer
-function ArcadeCabinetMod:OnPlayerInit(player)
-    --Initialize the custom data table for each player
-    player:GetData().ArcadeCabinet = {}
-    player:GetData().ArcadeCabinet.collectedItems = {}
-    player:GetData().ArcadeCabinet.collectedItemsOrdered = {}
-    player:AddCoins(20)
-    player:AddTrinket(TrinketType.TRINKET_DOOR_STOP, true)
-end
-ArcadeCabinetMod:AddCallback(ModCallbacks.MC_POST_PLAYER_INIT, ArcadeCabinetMod.OnPlayerInit)
+function ArcadeCabinetMod:OnCMD(cmd, args)
+    if cmd == "anal" then
+        floorsAnalyzed = tonumber(args)
+        totalFloorsAnalyzed = tonumber(args)
 
-
-function ArcadeCabinetMod:OnCMD(cmd, _)
-    if cmd == "gush" then
-        ArcadeCabinetVariables.CurrentGameState = ArcadeCabinetVariables.GameState.PLAYING
-        ArcadeCabinetVariables.CurrentScript = ArcadeCabinetVariables.ArcadeCabinetScripts[ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_GUSH]
-        ArcadeCabinetVariables.CurrentMinigame = ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_GUSH
-
-        ArcadeCabinetVariables.CurrentScript:Init()
-
-        for callback, funct in pairs(ArcadeCabinetVariables.CurrentScript.callbacks) do
-            ArcadeCabinetMod:AddCallback(callback, funct)
-        end
-
-        for _, entity in ipairs(Isaac.FindByType(EntityType.ENTITY_SLOT, -1, -1)) do
-            entity:Remove()
-        end
+        arcadeRooms = 0
+        secretRooms = 0
+        otherRooms = 0
+        totalRooms = 0
+        moddedRoomsPerFloors = {}
     end
 end
 ArcadeCabinetMod:AddCallback(ModCallbacks.MC_EXECUTE_CMD, ArcadeCabinetMod.OnCMD)
+
+
+function ArcadeCabinetMod:OnNewLevel()
+    local level = game:GetLevel()
+    local rooms = level:GetRooms()
+
+    local numModdedRooms = 0
+
+    for i = 0, rooms.Size - 1, 1 do
+        local room = rooms:Get(i)
+        local roomData = room.Data
+        local roomSpawns = roomData.Spawns
+
+        for o = 0, roomSpawns.Size - 1, 1 do
+            local spawn = roomSpawns:Get(o)
+            local spawnEntry = spawn:PickEntry(0)
+
+            if spawnEntry.Type == EntityType.ENTITY_SLOT and
+            (spawnEntry.Variant == ArcadeCabinetVariables.RANDOM_CABINET_VARIANT or
+            spawnEntry.Variant == ArcadeCabinetVariables.RANDOM_GLITCH_CABINET_VARIANT or
+            Helpers.IsModdedCabinetVariant(spawnEntry.Variant)) then
+                numModdedRooms = numModdedRooms + 1
+
+                if roomData.Type == RoomType.ROOM_ARCADE then
+                    arcadeRooms = arcadeRooms + 1
+                elseif roomData.Type == RoomType.ROOM_SECRET or roomData.Type == RoomType.ROOM_SUPERSECRET then
+                    secretRooms = secretRooms + 1
+                else
+                    otherRooms = otherRooms + 1
+                end
+
+                break
+            end
+        end
+
+        totalRooms = totalRooms + 1
+    end
+
+    if moddedRoomsPerFloors[numModdedRooms] then
+        moddedRoomsPerFloors[numModdedRooms] = moddedRoomsPerFloors[numModdedRooms] + 1
+    else
+        moddedRoomsPerFloors[numModdedRooms] = 1
+    end
+
+    floorsAnalyzed = floorsAnalyzed - 1
+
+    if floorsAnalyzed == 0 then
+        Isaac.ExecuteCommand("clear")
+        print(totalFloorsAnalyzed .. " were analyzed, out of which:")
+
+        local biggestKey = 0
+        for key, _ in pairs(moddedRoomsPerFloors) do
+            if key > biggestKey then
+                biggestKey = key
+            end
+        end
+
+        for i = 0, biggestKey, 1 do
+            local numFloors = moddedRoomsPerFloors[i]
+            if not numFloors then numFloors = 0 end
+            local percentage = numFloors / totalFloorsAnalyzed * 100
+            print("-" .. numFloors .. " had " .. i .. " modded rooms (" .. percentage .. "%)")
+        end
+
+        print("\n")
+
+        local totalModRooms = arcadeRooms + secretRooms + otherRooms
+        if totalModRooms == 0 then
+            print(totalRooms .. " were generated, out of which " .. totalModRooms .. " were modded")
+        else
+            local modRoomsPercentage = totalModRooms / totalRooms * 100
+            print(totalRooms .. " were generated, out of which " .. totalModRooms .. " (".. modRoomsPercentage .."%) were modded, and out of which")
+
+            local arcadeRoomsPercentage = arcadeRooms / totalModRooms * 100
+            print("-" .. arcadeRooms .. " were arcade rooms (" .. arcadeRoomsPercentage .. "%)")
+            local secretRoomsPercentage = secretRooms / totalModRooms * 100
+            print("-" .. secretRooms .. " were secret rooms (" .. secretRoomsPercentage .. "%)")
+            local otherRoomsPercentage = otherRooms / totalModRooms * 100
+            print("-" .. otherRooms .. " were other type of rooms (" .. otherRoomsPercentage .. "%)")
+        end
+    end
+end
+
+
+function ArcadeCabinetMod:OnRender()
+    if floorsAnalyzed > 0 then
+        local x = totalFloorsAnalyzed - floorsAnalyzed
+        Isaac.RenderText(x .. "/" .. totalFloorsAnalyzed, 100, 100, 1, 1, 1, 1)
+    end
+end
+ArcadeCabinetMod:AddCallback(ModCallbacks.MC_POST_RENDER, ArcadeCabinetMod.OnRender)
 
 
 function ArcadeCabinetMod:OnGameStart()
