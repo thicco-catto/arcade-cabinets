@@ -71,6 +71,9 @@ local function FinishTransitionFadeIn()
     --Make hud invisible
     game:GetHUD():SetVisible(false)
 
+    --Stop music
+    MusicManager():Disable()
+
     --Store stage stuff to go back and set it to the null stage
     local level = game:GetLevel()
     ArcadeCabinetVariables.LevelStage = level:GetStage()
@@ -240,6 +243,9 @@ local function CheckIfStartMinigame()
     if game:GetFrameCount() - ArcadeCabinetVariables.TransitionFrameCount < 20 then return end
 
     if IsAnyPlayerPressingStart() then
+        --Enable the music back
+        MusicManager():Enable()
+
         ArcadeCabinetVariables.CurrentGameState = ArcadeCabinetVariables.GameState.PLAYING
         ArcadeCabinetVariables.CurrentScript:Init(ArcadeCabinetMod, ArcadeCabinetVariables)
     end
