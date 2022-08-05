@@ -1,3 +1,8 @@
+if not REPENTANCE then
+	print("You must have Repentace to run Arcade Cabinets")
+	return
+end
+
 local ArcadeCabinetMod = RegisterMod("ArcadeCabinetMod", 1)
 local game = Game()
 
@@ -11,31 +16,31 @@ local function loadFile(loc, ...)
     return assert(loadfile(path .. loc .. ".lua"))(...)
 end
 
-local ArcadeCabinetVariables = loadFile("scripts/variables")
+local ArcadeCabinetVariables = loadFile("arcade_cabinet_scripts/variables")
 
-local Helpers = loadFile("scripts/helpers")
+local Helpers = loadFile("arcade_cabinet_scripts/helpers")
 Helpers.Init(ArcadeCabinetVariables)
 
-local PlayerInventory = loadFile("scripts/player inventory/playerInventory")
+local PlayerInventory = loadFile("arcade_cabinet_scripts/player inventory/playerInventory")
 PlayerInventory:Init(ArcadeCabinetMod, Helpers)
 
-local Cabinet = loadFile("scripts/cabinet")
+local Cabinet = loadFile("arcade_cabinet_scripts/cabinet")
 Cabinet:Init(ArcadeCabinetVariables, Helpers)
 
-local CabinetManagement = loadFile("scripts/cabinetManager")
+local CabinetManagement = loadFile("arcade_cabinet_scripts/cabinetManager")
 CabinetManagement:Init(ArcadeCabinetMod, ArcadeCabinetVariables, PlayerInventory, Cabinet, Helpers)
 
-local MinigameManagement = loadFile("scripts/minigameManager")
+local MinigameManagement = loadFile("arcade_cabinet_scripts/minigameManager")
 MinigameManagement:Init(ArcadeCabinetMod, ArcadeCabinetVariables, PlayerInventory, Cabinet, Helpers)
 
-local PlayerManagement = loadFile("scripts/playerManager")
+local PlayerManagement = loadFile("arcade_cabinet_scripts/playerManager")
 PlayerManagement:Init(ArcadeCabinetMod, ArcadeCabinetVariables, PlayerInventory, Cabinet, Helpers)
 
 CabinetManagement:AddOtherManagers(MinigameManagement, PlayerManagement)
 MinigameManagement:AddOtherManagers(CabinetManagement, PlayerManagement)
 PlayerManagement:AddOtherManagers(CabinetManagement, MinigameManagement)
 
-local SaveManagement = loadFile("scripts/saveManager")
+local SaveManagement = loadFile("arcade_cabinet_scripts/saveManager")
 SaveManagement:Init(ArcadeCabinetMod, ArcadeCabinetVariables, PlayerInventory, Helpers)
 
 
