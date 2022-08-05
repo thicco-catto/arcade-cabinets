@@ -167,7 +167,9 @@ function PlayerInventoryManager.SavePlayerState(player)
         local item = itemConfig:GetCollectible(id)
         if item then
             local effectNum = playerEffects:GetCollectibleEffectNum(item.ID)
-            table.insert(playerState.CollectibleEffects, { id = item.ID, num = effectNum })
+            if effectNum > 0 then
+                table.insert(playerState.CollectibleEffects, { id = item.ID, num = effectNum })
+            end
         end
     end
 
@@ -179,7 +181,9 @@ function PlayerInventoryManager.SavePlayerState(player)
         local nullItem = itemConfig:GetNullItem(id)
         if nullItem and nullItem.Type ~= ItemType.ITEM_ACTIVE then
             local effectNum = playerEffects:GetNullEffectNum(nullItem.ID)
-            table.insert(playerState.NullItemEffects, { id = nullItem.ID, num = effectNum })
+            if effectNum > 0 then
+                table.insert(playerState.NullItemEffects, { id = nullItem.ID, num = effectNum })
+            end
         end
     end
 
@@ -191,7 +195,9 @@ function PlayerInventoryManager.SavePlayerState(player)
         local trinket = itemConfig:GetTrinket(id)
         if trinket then
             local effectNum = playerEffects:GetTrinketEffectNum(trinket.ID)
-            table.insert(playerState.TrinketEffects, { id = trinket.ID, num = effectNum })
+            if effectNum > 0 then
+                table.insert(playerState.TrinketEffects, { id = trinket.ID, num = effectNum })
+            end
         end
     end
 

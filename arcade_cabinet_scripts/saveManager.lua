@@ -9,6 +9,25 @@ local PlayerInventory
 local game = Game()
 local json = require("json")
 
+local menuDataToSave = {}
+
+
+function SaveManagement:SaveData(menuData)
+    menuDataToSave = menuData
+
+    local saveData = {}
+
+    saveData.MachinesInRun = ArcadeCabinetVariables.MachinesInRun
+
+    local inventoryData = PlayerInventory:GetSaveData()
+    saveData.InventoryData = inventoryData
+
+    saveData.MenuData = menuDataToSave
+
+    local encodedSaveData = json.encode(saveData)
+    ArcadeCabinetMod:SaveData(encodedSaveData)
+end
+
 
 local function StartNewGame()
     ArcadeCabinetVariables.MachinesInRun = {}
@@ -46,7 +65,30 @@ local function ContinueGame()
 end
 
 
+function SaveManagement:GetMenuData()
+    if ArcadeCabinetMod:HasData() then
+        local encodedSaveData = ArcadeCabinetMod:LoadData()
+        local saveData = json.decode(encodedSaveData)
+
+        return saveData.MenuData
+    else
+        return {
+            MenuPalette = nil,
+            HudOffset = nil,
+            GamepadToggle = nil,
+            MenuKeybind = nil,
+            MenusNotified = nil,
+            MenusPoppedUp = nil
+        }
+    end
+end
+
+
 function SaveManagement:OnGameStart(isContinue)
+    if ArcadeCabinetMod:HasData() then
+        ArcadeCabinetVariables.IsShaderActive = SaveManagement:GetMenuData().shaderactive
+    end
+
     if isContinue then
         ContinueGame()
     else
@@ -58,16 +100,6 @@ end
 function SaveManagement:OnGameExit()
     --Set the game state to not playing
     ArcadeCabinetVariables.CurrentGameState = ArcadeCabinetVariables.GameState.NOT_PLAYING
-
-    --Save all the data
-    local saveData = {}
-
-    saveData.MachinesInRun = ArcadeCabinetVariables.MachinesInRun
-    local inventoryData = PlayerInventory:GetSaveData()
-    saveData.InventoryData = inventoryData
-
-    local encodedSaveData = json.encode(saveData)
-    ArcadeCabinetMod:SaveData(encodedSaveData)
 end
 
 

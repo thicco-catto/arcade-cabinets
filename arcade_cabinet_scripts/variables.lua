@@ -45,14 +45,14 @@ ArcadeCabinetVariables.ArcadeCabinetRooms = {
 }
 
 ArcadeCabinetVariables.ArcadeCabinetScripts = {
-    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_BLACKSTONEWIELDER] = loadFile("scripts/minigames/black_stone_wielder"),
-    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_GUSH] = loadFile("scripts/minigames/gush"),
-    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_HOLYSMOKES] = loadFile("scripts/minigames/holy_smokes"),
-    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_JUMPINGCOFFING] = loadFile("scripts/minigames/jumping_coffing"),
-    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_NIGHTLIGHT] = loadFile("scripts/minigames/night_light"),
-    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_NOSPLASH] = loadFile("scripts/minigames/no_splash"),
-    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_THEGROUNDBELOW] = loadFile("scripts/minigames/the_ground_below"),
-    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_TOOUNDERGROUND] = loadFile("scripts/minigames/too_underground")
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_BLACKSTONEWIELDER] = loadFile("arcade_cabinet_scripts/minigames/black_stone_wielder"),
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_GUSH] = loadFile("arcade_cabinet_scripts/minigames/gush"),
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_HOLYSMOKES] = loadFile("arcade_cabinet_scripts/minigames/holy_smokes"),
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_JUMPINGCOFFING] = loadFile("arcade_cabinet_scripts/minigames/jumping_coffing"),
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_NIGHTLIGHT] = loadFile("arcade_cabinet_scripts/minigames/night_light"),
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_NOSPLASH] = loadFile("arcade_cabinet_scripts/minigames/no_splash"),
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_THEGROUNDBELOW] = loadFile("arcade_cabinet_scripts/minigames/the_ground_below"),
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_TOOUNDERGROUND] = loadFile("arcade_cabinet_scripts/minigames/too_underground")
 }
 
 ArcadeCabinetVariables.ArcadeCabinetItems = {
@@ -139,5 +139,8 @@ ArcadeCabinetVariables.TransitionFrameCount = -1
 ArcadeCabinetVariables.FadeOutTimer = nil
 
 ArcadeCabinetVariables.MachinesInRun = {}
+
+--Options
+ArcadeCabinetVariables.IsShaderActive = 1
 
 return ArcadeCabinetVariables

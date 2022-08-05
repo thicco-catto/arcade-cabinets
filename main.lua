@@ -43,6 +43,9 @@ PlayerManagement:AddOtherManagers(CabinetManagement, MinigameManagement)
 local SaveManagement = loadFile("arcade_cabinet_scripts/saveManager")
 SaveManagement:Init(ArcadeCabinetMod, ArcadeCabinetVariables, PlayerInventory, Helpers)
 
+local DssCompat = loadFile("arcade_cabinet_scripts/dssCompat")
+DssCompat:Init(ArcadeCabinetVariables, SaveManagement)
+
 
 local function SpawnMachine(variant, pos)
     -- local machine = Isaac.Spawn(6, variant, 0, pos, Vector.Zero, nil)
