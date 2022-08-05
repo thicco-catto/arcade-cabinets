@@ -60,8 +60,6 @@ local function ContinueGame()
 
     --If we cant find an active minigame then return
     if not activeMinigame then return end
-
-    print("we were playing " .. activeMinigame)
 end
 
 

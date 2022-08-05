@@ -173,8 +173,6 @@ function MinigameManagement:GetShaderParams(shaderName)
     local shouldBeEnabled = ArcadeCabinetVariables.CurrentGameState == ArcadeCabinetVariables.GameState.TRANSITION or
     ArcadeCabinetVariables.CurrentGameState == ArcadeCabinetVariables.GameState.PLAYING
 
-    print(ArcadeCabinetVariables.IsShaderActive)
-
 	if shaderName == 'MinigameShader' then
         local isEnabled = 0
         if shouldBeEnabled and ArcadeCabinetVariables.IsShaderActive == 2 then
