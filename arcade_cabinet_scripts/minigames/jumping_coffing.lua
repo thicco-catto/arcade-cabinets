@@ -57,9 +57,9 @@ local MinigameConstants = {
         Vector(1000, 190)
     },
     MINIWAVES_PER_WAVE = {
-        1,
-        1,
-        3
+        6,
+        8,
+        8
     },
     FRAMES_BETWEEN_MINIWAVES_PER_WAVE = {
         40,
