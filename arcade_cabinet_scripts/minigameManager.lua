@@ -331,6 +331,7 @@ function MinigameManagement:OnFrameUpdate()
         for i = 0, 7, 1 do
             local door = room:GetDoor(i)
             if door then
+                SFXManager():Stop(SoundEffect.SOUND_DOOR_HEAVY_CLOSE)
                 door:Close(true)
             end
         end

@@ -89,15 +89,6 @@ function GetRoomItem(defaultPool, AllowActives, MinQuality)
 end
 
 
----@param player EntityPlayer
-function ArcadeCabinetMod:OnPlayerInit(player)
-    --Initialize the custom data table for each player
-    player:AddCoins(20)
-    player:AddTrinket(TrinketType.TRINKET_DOOR_STOP, true)
-end
-ArcadeCabinetMod:AddCallback(ModCallbacks.MC_POST_PLAYER_INIT, ArcadeCabinetMod.OnPlayerInit)
-
-
 local floorsAnalyzed = 0
 local totalFloorsAnalyzed = 0
 local arcadeRooms = 0
