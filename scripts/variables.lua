@@ -55,6 +55,17 @@ ArcadeCabinetVariables.ArcadeCabinetScripts = {
     [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_TOOUNDERGROUND] = loadFile("scripts/minigames/too_underground")
 }
 
+ArcadeCabinetVariables.ArcadeCabinetItems = {
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_BLACKSTONEWIELDER] = Isaac.GetItemIdByName("BSW minigame"),
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_GUSH] = Isaac.GetItemIdByName("GUSH minigame"),
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_HOLYSMOKES] = Isaac.GetItemIdByName("HS minigame"),
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_JUMPINGCOFFING] = Isaac.GetItemIdByName("JC minigame"),
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_NIGHTLIGHT] = Isaac.GetItemIdByName("NL minigame"),
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_NOSPLASH] = Isaac.GetItemIdByName("NS minigame"),
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_THEGROUNDBELOW] = Isaac.GetItemIdByName("TGB minigame"),
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_TOOUNDERGROUND] = Isaac.GetItemIdByName("TUG minigame")
+}
+
 ArcadeCabinetVariables.ArcadeCabinetMinimapAPIIconFrame = {
     [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_BLACKSTONEWIELDER] = 0,
     [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_GUSH] = 1,

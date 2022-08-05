@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <rooms>
-	<room variant="1" name="cabinet_secret" type="7" subtype="0" shape="1" width="13" height="7" difficulty="1" weight="0.1" lastTestTime="2022-07-29T16:31+00:00">
+	<room variant="1" name="cabinet_secret" type="7" subtype="0" shape="1" width="13" height="7" difficulty="1" weight="1.25" lastTestTime="2022-07-29T16:31+00:00">
 		<door exists="True" x="-1" y="3"/>
 		<door exists="True" x="6" y="-1"/>
 		<door exists="True" x="6" y="7"/>
@@ -168,7 +168,7 @@
 			<entity type="6100" variant="2" subtype="0" weight="1.0"/>
 		</spawn>
 	</room>
-	<room variant="437" name="cabinet" type="1" subtype="0" shape="6" width="26" height="7" difficulty="5" weight="1.0" lastTestTime="2022-08-02T13:51+00:00">
+	<room variant="437" name="cabinet" type="1" subtype="0" shape="6" width="26" height="7" difficulty="2" weight="2.0" lastTestTime="2022-08-04T16:02+00:00">
 		<door exists="False" x="-1" y="3"/>
 		<door exists="True" x="6" y="-1"/>
 		<door exists="True" x="6" y="7"/>

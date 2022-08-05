@@ -19,7 +19,6 @@ local function DestroyCabinet(cabinet)
 end
 
 
-
 local function SetUpCabinet(cabinet, forceGlitch)
     cabinet:GetData().ArcadeCabinet = {}
 
@@ -40,6 +39,7 @@ local function SetUpCabinet(cabinet, forceGlitch)
     else
         --If it didnt exist, play the appear animation and add it to the list
         if isGlitched then
+            SFXManager():Play(SoundEffect.SOUND_EDEN_GLITCH, 1, 2, false, 0.9 + math.random()*0.2)
             cabinet:GetSprite():Play("Glitch", true)
         else
             cabinet:GetSprite():Play("Initiate", true)

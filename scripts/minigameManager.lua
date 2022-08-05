@@ -225,6 +225,10 @@ local function CheckForTeleportToRoom()
     --Teleport players to the room
     local roomIndex = ArcadeCabinetVariables.ArcadeCabinetRooms[ArcadeCabinetVariables.CurrentMinigame]
     Isaac.ExecuteCommand("goto s.isaacs." .. roomIndex)
+
+    --Give the player the minigame item
+    local minigameItem = ArcadeCabinetVariables.ArcadeCabinetItems[ArcadeCabinetVariables.CurrentMinigame]
+    Isaac.GetPlayer(0):AddCollectible(minigameItem)
 end
 
 

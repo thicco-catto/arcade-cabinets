@@ -39,8 +39,6 @@ end
 
 ---@param player EntityPlayer
 function PlayerManagement:OnPeffectUpdate(player)
-    --CheckCollectedItems(player)
-
     --If we're in transition and the player has controls enabled (because of moving to another room), disable them
     if ArcadeCabinetVariables.CurrentGameState == ArcadeCabinetVariables.GameState.TRANSITION and player.ControlsEnabled then
         player.ControlsEnabled = false
@@ -51,6 +49,7 @@ end
 function PlayerManagement:OnNewRoom()
     if ArcadeCabinetVariables.RestorePlayers then
         ArcadeCabinetVariables.RestorePlayers = false
+        Isaac.GetPlayer(0):RemoveCollectible(minigameItem)
 
         PlayerInventory.RestoreAllPlayerStates()
     end

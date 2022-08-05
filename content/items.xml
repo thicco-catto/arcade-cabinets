@@ -2,4 +2,13 @@
     <active name="TUG minecrafter" description="why are you reading this" maxcharges="1" hidden="true"/>
 	
 	<active name="BSW rune" description="pls this is secret stop reading" maxcharges="1" hidden="true"/>
+
+    <passive name="BSW minigame" description="gather the runes" hidden="true"/>
+    <passive name="GUSH minigame" description="destroy the tar machine" hidden="true"/>
+    <passive name="HS minigame" description="kill satan" hidden="true"/>
+    <passive name="JC minigame" description="protect the dolly" hidden="true"/>
+    <passive name="NL minigame" description="survive until 6 am" hidden="true"/>
+    <passive name="NS minigame" description="kill the angler fish" hidden="true"/>
+    <passive name="TGB minigame" description="survive the fall" hidden="true"/>
+    <passive name="TUG minigame" description="dig to find the treasure" hidden="true"/>
 </items>

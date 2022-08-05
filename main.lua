@@ -35,6 +35,9 @@ CabinetManagement:AddOtherManagers(MinigameManagement, PlayerManagement)
 MinigameManagement:AddOtherManagers(CabinetManagement, PlayerManagement)
 PlayerManagement:AddOtherManagers(CabinetManagement, MinigameManagement)
 
+local SaveManagement = loadFile("scripts/saveManager")
+SaveManagement:Init(ArcadeCabinetMod, ArcadeCabinetVariables, PlayerInventory, Helpers)
+
 
 local function SpawnMachine(variant, pos)
     -- local machine = Isaac.Spawn(6, variant, 0, pos, Vector.Zero, nil)
@@ -81,9 +84,6 @@ end
 ---@param player EntityPlayer
 function ArcadeCabinetMod:OnPlayerInit(player)
     --Initialize the custom data table for each player
-    player:GetData().ArcadeCabinet = {}
-    player:GetData().ArcadeCabinet.collectedItems = {}
-    player:GetData().ArcadeCabinet.collectedItemsOrdered = {}
     player:AddCoins(20)
     player:AddTrinket(TrinketType.TRINKET_DOOR_STOP, true)
 end
@@ -317,7 +317,7 @@ local function shallowCopy(tab)
         return 'userdata ' .. dump(newt, depth, seen)
       end
     elseif type(o) == 'table' then -- handle tables
-      if includes(seen, tostring(o)) then return '(circular)' end
+      --if includes(seen, tostring(o)) then return '(circular)' end
       table.insert(seen, tostring(o))
       local s = '{\n'
       local first = true

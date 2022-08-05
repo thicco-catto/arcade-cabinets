@@ -12,7 +12,6 @@ local InventoryType = {
     COLLECTIBLE = 1,
     TRINKET = 2,
 }
-local HasTriggeredStart = false
 local ShouldSaveAndClearPlayers = false
 
 local ForgottenControllerIndexesToChangeBody = {}
@@ -145,10 +144,12 @@ function PlayerInventoryManager.SavePlayerState(player)
     for _, inventoryItem in ipairs(currentPlayerState.InventoryOrdered) do
         table.insert(playerState.Inventory, inventoryItem)
     end
+
     playerState.CollectedItems = {}
     for itemId, count in pairs(currentPlayerState.CollectedItems) do
         playerState.CollectedItems[itemId] = count
     end
+
     playerState.GulpedTrinkets = {}
     for trinketId, count in pairs(currentPlayerState.GulpedTrinkets) do
         playerState.GulpedTrinkets[trinketId] = count
@@ -1094,8 +1095,6 @@ end
 
 
 function PlayerInventoryManager:OnPeffectUpdate(player)
-    if not HasTriggeredStart then return end
-
     local playerIndex = Helpers.GetPlayerIndex(player)
     local playerState = CurrentPlayerStates[playerIndex]
 
@@ -1113,21 +1112,6 @@ function PlayerInventoryManager:OnPeffectUpdate(player)
     CheckCollectedItems(player, playerState)
 
     CheckGulpedTrinkets(player, playerState)
-end
-
-
-function PlayerInventoryManager:OnPlayerInit(player)
-    if not HasTriggeredStart then return end
-
-    local playerIndex = Helpers.GetPlayerIndex(player)
-
-    if not CurrentPlayerStates[playerIndex] then
-        CurrentPlayerStates[playerIndex] = {
-            InventoryOrdered = {},
-            GulpedTrinkets = {},
-            CollectedItems = {}
-        }
-    end
 end
 
 
@@ -1196,21 +1180,112 @@ function PlayerInventoryManager:OnFrameUpdate()
 end
 
 
-function PlayerInventoryManager:OnGameStart(IsContinue)
-    HasTriggeredStart = true
+function PlayerInventoryManager:OnNewGame()
+    CurrentPlayerStates = {}
+    SavedPlayerStates = {}
+end
 
-    if IsContinue then
-        --Load data from save
-    else
-        --Initialize data
-        CurrentPlayerStates = {}
-        SavedPlayerStates = {}
+
+function PlayerInventoryManager:OnContinueGame(inventoryData)
+    CurrentPlayerStates = {}
+    SavedPlayerStates = {}
+
+    for _, currentPlayerStateFromSaveData in ipairs(inventoryData.CurrentPlayerStates) do
+        local playerIndex = tonumber(currentPlayerStateFromSaveData.playerIndex)
+        local savedState = currentPlayerStateFromSaveData.playerState
+
+        if playerIndex then
+            local playerState = {}
+
+            playerState.InventoryOrdered = savedState.InventoryOrdered
+
+            playerState.CollectedItems = {}
+            for _, itemFromSave in ipairs(savedState.CollectedItemsForSaving) do
+                playerState.CollectedItems[itemFromSave.item] = itemFromSave.num
+            end
+
+            playerState.GulpedTrinkets = {}
+            for _, trinketFromSave in ipairs(savedState.GulpedTrinketsForSaving) do
+                playerState.GulpedTrinkets[trinketFromSave.trinket] = trinketFromSave.num
+            end
+
+            CurrentPlayerStates[playerIndex] = playerState
+        end
     end
 
-    for i = 0, game:GetNumPlayers(), 1 do
-        local player = game:GetPlayer(i)
-        PlayerInventoryManager:OnPlayerInit(player)
+    for _, savedPlayerStateFromSaveData in ipairs(inventoryData.SavedPlayerStates) do
+        local playerIndex = tonumber(savedPlayerStateFromSaveData.playerIndex)
+        local savedState = savedPlayerStateFromSaveData.playerState
+
+        if playerIndex then
+            savedState.CollectedItems = {}
+            for _, itemFromSave in ipairs(savedState.CollectedItemsForSaving) do
+                savedState.CollectedItems[itemFromSave.item] = itemFromSave.num
+            end
+
+            savedState.GulpedTrinkets = {}
+            for _, trinketFromSave in ipairs(savedState.GulpedTrinketsForSaving) do
+                savedState.CollectedItems[trinketFromSave.trinket] = trinketFromSave.num
+            end
+
+            savedState.Position = Vector(savedState.PositionForSaving.x, savedState.PositionForSaving.y)
+
+            SavedPlayerStates[playerIndex] = savedState
+        end
     end
+
+end
+
+
+function PlayerInventoryManager:GetSaveData()
+    local inventoryData = {}
+
+    local currentPlayerStatesForSaving = {}
+
+    for playerIndex, playerState in pairs(CurrentPlayerStates) do
+        local saveState = {}
+
+        saveState.CollectedItemsForSaving = {}
+        for item, num in pairs(playerState.CollectedItems) do
+            table.insert(saveState.CollectedItemsForSaving, {item = item, num = num})
+        end
+
+        saveState.GulpedTrinketsForSaving = {}
+        for trinket, num in pairs(playerState.GulpedTrinkets) do
+            table.insert(saveState.GulpedTrinketsForSaving, {trinket = trinket, num = num})
+        end
+
+        saveState.InventoryOrdered = playerState.InventoryOrdered
+
+        table.insert(currentPlayerStatesForSaving, {playerIndex = playerIndex, playerState = saveState})
+    end
+
+    local savedPlayerStatesForSaving = {}
+
+    for playerIndex, playerState in pairs(SavedPlayerStates) do
+        local saveState = playerState
+
+        local CollectedItemsForSaving = {}
+        for item, num in pairs(playerState.CollectedItems) do
+            table.insert(CollectedItemsForSaving, {item = item, num = num})
+        end
+        saveState.CollectedItemsForSaving = CollectedItemsForSaving
+
+        local GulpedTrinketsForSaving = {}
+        for trinket, num in pairs(playerState.GulpedTrinkets) do
+            table.insert(GulpedTrinketsForSaving, {trinket = trinket, num = num})
+        end
+        saveState.GulpedTrinketsForSaving = GulpedTrinketsForSaving
+
+        saveState.PositionForSaving = {x = playerState.Position.X, y = playerState.Position.Y}
+
+        table.insert(savedPlayerStatesForSaving, {playerIndex = playerIndex, playerState = saveState})
+    end
+
+    inventoryData.CurrentPlayerStates = currentPlayerStatesForSaving
+    inventoryData.SavedPlayerStates = savedPlayerStatesForSaving
+
+    return inventoryData
 end
 
 
@@ -1218,24 +1293,11 @@ function PlayerInventoryManager:OnRender()
     -- local playerNum = game:GetNumPlayers()
     -- for i = 0, playerNum - 1, 1 do
     --     local player = game:GetPlayer(i)
-    --     local playerIndex = Helpers.GetPlayerIndex(player, true, true)
+    --     local playerIndex = Helpers.GetPlayerIndex(player)
+    --     local str = dump(CurrentPlayerStates[playerIndex].InventoryOrdered)
     --     local pos = Isaac.WorldToScreen(player.Position)
 
-    --     Isaac.RenderText(playerIndex, pos.X, pos.Y, 1, 1, 1, 255)
-    -- end
-
-    -- for _, entity in ipairs(Isaac.GetRoomEntities()) do
-    --     local playerIndex = entity.Type .. ", " .. entity.Variant .. ", " .. entity.SubType
-    --     local pos = Isaac.WorldToScreen(entity.Position)
-
-    --     Isaac.RenderText(playerIndex, pos.X, pos.Y, 1, 1, 1, 255)
-    -- end
-
-    -- for _, entity in ipairs(Isaac.FindByType(EntityType.ENTITY_DARK_ESAU)) do
-    --     local playerIndex = Helpers.GetPlayerIndex(entity.SpawnerEntity:ToPlayer())
-    --     local pos = Isaac.WorldToScreen(entity.Position)
-
-    --     Isaac.RenderText(playerIndex, pos.X, pos.Y, 1, 1, 1, 255)
+    --     Isaac.RenderText(str, pos.X, pos.Y, 1, 1, 1, 255)
     -- end
 end
 
@@ -1265,22 +1327,15 @@ function PlayerInventoryManager:OnCMD(cmd, _)
         print("Restoring saved states")
         PlayerInventoryManager.RestoreAllPlayerStates()
     elseif cmd == "1" then
-        local effects = Isaac.GetPlayer(0):GetEffects():GetEffectsList()
-        for i = 0, effects.Size - 1, 1 do
-            local item = effects:Get(i)
-            local type = "Collectible"
-
-            print()
-        end
-        print(Isaac.GetPlayer(0):GetEffects():GetEffectsList():Get(0).Item:IsNull())
+        print(dump(SavedPlayerStates))
+    elseif cmd == "2" then
+        print(dump(CurrentPlayerStates))
     end
 end
 
 
 function PlayerInventoryManager:Init(mod, helpers)
     mod:AddCallback(ModCallbacks.MC_POST_PEFFECT_UPDATE, PlayerInventoryManager.OnPeffectUpdate)
-    mod:AddCallback(ModCallbacks.MC_POST_PLAYER_INIT, PlayerInventoryManager.OnPlayerInit)
-    mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, PlayerInventoryManager.OnGameStart)
     mod:AddCallback(ModCallbacks.MC_INPUT_ACTION, PlayerInventoryManager.OnInput)
     mod:AddCallback(ModCallbacks.MC_POST_PLAYER_UPDATE, PlayerInventoryManager.OnPlayerUpdate)
     mod:AddCallback(ModCallbacks.MC_POST_UPDATE, PlayerInventoryManager.OnFrameUpdate)
