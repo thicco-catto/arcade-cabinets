@@ -200,23 +200,11 @@ end
 
 
 local function CalculateBubbleVelocity()
-    if (Input.IsActionPressed(ButtonAction.ACTION_LEFT, 0) or Input.IsActionPressed(ButtonAction.ACTION_RIGHT, 0)) and not
-    (Input.IsActionPressed(ButtonAction.ACTION_LEFT, 0) and Input.IsActionPressed(ButtonAction.ACTION_RIGHT, 0)) and
-    CurrentMinigameState == MinigameState.SWIMMING then
-        if Input.IsActionPressed(ButtonAction.ACTION_LEFT, 0) then
-            CurrentBubbleXVelocity = CurrentBubbleXVelocity + MinigameConstants.BUBBLE_X_ACCELERATION
+    if Input.IsActionPressed(ButtonAction.ACTION_RIGHT, 0) and CurrentMinigameState == MinigameState.SWIMMING then
+        CurrentBubbleXVelocity = CurrentBubbleXVelocity - MinigameConstants.BUBBLE_X_ACCELERATION
 
-            if CurrentBubbleXVelocity > MinigameConstants.BUBBLE_MAX_X_VELOCITY then
-                CurrentBubbleXVelocity = MinigameConstants.BUBBLE_MAX_X_VELOCITY
-            end
-        end
-
-        if Input.IsActionPressed(ButtonAction.ACTION_RIGHT, 0) then
-            CurrentBubbleXVelocity = CurrentBubbleXVelocity - MinigameConstants.BUBBLE_X_ACCELERATION
-
-            if CurrentBubbleXVelocity < -MinigameConstants.BUBBLE_MAX_X_VELOCITY then
-                CurrentBubbleXVelocity = -MinigameConstants.BUBBLE_MAX_X_VELOCITY
-            end
+        if CurrentBubbleXVelocity < -MinigameConstants.BUBBLE_MAX_X_VELOCITY then
+            CurrentBubbleXVelocity = -MinigameConstants.BUBBLE_MAX_X_VELOCITY
         end
     else
         if CurrentBubbleXVelocity > 0 then

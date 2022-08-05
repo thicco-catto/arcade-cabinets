@@ -49,6 +49,7 @@ end
 function PlayerManagement:OnNewRoom()
     if ArcadeCabinetVariables.RestorePlayers then
         ArcadeCabinetVariables.RestorePlayers = false
+        local minigameItem = ArcadeCabinetVariables.ArcadeCabinetItems[ArcadeCabinetVariables.CurrentMinigame]
         Isaac.GetPlayer(0):RemoveCollectible(minigameItem)
 
         PlayerInventory.RestoreAllPlayerStates()
