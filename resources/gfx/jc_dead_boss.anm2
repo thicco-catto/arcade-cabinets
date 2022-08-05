@@ -1,5 +1,5 @@
 <AnimatedActor>
-	<Info CreatedBy="Unknown" CreatedOn="26/02/2022 10:48:36" Version="12" Fps="30"/>
+	<Info CreatedBy="Unknown" CreatedOn="05/08/2022 13:11:23" Version="13" Fps="30"/>
 	<Content>
 		<Spritesheets>
 			<Spritesheet Path="effects\jumping coffing\dead_boss.png" Id="0"/>

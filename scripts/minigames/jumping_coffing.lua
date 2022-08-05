@@ -57,9 +57,9 @@ local MinigameConstants = {
         Vector(1000, 190)
     },
     MINIWAVES_PER_WAVE = {
-        4,
-        4,
-        8
+        1,
+        1,
+        3
     },
     FRAMES_BETWEEN_MINIWAVES_PER_WAVE = {
         40,
@@ -357,6 +357,7 @@ local function SpawnBoss(chosenCorner)
 
     boss.Target = TargetEntity
     boss.HitPoints = 120
+    boss:ClearEntityFlags(EntityFlag.FLAG_APPEAR)
     boss:AddEntityFlags(EntityFlag.FLAG_NO_FLASH_ON_DAMAGE)
     boss:GetData().framesUntilSpecialAttack = 100
     boss:GetData().specialAttackFrames = 0
@@ -698,8 +699,9 @@ local function KillEnemy(entity)
 
         bloodsplat:GetSprite():Load("gfx/jc_bloodsplat_big.anm2", true)
 
-        local deadBoss = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, MinigameEntityVariants.TARGET, 0, entity.Position + Vector(0, -0.01), Vector.Zero, nil)
+        local deadBoss = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.TARGET, 0, entity.Position + Vector(0, -0.01), Vector.Zero, nil)
         deadBoss:GetSprite():Load("gfx/jc_dead_boss.anm2", true)
+        deadBoss:GetSprite():Play("DeadBoss")
     elseif entity.Type == EntityType.ENTITY_ATTACKFLY then
         --Fly death
         SFXManager:Play(MinigameSounds.FLY_DEATH)
