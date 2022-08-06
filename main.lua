@@ -48,12 +48,12 @@ DssCompat:Init(ArcadeCabinetVariables, SaveManagement)
 
 
 local function SpawnMachine(variant, pos)
-    -- local machine = Isaac.Spawn(6, variant, 0, pos, Vector.Zero, nil)
-    -- local item = GetRoomItem(ItemPoolType.POOL_CRANE_GAME)
-    -- local itemSprite = Isaac.GetItemConfig():GetCollectible(item).GfxFileName
+    local machine = Isaac.Spawn(6, variant, 0, pos, Vector.Zero, nil)
+    local item = GetRoomItem(ItemPoolType.POOL_CRANE_GAME)
+    local itemSprite = Isaac.GetItemConfig():GetCollectible(item).GfxFileName
 
-    -- machine:GetSprite():ReplaceSpritesheet(2, itemSprite)
-    -- machine:GetSprite():LoadGraphics()
+    machine:GetSprite():ReplaceSpritesheet(2, itemSprite)
+    machine:GetSprite():LoadGraphics()
 end
 
 
@@ -100,20 +100,6 @@ local moddedRoomsPerFloors = {}
 
 
 function ArcadeCabinetMod:OnFrameUpdate()
-    if game:GetFrameCount() == 1 and ArcadeCabinetVariables.CurrentGameState == ArcadeCabinetVariables.GameState.NOT_PLAYING then
-        SpawnMachine(ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_BLACKSTONEWIELDER, Vector(100, 150))
-        SpawnMachine(ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_GUSH, Vector(170, 150))
-        SpawnMachine(ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_HOLYSMOKES, Vector(240, 150))
-
-        SpawnMachine(ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_JUMPINGCOFFING, Vector(400, 150))
-        SpawnMachine(ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_NIGHTLIGHT, Vector(470, 150))
-        SpawnMachine(ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_NOSPLASH, Vector(540, 150))
-
-        --SpawnMachine(ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_THEBLOB, Vector(100, 250))
-        SpawnMachine(ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_THEGROUNDBELOW, Vector(100, 250))
-        SpawnMachine(ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_TOOUNDERGROUND, Vector(540, 250))
-    end
-
     if floorsAnalyzed > 0 then
         ArcadeCabinetMod:OnNewLevel()
         Isaac.ExecuteCommand("reseed")
@@ -133,7 +119,18 @@ function ArcadeCabinetMod:OnCMD(cmd, args)
         otherRooms = 0
         totalRooms = 0
         moddedRoomsPerFloors = {}
-    end
+	elseif cmd == "machines" then
+		SpawnMachine(ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_BLACKSTONEWIELDER, Vector(100, 150))
+        SpawnMachine(ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_GUSH, Vector(170, 150))
+        SpawnMachine(ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_HOLYSMOKES, Vector(240, 150))
+
+        SpawnMachine(ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_JUMPINGCOFFING, Vector(400, 150))
+        SpawnMachine(ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_NIGHTLIGHT, Vector(470, 150))
+        SpawnMachine(ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_NOSPLASH, Vector(540, 150))
+
+        SpawnMachine(ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_THEGROUNDBELOW, Vector(100, 250))
+        SpawnMachine(ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_TOOUNDERGROUND, Vector(540, 250))
+	end
 end
 ArcadeCabinetMod:AddCallback(ModCallbacks.MC_EXECUTE_CMD, ArcadeCabinetMod.OnCMD)
 

@@ -44,7 +44,7 @@
 
                 void main(void)
                 {
-					if(EnabledOut == 1){
+					if(EnabledOut == 1.0){
 		                vec2 screenRatio = OutRenderData.zw / OutRenderData.xy;
 		                vec2 screenUV = TexCoord0 * screenRatio;
 
@@ -105,12 +105,12 @@
 			}
 		]]></vertex>
 		<fragment><![CDATA[
-			varying lowp vec4 Color0;										
-			varying mediump vec2 TexCoord0;								
-			varying lowp float ScaleOut;
-            varying lowp vec4 RenderDataOut;
-			varying mediump float TimeOut;
-			varying lowp float EnabledOut;
+			varying vec4 Color0;										
+			varying vec2 TexCoord0;								
+			varying float ScaleOut;
+            varying vec4 RenderDataOut;
+			varying float TimeOut;
+			varying float EnabledOut;
 			uniform sampler2D Texture0;											
 
 			vec4 sample_screen2(vec2 coords){	
@@ -136,7 +136,7 @@
 
 					//if(newCoords.y < 0.5){
 						newCoords -= vec2(.5,.5);
-	    	        	newCoords.x *= 1.0 + pow(abs(newCoords.y) / 2, 2.0);
+	    	        	newCoords.x *= 1.0 + pow(abs(newCoords.y) / 2.0, 2.0);
 		            	newCoords.y *= 1.0 + pow(abs(newCoords.x) / 1.2, 2.0);
 		            	newCoords += vec2(.5,.5);
 					//}

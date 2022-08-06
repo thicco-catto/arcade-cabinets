@@ -174,9 +174,9 @@ function MinigameManagement:GetShaderParams(shaderName)
     ArcadeCabinetVariables.CurrentGameState == ArcadeCabinetVariables.GameState.PLAYING
 
 	if shaderName == 'MinigameShader' then
-        local isEnabled = 0
+        local isEnabled = 0.0
         if shouldBeEnabled and ArcadeCabinetVariables.IsShaderActive == 2 then
-            isEnabled = 1
+            isEnabled = 1.0
         end
         local params = {
                 Time = Isaac.GetFrameCount(),
@@ -185,11 +185,11 @@ function MinigameManagement:GetShaderParams(shaderName)
             }
         return params;
     elseif shaderName == "MinigameShaderV2" then
-        local isEnabled = 0
+        local isEnabled = 0.0
         if shouldBeEnabled and ArcadeCabinetVariables.IsShaderActive == 1 then
-            isEnabled = 1
+            isEnabled = 1.0
         end
-        local params = { 
+        local params = {
             Time = game:GetFrameCount(),
             Enabled = isEnabled
         }

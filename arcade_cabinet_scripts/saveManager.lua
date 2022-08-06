@@ -12,9 +12,12 @@ local json = require("json")
 local menuDataToSave = {}
 
 
-function SaveManagement:SaveData(menuData)
+function SaveManagement:SaveMenuData(menuData)
     menuDataToSave = menuData
+end
 
+
+function SaveManagement:SaveData()
     local saveData = {}
 
     saveData.MachinesInRun = ArcadeCabinetVariables.MachinesInRun
@@ -99,7 +102,6 @@ function SaveManagement:OnGameExit()
     --Set the game state to not playing
     ArcadeCabinetVariables.CurrentGameState = ArcadeCabinetVariables.GameState.NOT_PLAYING
 end
-
 
 
 function SaveManagement:Init(mod, variables, inventory, helpers)

@@ -3,16 +3,18 @@ local SaveManager = {}
 
 local ArcadeCabinetVariables
 
-dssCompat.menusavedata = {}
+dssCompat.menusavedata = nil
 
 function dssCompat.GetSaveData()
-    dssCompat.menusavedata = SaveManager:GetMenuData()
+    if not dssCompat.menusavedata then
+        dssCompat.menusavedata = SaveManager:GetMenuData()
+    end
 
     return dssCompat.menusavedata
 end
 
 function dssCompat.StoreSaveData()
-    SaveManager:SaveData(dssCompat.menusavedata)
+    SaveManager:SaveMenuData(dssCompat.menusavedata)
 end
 
 -- Change this variable to match your mod. The standard is "Dead Sea Scrolls (Mod Name)"
@@ -26,7 +28,7 @@ local DSSCoreVersion = 4
 local MenuProvider = {}
 
 function MenuProvider.SaveSaveData()
-    dssCompat.StoreSaveData()
+    SaveManager:SaveData()
 end
 
 function MenuProvider.GetPaletteSetting()
@@ -188,7 +190,7 @@ local exampledirectorykey = {
     Path = {},
 }
 
-DeadSeaScrollsMenu.AddMenu("Example Mod Menu!", {
+DeadSeaScrollsMenu.AddMenu("Arcade Cabinets", {
     -- The Run, Close, and Open functions define the core loop of your menu
     -- Once your menu is opened, all the work is shifted off to your mod running these functions, so each mod can have its own independently functioning menu.
     -- The DSSInitializerFunction returns a table with defaults defined for each function, as "runMenu", "openMenu", and "closeMenu"
