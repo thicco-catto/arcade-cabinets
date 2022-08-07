@@ -486,7 +486,10 @@ function PlayerInventoryManager.ClearPlayerState(player)
     player:GetEffects():ClearEffects()
 
     for _, temporaryItem in ipairs(playerState.CollectibleEffects) do
-        player:GetEffects():RemoveCollectibleEffect(temporaryItem.id, temporaryItem.num)
+        --Strawmans have this collectible effect so they now when to get removed, so dont remove it
+        if temporaryItem.id ~= CollectibleType.COLLECTIBLE_STRAW_MAN then
+            player:GetEffects():RemoveCollectibleEffect(temporaryItem.id, temporaryItem.num)
+        end
     end
 
     for _, temporaryItem in ipairs(playerState.NullItemEffects) do
@@ -579,6 +582,8 @@ function PlayerInventoryManager.SaveAndClearAllPlayers()
     --Finally we change their player type to isaac
     for i = 0, game:GetNumPlayers() - 1, 1 do
         local player = game:GetPlayer(i)
+
+        --If a player has a parent its a strawman, so dont change its state when I remove the item, strawman gets removed
         player:ChangePlayerType(PlayerType.PLAYER_ISAAC)
     end
 
@@ -981,6 +986,15 @@ function PlayerInventoryManager.RestorePlayerState(player)
     --Restore data
     for key, value in pairs(playerState.PlayerData) do
         player:GetData()[key] = value
+    end
+
+    --Players with changed player indexes wont have a current player state registered
+    if not CurrentPlayerStates[playerIndex] then
+        CurrentPlayerStates[playerIndex] = {
+            InventoryOrdered = {},
+            CollectedItems = {},
+            GulpedTrinkets = {}
+        }
     end
 
     local currentPlayerState = CurrentPlayerStates[playerIndex]

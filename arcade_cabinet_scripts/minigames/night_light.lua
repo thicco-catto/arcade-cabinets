@@ -47,7 +47,7 @@ local MinigameEntityVariants = {
 local MinigameConstants = {
     --Wave control
     MAX_HOURS = 6,
-    SECONDS_PER_HOUR = 12,
+    SECONDS_PER_HOUR = 10,
     GHOSTS_PER_HOUR = {
         16,
         22,
@@ -66,7 +66,7 @@ local MinigameConstants = {
     --Entities stuff
     DUST_SPEED = 4,
     FUCKY_SPEED = 10,
-    MORNINGSTAR_CHASE_SPEED = 4.2,
+    MORNINGSTAR_CHASE_SPEED = 4.8,
     MORNINGSTAR_RETREAT_SPEED = 1.2,
 
     MAX_CHEATING_COUNTER = 100,

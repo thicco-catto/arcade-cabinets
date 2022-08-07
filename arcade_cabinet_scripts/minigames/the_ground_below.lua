@@ -46,21 +46,18 @@ local MinigameConstants = {
     BG_TO_SPAWN_THRESHOLD = 560,
 
     --Wave system
-    MAX_FALLING_TIMER_FRAMES = 30,
+    MAX_FALLING_TIMER_FRAMES = 15,
     NUM_WAVES_PER_CHAPTER = {
         3,
         3,
-        3
     },
     HORF_CHANCE_PER_CHAPTER = {
         33,
         33,
-        100
     },
     KEEPER_CHANCE_PER_CHAPTER = {
         0,
-        25,
-        50
+        0,
     },
 
     --Horfs attack
@@ -91,7 +88,7 @@ local MinigameConstants = {
     DUKE_DESPAWN = Vector(900, 200),
     DUKE_VELOCITY = 3,
     DUKE_SPAWN_FLY_COOLDOWN = 80,
-    DUKE_NUM_FLY_ROUNDS = 3,
+    DUKE_NUM_FLY_ROUNDS = 2,
     DUKE_FLY_SPAWN_OFFSET = 10,
     DUKE_FLY_VELOCITY = 7,
 
@@ -163,9 +160,6 @@ local FlyLineNum = 0
 local spawnedBgNum = 0
 local currentBgType = "rocks"
 local nextBgChange = -10
-
-local HasSpawnedHorfs = false
-
 
 local function FinishAttack()
     MinigameTimers.FallingTimer = MinigameConstants.MAX_FALLING_TIMER_FRAMES
@@ -696,16 +690,15 @@ local function UpdateFalling()
 
             if ((CurrentChapter > 1 or CurrentWave > 1) and
             rng:RandomInt(100) < (MinigameConstants.HORF_CHANCE_PER_CHAPTER[CurrentChapter]) + extraGlitchChance) or
-            (CurrentChapter == 2 and CurrentWave == MinigameConstants.NUM_WAVES_PER_CHAPTER[CurrentChapter] and not HasSpawnedHorfs) then
-                if rng:RandomInt(100) < (MinigameConstants.KEEPER_CHANCE_PER_CHAPTER[CurrentChapter] + extraGlitchChance) and
-                not (CurrentChapter == 2 and CurrentWave == MinigameConstants.NUM_WAVES_PER_CHAPTER[CurrentChapter] and not HasSpawnedHorfs) then
+            (CurrentChapter == 1 and CurrentWave == MinigameConstants.NUM_WAVES_PER_CHAPTER[CurrentChapter]) then
+                if (rng:RandomInt(100) < (MinigameConstants.KEEPER_CHANCE_PER_CHAPTER[CurrentChapter] + extraGlitchChance) and
+                not (CurrentChapter == 1 and CurrentWave == MinigameConstants.NUM_WAVES_PER_CHAPTER[CurrentChapter])) or
+                (CurrentChapter == 2 and CurrentWave == MinigameConstants.NUM_WAVES_PER_CHAPTER[CurrentChapter]) then
                     CurrentAttack = MinigameAttack.HANGING_KEEPERS
                     StartHangingKeeperAttack()
                 else
                     CurrentAttack = MinigameAttack.HORFS
                     StartHorfAttack()
-
-                    HasSpawnedHorfs = CurrentChapter == 2
                 end
             else
                 CurrentAttack = MinigameAttack.FLIES

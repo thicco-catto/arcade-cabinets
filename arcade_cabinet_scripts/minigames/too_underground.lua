@@ -62,12 +62,12 @@ local MinigameConstants = {
         HARDENED = 2,
     },
     ROCK_MAX_HP = {
-        2,
-        3
+        1,
+        2
     },
     ROCK_SHOCKWAVE_CHANCE = {
-        7,
-        20
+        5,
+        12
     },
 
     INTRO_SCREEN_MAX_FRAMES = 70,
