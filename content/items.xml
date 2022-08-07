@@ -5,10 +5,23 @@
 
     <passive name="BSW minigame" description="gather the runes" hidden="true"/>
     <passive name="GUSH minigame" description="destroy the tar machine" hidden="true"/>
-    <passive name="HS minigame" description="kill satan" hidden="true"/>
+    <passive name="HS minigame" description="kill lucifer" hidden="true"/>
     <passive name="JC minigame" description="protect the dolly" hidden="true"/>
     <passive name="NL minigame" description="survive until 6 am" hidden="true"/>
     <passive name="NS minigame" description="kill the angler fish" hidden="true"/>
     <passive name="TGB minigame" description="survive the fall" hidden="true"/>
     <passive name="TUG minigame" description="dig to find the treasure" hidden="true"/>
+
+    <passive name="Spun transform" description="Counts towards spun" hidden="true" tags="syringe"/>
+    <passive name="Mom transform" description="Counts towards mom" hidden="true" tags="mom"/>
+    <passive name="Guppy transform" description="Counts towards guppy" hidden="true" tags="guppy"/>
+    <passive name="Fly transform" description="Counts towards fly" hidden="true" tags="fly"/>
+    <passive name="Bob transform" description="Counts towards bob" hidden="true" tags="bob"/>
+    <passive name="Mushroom transform" description="Counts towards mushroom" hidden="true" tags="mushroom"/>
+    <passive name="Baby transform" description="Counts towards baby" hidden="true" tags="baby"/>
+    <passive name="Angel transform" description="Counts towards angel" hidden="true" tags="angel"/>
+    <passive name="Devil transform" description="Counts towards devil" hidden="true" tags="devil"/>
+    <passive name="Poop transform" description="Counts towards poop" hidden="true" tags="poop"/>
+    <passive name="Book transform" description="Counts towards book" hidden="true" tags="book"/>
+    <passive name="Spider transform" description="Counts towards spider" hidden="true" tags="spider"/>
 </items>

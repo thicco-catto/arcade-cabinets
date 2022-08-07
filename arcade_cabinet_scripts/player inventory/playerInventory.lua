@@ -17,6 +17,21 @@ local ShouldSaveAndClearPlayers = false
 local ForgottenControllerIndexesToChangeBody = {}
 local DeadTaintedLazPositions = {}
 
+local TransformItems = {
+    SPUN = Isaac.GetItemIdByName("Spun transform"),
+    MOM = Isaac.GetItemIdByName("Mom transform"),
+    GUPPY = Isaac.GetItemIdByName("Guppy transform"),
+    FLY = Isaac.GetItemIdByName("Fly transform"),
+    BOB = Isaac.GetItemIdByName("Bob transform"),
+    MUSHROOM = Isaac.GetItemIdByName("Mushroom transform"),
+    BABY = Isaac.GetItemIdByName("Baby transform"),
+    ANGEL = Isaac.GetItemIdByName("Angel transform"),
+    DEVIL = Isaac.GetItemIdByName("Devil transform"),
+    POOP = Isaac.GetItemIdByName("Poop transform"),
+    BOOK = Isaac.GetItemIdByName("Book transform"),
+    SPIDER = Isaac.GetItemIdByName("Spider transform"),
+}
+
 
 ---@param player EntityPlayer
 function PlayerInventoryManager.SavePlayerState(player)
@@ -154,6 +169,20 @@ function PlayerInventoryManager.SavePlayerState(player)
     for trinketId, count in pairs(currentPlayerState.GulpedTrinkets) do
         playerState.GulpedTrinkets[trinketId] = count
     end
+
+    --Transformations
+    playerState.IsGuppy = player:HasPlayerForm(PlayerForm.PLAYERFORM_GUPPY)
+    playerState.IsLordOfFlies = player:HasPlayerForm(PlayerForm.PLAYERFORM_LORD_OF_THE_FLIES)
+    playerState.IsFunGuy = player:HasPlayerForm(PlayerForm.PLAYERFORM_MUSHROOM)
+    playerState.IsAngel = player:HasPlayerForm(PlayerForm.PLAYERFORM_ANGEL)
+    playerState.IsBobby = player:HasPlayerForm(PlayerForm.PLAYERFORM_BOB)
+    playerState.IsJunkie = player:HasPlayerForm(PlayerForm.PLAYERFORM_DRUGS)
+    playerState.IsMom = player:HasPlayerForm(PlayerForm.PLAYERFORM_MOM)
+    playerState.IsBaby = player:HasPlayerForm(PlayerForm.PLAYERFORM_BABY)
+    playerState.IsLeviathan = player:HasPlayerForm(PlayerForm.PLAYERFORM_EVIL_ANGEL)
+    playerState.IsShit = player:HasPlayerForm(PlayerForm.PLAYERFORM_POOP)
+    playerState.IsBookWorm = player:HasPlayerForm(PlayerForm.PLAYERFORM_BOOK_WORM)
+    playerState.IsSpiderBaby = player:HasPlayerForm(PlayerForm.PLAYERFORM_SPIDERBABY)
 
     --Temporary effects
     local playerEffects = player:GetEffects()
@@ -615,6 +644,15 @@ end
 
 
 ---@param player EntityPlayer
+local function AddTransformationItem(player, item)
+    for i = 1, 3, 1 do
+        player:AddCollectible(item)
+        player:RemoveCollectible(item, false, ActiveSlot.SLOT_PRIMARY, false)
+    end
+end
+
+
+---@param player EntityPlayer
 function PlayerInventoryManager.RestorePlayerState(player)
     local playerIndex = Helpers.GetPlayerIndex(player)
     local playerState = SavedPlayerStates[playerIndex]
@@ -730,6 +768,55 @@ function PlayerInventoryManager.RestorePlayerState(player)
         for key, value in pairs(charmedEntity.data) do
             entity:GetData()[key] = value
         end
+    end
+
+    --Check for transformations
+    if playerState.IsGuppy and not player:HasPlayerForm(PlayerForm.PLAYERFORM_GUPPY) then
+        AddTransformationItem(player, TransformItems.GUPPY)
+    end
+
+    if playerState.IsLordOfFlies and not player:HasPlayerForm(PlayerForm.PLAYERFORM_LORD_OF_THE_FLIES) then
+        AddTransformationItem(player, TransformItems.FLY)
+    end
+
+    if playerState.IsFunGuy and not player:HasPlayerForm(PlayerForm.PLAYERFORM_MUSHROOM) then
+        AddTransformationItem(player, TransformItems.MUSHROOM)
+    end
+
+    if playerState.IsAngel and not player:HasPlayerForm(PlayerForm.PLAYERFORM_ANGEL) then
+        AddTransformationItem(player, TransformItems.ANGEL)
+    end
+
+    if playerState.IsBobby and not player:HasPlayerForm(PlayerForm.PLAYERFORM_BOB) then
+        AddTransformationItem(player, TransformItems.BOB)
+    end
+
+    if playerState.IsJunkie and not player:HasPlayerForm(PlayerForm.PLAYERFORM_DRUGS) then
+        AddTransformationItem(player, TransformItems.SPUN)
+    end
+
+    if playerState.IsMom and not player:HasPlayerForm(PlayerForm.PLAYERFORM_MOM) then
+        AddTransformationItem(player, TransformItems.MOM)
+    end
+
+    if playerState.IsBaby and not player:HasPlayerForm(PlayerForm.PLAYERFORM_BABY) then
+        AddTransformationItem(player, TransformItems.BABY)
+    end
+
+    if playerState.IsLeviathan and not player:HasPlayerForm(PlayerForm.PLAYERFORM_EVIL_ANGEL) then
+        AddTransformationItem(player, TransformItems.DEVIL)
+    end
+
+    if playerState.IsShit and not player:HasPlayerForm(PlayerForm.PLAYERFORM_POOP) then
+        AddTransformationItem(player, TransformItems.POOP)
+    end
+
+    if playerState.IsBookWorm and not player:HasPlayerForm(PlayerForm.PLAYERFORM_BOOK_WORM) then
+        AddTransformationItem(player, TransformItems.BOOK)
+    end
+
+    if playerState.IsSpiderBaby and not player:HasPlayerForm(PlayerForm.PLAYERFORM_SPIDERBABY) then
+        AddTransformationItem(player, TransformItems.SPIDER)
     end
 
     --Inventory
