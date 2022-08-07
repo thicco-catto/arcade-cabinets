@@ -1,5 +1,5 @@
 local dssCompat = {}
-local SaveManager = {}
+local SaveManager
 
 local ArcadeCabinetVariables
 
@@ -169,6 +169,7 @@ local exampledirectory = {
                 store = function(var)
                     ArcadeCabinetVariables.IsShaderActive = var
                     dssCompat.GetSaveData().shaderactive = var
+                    dssCompat.StoreSaveData()
                 end,
 
                 -- A simple way to define tooltips is using the "strset" tag, where each string in the table is another line of the tooltip

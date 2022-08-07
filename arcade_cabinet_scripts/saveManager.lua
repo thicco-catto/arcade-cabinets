@@ -46,6 +46,8 @@ local function ContinueGame()
 
         ArcadeCabinetVariables.MachinesInRun = saveData.MachinesInRun
         PlayerInventory:OnContinueGame(saveData.InventoryData)
+
+        ArcadeCabinetVariables.IsShaderActive = saveData.MenuData.shaderactive
     else
         --If the mod doesnt have save data (for some reason) just act like we started a new game
         StartNewGame()
@@ -73,21 +75,25 @@ function SaveManagement:GetMenuData()
 
         return saveData.MenuData
     else
-        return {
-            MenuPalette = nil,
-            HudOffset = nil,
-            GamepadToggle = nil,
-            MenuKeybind = nil,
-            MenusNotified = nil,
-            MenusPoppedUp = nil
-        }
+        return {}
     end
 end
 
 
 function SaveManagement:OnGameStart(isContinue)
+    --If we are not not playing set options to what they were
+    if ArcadeCabinetVariables.CurrentGameState ~= ArcadeCabinetVariables.GameState.NOT_PLAYING then
+        ArcadeCabinetVariables.CurrentScript:RemoveCallbacks(ArcadeCabinetMod)
+        Options.ChargeBars = ArcadeCabinetVariables.OptionsChargeBar
+        Options.Filter = ArcadeCabinetVariables.OptionsFilter
+        Options.CameraStyle = ArcadeCabinetVariables.OptionsActiveCam
+    end
+
+    --Set the game state to not playing
+    ArcadeCabinetVariables.CurrentGameState = ArcadeCabinetVariables.GameState.NOT_PLAYING
+
     if ArcadeCabinetMod:HasData() then
-        ArcadeCabinetVariables.IsShaderActive = SaveManagement:GetMenuData().shaderactive
+        ArcadeCabinetVariables.IsShaderActive = SaveManagement:GetMenuData().shaderactive or 1
     end
 
     if isContinue then
@@ -99,6 +105,14 @@ end
 
 
 function SaveManagement:OnGameExit()
+    --If we are not not playing set options to what they were
+    if ArcadeCabinetVariables.CurrentGameState ~= ArcadeCabinetVariables.GameState.NOT_PLAYING then
+        ArcadeCabinetVariables.CurrentScript:RemoveCallbacks(ArcadeCabinetMod)
+        Options.ChargeBars = ArcadeCabinetVariables.OptionsChargeBar
+        Options.Filter = ArcadeCabinetVariables.OptionsFilter
+        Options.CameraStyle = ArcadeCabinetVariables.OptionsActiveCam
+    end
+
     --Set the game state to not playing
     ArcadeCabinetVariables.CurrentGameState = ArcadeCabinetVariables.GameState.NOT_PLAYING
 end
