@@ -325,7 +325,7 @@ function PlayerInventoryManager.SavePlayerState(player)
         if parentIndex == playerIndex then
             local id = itemWisp.SubType
             local data = {}
-            Helpers.CopyTable(data, wisp:GetData())
+            Helpers.CopyTable(data, itemWisp:GetData())
             table.insert(playerState.ItemWisps, { subtype = id, data = data })
         end
     end
