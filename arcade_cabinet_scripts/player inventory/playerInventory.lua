@@ -12,10 +12,13 @@ local InventoryType = {
     COLLECTIBLE = 1,
     TRINKET = 2,
 }
-local ShouldSaveAndClearPlayers = false
+local ShouldSaveAndClearPlayers = -1
 
 local ForgottenControllerIndexesToChangeBody = {}
+local FlippedLazarusIndexes = {}
 local DeadTaintedLazPositions = {}
+local TaintedLazBirthRightPlayerIndexes = {}
+local TaintedLazToFlip = {}
 
 local TransformItems = {
     SPUN = Isaac.GetItemIdByName("Spun transform"),
@@ -31,6 +34,11 @@ local TransformItems = {
     BOOK = Isaac.GetItemIdByName("Book transform"),
     SPIDER = Isaac.GetItemIdByName("Spider transform"),
 }
+
+local CheckCurrentPlayerStates = true
+
+local DontUseFlipOnNextTaintedLaz = false
+local DeadTaintedLazWasActive = false
 
 
 ---@param player EntityPlayer
@@ -102,6 +110,14 @@ function PlayerInventoryManager.SavePlayerState(player)
                 playerState.WasDeadTaintedLaz = true
                 table.remove(DeadTaintedLazPositions, index)
             end
+        end
+    end
+
+    for n, index in ipairs(TaintedLazBirthRightPlayerIndexes) do
+        if index == Helpers.GetPlayerIndex(player) then
+            playerState.WasDeadTaintedLaz = true
+            table.remove(TaintedLazBirthRightPlayerIndexes, n)
+            break
         end
     end
 
@@ -571,13 +587,66 @@ end
 
 
 function PlayerInventoryManager.PreparePlayersForSaveAndClear()
+    --Prepare all variables neccesary for saveclear
+    StrawmansToRestore = {}
+    PlayersToRestore = {}
+    ForgottenControllerIndexesToChangeBody = {}
+    DeadTaintedLazPositions = {}
+    TaintedLazBirthRightPlayerIndexes = {}
+    FlippedLazarusIndexes = {}
+    TaintedLazToFlip = {}
+    CheckCurrentPlayerStates = false
+
     --Special check for t laz
     for i = 0, game:GetNumPlayers() - 1, 1 do
         local player = game:GetPlayer(i)
         if player:GetPlayerType() == PlayerType.PLAYER_LAZARUS2_B then
-            player:UseActiveItem(CollectibleType.COLLECTIBLE_FLIP, UseFlag.USE_NOANIM | UseFlag.USE_NOCOSTUME)
+            --Check if the player has already been flipped
+            for _, index in ipairs(FlippedLazarusIndexes) do
+                if Helpers.GetPlayerIndex(player) == index then
+                    DontUseFlipOnNextTaintedLaz = true
+                    break
+                end
+            end
 
-            table.insert(DeadTaintedLazPositions, player.Position)
+            if DontUseFlipOnNextTaintedLaz then
+                DontUseFlipOnNextTaintedLaz = false
+            else
+                table.insert(FlippedLazarusIndexes, Helpers.GetPlayerIndex(player))
+                player:UseActiveItem(CollectibleType.COLLECTIBLE_FLIP, UseFlag.USE_NOANIM | UseFlag.USE_NOCOSTUME)
+
+                if player:GetOtherTwin() then
+                    table.insert(TaintedLazBirthRightPlayerIndexes, Helpers.GetPlayerIndex(player:GetOtherTwin()))
+                else
+                    table.insert(DeadTaintedLazPositions, player.Position)
+                end
+            end
+        end
+
+        --Check for t.laz birthright
+        if player:GetPlayerType() == PlayerType.PLAYER_LAZARUS_B or player:GetPlayerType() == PlayerType.PLAYER_LAZARUS2_B and
+        player:GetOtherTwin() then
+            if player:GetPlayerType() == PlayerType.PLAYER_LAZARUS_B then
+                if DeadTaintedLazWasActive then
+                    DeadTaintedLazWasActive = false
+                else
+                    DontUseFlipOnNextTaintedLaz = true
+                end
+            else
+                DeadTaintedLazWasActive = true
+            end
+
+            for _ = 1, player:GetCollectibleNum(CollectibleType.COLLECTIBLE_BIRTHRIGHT), 1 do
+                player:RemoveCollectible(CollectibleType.COLLECTIBLE_BIRTHRIGHT)
+            end
+
+            local twin = player:GetOtherTwin()
+            --Double check here
+            if twin then
+                for _ = 1, twin:GetCollectibleNum(CollectibleType.COLLECTIBLE_BIRTHRIGHT), 1 do
+                    twin:RemoveCollectible(CollectibleType.COLLECTIBLE_BIRTHRIGHT)
+                end
+            end
         end
     end
 
@@ -611,8 +680,8 @@ function PlayerInventoryManager.SaveAndClearAllPlayers()
     --Finally we change their player type to isaac
     for i = 0, game:GetNumPlayers() - 1, 1 do
         local player = game:GetPlayer(i)
+        print(player:GetPlayerType())
 
-        --If a player has a parent its a strawman, so dont change its state when I remove the item, strawman gets removed
         player:ChangePlayerType(PlayerType.PLAYER_ISAAC)
     end
 
@@ -621,6 +690,11 @@ function PlayerInventoryManager.SaveAndClearAllPlayers()
         local player = game:GetPlayer(i)
         PlayerInventoryManager.ClearPlayerStateAfterPlayerType(player)
     end
+
+    --Reset special flags
+    CheckCurrentPlayerStates = true
+    DontUseFlipOnNextTaintedLaz = false
+    DeadTaintedLazWasActive = false
 end
 
 ---@param player EntityPlayer
@@ -957,7 +1031,7 @@ function PlayerInventoryManager.RestorePlayerState(player)
     end
 
     if playerState.WasDeadTaintedLaz then
-        player:UseActiveItem(CollectibleType.COLLECTIBLE_FLIP, UseFlag.USE_NOANIM | UseFlag.USE_NOCOSTUME)
+        table.insert(TaintedLazToFlip, playerIndex)
     end
 
     player:RespawnFamiliars()
@@ -1216,6 +1290,9 @@ function PlayerInventoryManager:OnPeffectUpdate(player)
         playerState = CurrentPlayerStates[playerIndex]
     end
 
+    --Special flag for the frame between preparing the players and actually clearing their states
+    if not CheckCurrentPlayerStates then return end
+
     CheckCollectedItems(player, playerState)
 
     CheckGulpedTrinkets(player, playerState)
@@ -1261,6 +1338,14 @@ function PlayerInventoryManager:OnPlayerUpdate(player)
         end
     end
 
+    for n, index in ipairs(TaintedLazToFlip) do
+        if index == playerIndex then
+            player:UseActiveItem(CollectibleType.COLLECTIBLE_FLIP, UseFlag.USE_NOANIM | UseFlag.USE_NOCOSTUME)
+            table.remove(TaintedLazToFlip, n)
+            break
+        end
+    end
+
     if player:GetData().RestoreSoulPosition then
         local savedState = SavedPlayerStates[playerIndex]
 
@@ -1281,7 +1366,6 @@ end
 function PlayerInventoryManager:OnFrameUpdate()
     if ShouldSaveAndClearPlayers then
         ShouldSaveAndClearPlayers = false
-
         PlayerInventoryManager.SaveAndClearAllPlayers()
     end
 end
@@ -1397,15 +1481,14 @@ end
 
 
 function PlayerInventoryManager:OnRender()
-    -- local playerNum = game:GetNumPlayers()
-    -- for i = 0, playerNum - 1, 1 do
-    --     local player = game:GetPlayer(i)
-    --     local playerIndex = Helpers.GetPlayerIndex(player)
-    --     local str = dump(CurrentPlayerStates[playerIndex].InventoryOrdered)
-    --     local pos = Isaac.WorldToScreen(player.Position)
+    local playerNum = game:GetNumPlayers()
+    for i = 0, playerNum - 1, 1 do
+        local player = game:GetPlayer(i)
+        local playerIndex = Helpers.GetPlayerIndex(player)
+        local pos = Isaac.WorldToScreen(player.Position)
 
-    --     Isaac.RenderText(str, pos.X, pos.Y, 1, 1, 1, 255)
-    -- end
+        Isaac.RenderText(playerIndex, pos.X, pos.Y, 1, 1, 1, 255)
+    end
 end
 
 
