@@ -167,6 +167,11 @@ function MinigameManagement:GetShaderParams(shaderName)
     --Render transition (here so it renders on top of the hud)
     RenderTransitionScreen()
 
+    if ArcadeCabinetVariables.NiceTryFrameCount > 0 then
+        ArcadeCabinetVariables.NiceTryScreen:Play("Idle", true)
+        ArcadeCabinetVariables.NiceTryScreen:Render(Vector(Isaac.GetScreenWidth() / 2, Isaac.GetScreenHeight() / 2), Vector.Zero, Vector.Zero)
+    end
+
     --DebugRender()
 
     --Shader stuff
@@ -336,6 +341,29 @@ function MinigameManagement:OnFrameUpdate()
             end
         end
     end
+
+    if ArcadeCabinetVariables.NiceTryFrameCount > 0 then
+        ArcadeCabinetVariables.NiceTryFrameCount = ArcadeCabinetVariables.NiceTryFrameCount - 1
+    end
+end
+
+
+function MinigameManagement:PreGlowingHourglassUse()
+    if not ArcadeCabinetVariables.IsInRoomAfterMinigame then return end
+
+    ArcadeCabinetVariables.NiceTryFrameCount = ArcadeCabinetVariables.MAX_NICE_TRY_FRAMES
+    return true
+end
+
+
+function MinigameManagement:OnNewRoom()
+    if ArcadeCabinetVariables.IsInRoomAfterMinigame then
+        ArcadeCabinetVariables.IsInRoomAfterMinigame = false
+    end
+
+    if ArcadeCabinetVariables.RestorePlayers then
+        ArcadeCabinetVariables.IsInRoomAfterMinigame = true
+    end
 end
 
 
@@ -344,6 +372,8 @@ function MinigameManagement:Init(mod, variables, inventory, cabinet, helpers)
     mod:AddCallback(ModCallbacks.MC_GET_SHADER_PARAMS, MinigameManagement.GetShaderParams)
     mod:AddCallback(ModCallbacks.MC_POST_RENDER, MinigameManagement.OnRender)
     mod:AddCallback(ModCallbacks.MC_POST_UPDATE, MinigameManagement.OnFrameUpdate)
+    mod:AddCallback(ModCallbacks.MC_PRE_USE_ITEM, MinigameManagement.PreGlowingHourglassUse)
+    mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, MinigameManagement.OnNewRoom)
 
     ArcadeCabinetMod = mod
     ArcadeCabinetVariables = variables

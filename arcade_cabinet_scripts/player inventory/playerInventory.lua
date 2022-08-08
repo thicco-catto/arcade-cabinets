@@ -680,7 +680,6 @@ function PlayerInventoryManager.SaveAndClearAllPlayers()
     --Finally we change their player type to isaac
     for i = 0, game:GetNumPlayers() - 1, 1 do
         local player = game:GetPlayer(i)
-        print(player:GetPlayerType())
 
         player:ChangePlayerType(PlayerType.PLAYER_ISAAC)
     end
@@ -1481,14 +1480,14 @@ end
 
 
 function PlayerInventoryManager:OnRender()
-    local playerNum = game:GetNumPlayers()
-    for i = 0, playerNum - 1, 1 do
-        local player = game:GetPlayer(i)
-        local playerIndex = Helpers.GetPlayerIndex(player)
-        local pos = Isaac.WorldToScreen(player.Position)
+    -- local playerNum = game:GetNumPlayers()
+    -- for i = 0, playerNum - 1, 1 do
+    --     local player = game:GetPlayer(i)
+    --     local playerIndex = Helpers.GetPlayerIndex(player)
+    --     local pos = Isaac.WorldToScreen(player.Position)
 
-        Isaac.RenderText(playerIndex, pos.X, pos.Y, 1, 1, 1, 255)
-    end
+    --     Isaac.RenderText(playerIndex, pos.X, pos.Y, 1, 1, 1, 255)
+    -- end
 end
 
 

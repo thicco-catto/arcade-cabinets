@@ -149,6 +149,9 @@ end
 
 
 local function OnCabinetUpdate(cabinet)
+    if not cabinet:GetData().ArcadeCabinet then SetUpCabinet(cabinet) return end
+    if not cabinet:GetData().ArcadeCabinet.CabinetObject then SetUpCabinet(cabinet) return end
+
     local cabinetSpr = cabinet:GetSprite()
     local cabinetObject = cabinet:GetData().ArcadeCabinet.CabinetObject
 

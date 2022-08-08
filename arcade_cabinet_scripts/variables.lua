@@ -105,6 +105,7 @@ ArcadeCabinetVariables.CABINET_RADIUS = 22
 ArcadeCabinetVariables.CHANCE_FOR_CRANE_TO_CABINET = 5
 ArcadeCabinetVariables.CHANCE_FOR_CABINET_EXPLODING = 30
 ArcadeCabinetVariables.CHANCE_FOR_CABINET_EXPLODING_LUCKY_FOOT = 20
+ArcadeCabinetVariables.MAX_NICE_TRY_FRAMES = 20
 ArcadeCabinetVariables.GameState = {
     NOT_PLAYING = 1,
     FADE_IN = 2,
@@ -139,6 +140,12 @@ ArcadeCabinetVariables.TransitionFrameCount = -1
 ArcadeCabinetVariables.FadeOutTimer = nil
 
 ArcadeCabinetVariables.MachinesInRun = {}
+ArcadeCabinetVariables.IsInRoomAfterMinigame = false
+ArcadeCabinetVariables.NiceTryFrameCount = 0
+ArcadeCabinetVariables.NiceTryScreen = Sprite()
+ArcadeCabinetVariables.NiceTryScreen:Load("gfx/minigame_transition.anm2", true)
+ArcadeCabinetVariables.NiceTryScreen:ReplaceSpritesheet(0, "gfx/effects/nice_try_screen.png")
+ArcadeCabinetVariables.NiceTryScreen:LoadGraphics()
 
 --Options
 ArcadeCabinetVariables.IsShaderActive = 1
