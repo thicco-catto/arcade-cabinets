@@ -12,7 +12,7 @@ local InventoryType = {
     COLLECTIBLE = 1,
     TRINKET = 2,
 }
-local ShouldSaveAndClearPlayers = -1
+local ShouldSaveAndClearPlayers = false
 
 local ForgottenControllerIndexesToChangeBody = {}
 local FlippedLazarusIndexes = {}

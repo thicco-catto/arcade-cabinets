@@ -56,7 +56,7 @@ end
 
 function Cabinet:GetRNG()
     local rng = RNG()
-    rng:SetSeed(self.initialSeed + self.stage + self.room, 35 + self.gridPosition)
+    rng:SetSeed(self.initialSeed + self.stage + self.room + self.gridPosition, 35)
     return rng
 end
 
@@ -88,8 +88,8 @@ function Cabinet:ShouldGetDestroyed()
 
     --If there has been 3 attempts and no explosion, force it
     --5 attempts if any player has lucky foot
-    if self.numberOfAttempts == 3 and not anyPlayerHasLuckyFooty or
-    self.numberOfAttempts == 5 and anyPlayerHasLuckyFoot then
+    if (self.numberOfAttempts == 3 and not anyPlayerHasLuckyFoot) or
+    (self.numberOfAttempts == 5 and anyPlayerHasLuckyFoot) then
         return true
     end
 
@@ -101,9 +101,9 @@ function Cabinet:ShouldGetDestroyed()
     end
 
     --If any player has lucky foot, the chance is bigger
-    local breakingChance = cabinetRNG:RandomInt(100)
-    return not anyPlayerHasLuckyFoot and breakingChance <= ArcadeCabinetVariables.CHANCE_FOR_CABINET_EXPLODING or
-    anyPlayerHasLuckyFoot and breakingChance <= ArcadeCabinetVariables.CHANCE_FOR_CABINET_EXPLODING_LUCKY_FOOT
+    local breakingChance = math.floor(cabinetRNG:RandomFloat() * 100)
+    return (not anyPlayerHasLuckyFoot and breakingChance <= ArcadeCabinetVariables.CHANCE_FOR_CABINET_EXPLODING) or
+    (anyPlayerHasLuckyFoot and breakingChance <= ArcadeCabinetVariables.CHANCE_FOR_CABINET_EXPLODING_LUCKY_FOOT)
 end
 
 
