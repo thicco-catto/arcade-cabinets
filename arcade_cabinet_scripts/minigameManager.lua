@@ -80,6 +80,14 @@ local function FinishTransitionFadeIn()
     ArcadeCabinetVariables.LevelStageType = level:GetStageType()
     level:SetStage(LevelStage.STAGE4_3, StageType.STAGETYPE_AFTERBIRTH)
 
+    --Remove the challenge and store it
+    ArcadeCabinetVariables.ChallengeType = game.Challenge
+    game.Challenge = 0
+
+    --Remove curses and store them
+    ArcadeCabinetVariables.LevelCurses = level:GetCurses()
+    level:RemoveCurses(level:GetCurses())
+
     --Set options like chargebar and filter
     ArcadeCabinetVariables.OptionsChargeBar = Options.ChargeBars
     ArcadeCabinetVariables.OptionsFilter = Options.Filter
@@ -291,6 +299,12 @@ local function CheckIfEndMinigame()
     --Set stage back to original
     local level = game:GetLevel()
     level:SetStage(ArcadeCabinetVariables.LevelStage, ArcadeCabinetVariables.LevelStageType)
+
+    --Set the challenge back
+    game.Challenge = ArcadeCabinetVariables.ChallengeType
+
+    --Add curses back
+    level:AddCurse(ArcadeCabinetVariables.LevelCurses, false)
 
     --Teleport the players back through the door
     local room = game:GetRoom()
