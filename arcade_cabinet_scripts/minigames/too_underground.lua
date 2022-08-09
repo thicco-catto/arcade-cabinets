@@ -381,6 +381,9 @@ local function RenderFadeOut()
         for i = 0, game:GetNumPlayers() - 1, 1 do
             local player = game:GetPlayer(i)
             player:RemoveCollectible(MinigameConstants.CUSTOM_TNT_ACTIVE)
+
+            local costume = Isaac.GetCostumeIdByPath("gfx/costumes/minigame_empty_costume.anm2")
+            player:TryRemoveNullCostume(costume)
         end
 
         if CurrentMinigameState == MinigameState.WINNING then
@@ -924,6 +927,9 @@ function too_underground:Init(mod, variables)
         playerSprite:Load("gfx/tug_isaac52.anm2", true)
         playerSprite:ReplaceSpritesheet(4, "") --Empty head xd
         playerSprite:LoadGraphics()
+
+        local costume = Isaac.GetCostumeIdByPath("gfx/costumes/minigame_empty_costume.anm2")
+        player:AddNullCostume(costume)
     end
 end
 

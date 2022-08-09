@@ -1,4 +1,5 @@
 <costumes anm2root="gfx/costumes/">
-    <costume anm2path="bsw_robes.anm2" type="none"/>
-    <costume anm2path="hs_halo.anm2" type="none"/>
+    <costume anm2path="minigame_empty_costume.anm2" type="none" priority="60"/>
+    <costume anm2path="bsw_robes.anm2" type="none" priority="100"/>
+    <costume anm2path="hs_halo.anm2" type="none" priority="100"/>
 </costumes>

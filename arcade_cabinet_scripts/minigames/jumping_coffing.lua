@@ -550,6 +550,9 @@ local function RenderFadeOut()
         for i = 0, playerNum - 1, 1 do
             local player = game:GetPlayer(i)
             player:RemoveCollectible(CollectibleType.COLLECTIBLE_SPIRIT_SWORD)
+
+            local costume = Isaac.GetCostumeIdByPath("gfx/costumes/minigame_empty_costume.anm2")
+            player:TryRemoveNullCostume(costume)
         end
 
         if CurrentMinigameState == MinigameStates.WINNING then
@@ -983,6 +986,9 @@ function jumping_coffing:Init(mod, variables)
 
         --Make sure the controls are off
         player.ControlsEnabled = false
+
+        local costume = Isaac.GetCostumeIdByPath("gfx/costumes/minigame_empty_costume.anm2")
+        player:AddNullCostume(costume)
     end
 end
 

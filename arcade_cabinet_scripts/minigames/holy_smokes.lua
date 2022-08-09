@@ -928,6 +928,9 @@ local function RenderFadeOut()
         for i = 0, playerNum - 1, 1 do
             local player = game:GetPlayer(i)
             player:TryRemoveNullCostume(Isaac.GetCostumeIdByPath("gfx/costumes/hs_halo.anm2"))
+
+            local emptyCostume = Isaac.GetCostumeIdByPath("gfx/costumes/minigame_empty_costume.anm2")
+            player:TryRemoveNullCostume(emptyCostume)
         end
 
         if CurrentMinigameState == MinigameState.WINNING then
@@ -1272,6 +1275,9 @@ function holy_smokes:Init(mod, variables)
 
         local costume = Isaac.GetCostumeIdByPath("gfx/costumes/hs_halo.anm2")
         player:AddNullCostume(costume)
+
+        local emptyCostume = Isaac.GetCostumeIdByPath("gfx/costumes/minigame_empty_costume.anm2")
+        player:AddNullCostume(emptyCostume)
     end
 end
 

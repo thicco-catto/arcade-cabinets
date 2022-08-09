@@ -470,10 +470,13 @@ local function RenderFadeOut()
             local costume = Isaac.GetCostumeIdByPath("gfx/costumes/bsw_robes.anm2")
             player:TryRemoveNullCostume(costume)
 
-            for _, entity in ipairs(Isaac.GetRoomEntities()) do
-                if entity:IsVulnerableEnemy() then
-                    entity:Remove()
-                end
+            local emptyCostume = Isaac.GetCostumeIdByPath("gfx/costumes/minigame_empty_costume.anm2")
+            player:TryRemoveNullCostume(emptyCostume)
+        end
+
+        for _, entity in ipairs(Isaac.GetRoomEntities()) do
+            if entity:IsVulnerableEnemy() then
+                entity:Remove()
             end
         end
 
@@ -830,6 +833,9 @@ function black_stone_wielder:Init(mod, variables)
 
         local costume = Isaac.GetCostumeIdByPath("gfx/costumes/bsw_robes.anm2")
         player:AddNullCostume(costume)
+
+        local emptyCostume = Isaac.GetCostumeIdByPath("gfx/costumes/minigame_empty_costume.anm2")
+        player:AddNullCostume(emptyCostume)
     end
 end
 
