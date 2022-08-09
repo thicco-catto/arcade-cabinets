@@ -30,6 +30,7 @@ local MinigameSounds = {
 }
 
 local MinigameMusic = Isaac.GetMusicIdByName("bsw black beat wielder")
+local MinigameGlitchedMusic = Isaac.GetMusicIdByName("bsw black beat wielder glitched")
 
 --Entities
 local MinigameEntityVariants = {
@@ -216,6 +217,7 @@ local function HitPlayer(player)
         CurrentMinigameState = MinigameState.LOSING
         SFXManager:Play(MinigameSounds.LOSE)
         TransitionScreen:Play("Appear")
+        MusicManager:VolumeSlide(0, 1)
 
         local playerNum = game:GetNumPlayers()
         for i = 0, playerNum - 1, 1 do
@@ -381,12 +383,14 @@ local function UpdateWaitForTransition()
         if CurrentLevel == 3 then
             CurrentMinigameState = MinigameState.WINNING
             SFXManager:Play(MinigameSounds.WIN)
+            MusicManager:VolumeSlide(0, 1)
             TransitionScreen:Play("Appear")
 
             local playerNum = game:GetNumPlayers()
             for i = 0, playerNum - 1, 1 do
                 game:GetPlayer(i):PlayExtraAnimation("Happy")
                 game:GetPlayer(i):GetSprite():SetFrame(10)
+                game:GetPlayer(i).ControlsEnabled = false
             end
         else
             CurrentLevel = CurrentLevel + 1
@@ -771,7 +775,11 @@ function black_stone_wielder:Init(mod, variables)
         timer = 0
     end
 
-    MusicManager:Play(MinigameMusic, 1)
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+        MusicManager:Play(MinigameGlitchedMusic, 1)
+    else
+        MusicManager:Play(MinigameMusic, 1)
+    end
     MusicManager:UpdateVolume()
 
     --UI
@@ -793,7 +801,6 @@ function black_stone_wielder:Init(mod, variables)
     BgUI:LoadGraphics()
     RuneUI:LoadGraphics()
     HeartsUI:LoadGraphics()
-
 
     --Transition
     PrepareTransition()

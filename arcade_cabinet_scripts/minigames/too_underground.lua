@@ -41,6 +41,7 @@ local MinigameSounds = {
 }
 
 local MinigameMusic = Isaac.GetMusicIdByName("tug under beats")
+local MinigameGlitchedMusic = Isaac.GetMusicIdByName("tug under beats glitched")
 
 --Entities
 local MinigameEntityVariants = {
@@ -865,7 +866,11 @@ function too_underground:Init(mod, variables)
     StoneMeterUI:LoadGraphics()
 
     --Music
-    MusicManager:Play(MinigameMusic, 1)
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+        MusicManager:Play(MinigameGlitchedMusic, 1)
+    else
+        MusicManager:Play(MinigameMusic, 1)
+    end
     MusicManager:UpdateVolume()
     MusicManager:Pause()
 

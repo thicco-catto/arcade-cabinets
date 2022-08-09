@@ -31,7 +31,8 @@ local MinigameSounds = {
     LOSE = Isaac.GetSoundIdByName("arcade cabinet lose")
 }
 
-local MinigameMusic = Isaac.GetMusicIdByName("bsw black beat wielder")
+local MinigameMusic = Isaac.GetMusicIdByName("ns underwater beats")
+local MinigameGlitchedMusic = Isaac.GetMusicIdByName("ns underwater beats glitched")
 
 -- Entities
 local MinigameEntityTypes = {
@@ -101,7 +102,7 @@ local MinigameConstants = {
     CLAM_APPEAR_SOUND_Y = 450,
     CLAM_SPAWNING_Y = 700,
     CLAM_SPAWNING_X = 120,
-    CLAM_SPAWNING_X_OFFSET = 600,
+    CLAM_SPAWNING_X_OFFSET = 550,
     CLAM_SHOOT_COOLDOWN = 30,
 
     --Angler fish stuff
@@ -473,6 +474,7 @@ function no_splash:OnChuckCorpseUpdate(corpse)
             SpawnedFinalExplosions = SpawnedFinalExplosions + 1
 
             if SpawnedFinalExplosions == MinigameConstants.MAX_CHUCK_EXPLOSIONS then
+                MusicManager:VolumeSlide(0, 1)
                 corpse:GetSprite():Play("Corpse", true)
                 corpse.Velocity = Vector(0, MinigameConstants.CORPSE_VELOCITY)
 
@@ -716,10 +718,12 @@ local function UpdateAnglerFish(anglerFish)
     if anglerFish.Position.Y <= MinigameConstants.ANGLER_FISH_Y_SOUND and not anglerFish:GetData().HasPlayedSound then
         anglerFish:GetData().HasPlayedSound = true
         SFXManager:Play(MinigameSounds.CHUCK_CHICANERY)
+        MusicManager:Pause()
     end
 
     if anglerFish:GetData().IsWaitingForSound and not SFXManager:IsPlaying(MinigameSounds.CHUCK_CHICANERY) then
         if not anglerFish:GetData().CanDoAttacks then
+            MusicManager:Resume()
             anglerFish:GetData().CanDoAttacks = true
             MinigameTimers.AnglerFishAttackTimer = MinigameConstants.ANGLER_FISH_INITIAL_COOLDOWN
             if rng:RandomInt(100) <= MinigameConstants.GLITCH_CHANCE_FOR_QUICK_CHUCK_ATTACK then
@@ -887,6 +891,7 @@ function no_splash:OnPlayerDamage(player)
 
             TransitionScreen:Play("Appear", true)
             SFXManager:Play(MinigameSounds.LOSE)
+            MusicManager:VolumeSlide(0, 1)
 
             for _, entity in ipairs(Isaac.FindByType(MinigameEntityTypes.CUSTOM_ENTITY)) do
                 entity.Velocity = Vector.Zero
@@ -1349,6 +1354,14 @@ function no_splash:Init(mod, variables)
 
     PlayerHealthUI:LoadGraphics()
     BossHealthUI:LoadGraphics()
+
+    --Music
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+        MusicManager:Play(MinigameGlitchedMusic, 1)
+    else
+        MusicManager:Play(MinigameMusic, 1)
+    end
+    MusicManager:UpdateVolume()
 
     -- Prepare players
     local playerNum = game:GetNumPlayers()

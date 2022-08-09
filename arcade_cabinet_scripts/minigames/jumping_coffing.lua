@@ -39,6 +39,7 @@ local MinigameSounds = {
 }
 
 local MinigameMusic = Isaac.GetMusicIdByName("jc corpse beat")
+local MinigameGlitchedMusic = Isaac.GetMusicIdByName("jc corpse beat glitched")
 
 --Entities
 local MinigameEntityVariants = {
@@ -957,7 +958,11 @@ function jumping_coffing:Init(mod, variables)
     end
 
     --Play music
-    MusicManager:Play(MinigameMusic, 1)
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+        MusicManager:Play(MinigameGlitchedMusic, 1)
+    else
+        MusicManager:Play(MinigameMusic, 1)
+    end
     MusicManager:UpdateVolume()
     MusicManager:Pause()
 

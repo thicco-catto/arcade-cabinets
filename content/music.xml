@@ -1,5 +1,14 @@
 <music root="music/">
+	<!--Normal music-->
 	<track name="bsw black beat wielder" path="black_beat_wielder.ogg" loop="true" />
 	<track name="jc corpse beat" path="corpse_beat.ogg" loop="true" />
+	<track name="ns underwater beats" path="underwater_beats.ogg" loop="true" />
 	<track name="tug under beats" path="under_beats.ogg" loop="true" />
+
+	<!--Glitched music-->
+	<track name="bsw black beat wielder glitched" path="black_beat_wielder_glitched.ogg" loop="true" />
+	<track name="jc corpse beat glitched" path="corpse_beat_glitched.ogg" loop="true" />
+	<track name="ns underwater beats glitched" path="underwater_beats_glitched.ogg" loop="true" />
+	<track name="tug under beats glitched" path="under_beats_glitched.ogg" loop="true" />
+
 </music>
