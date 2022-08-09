@@ -372,7 +372,7 @@ function MinigameManagement:Init(mod, variables, inventory, cabinet, helpers)
     mod:AddCallback(ModCallbacks.MC_GET_SHADER_PARAMS, MinigameManagement.GetShaderParams)
     mod:AddCallback(ModCallbacks.MC_POST_RENDER, MinigameManagement.OnRender)
     mod:AddCallback(ModCallbacks.MC_POST_UPDATE, MinigameManagement.OnFrameUpdate)
-    mod:AddCallback(ModCallbacks.MC_PRE_USE_ITEM, MinigameManagement.PreGlowingHourglassUse)
+    mod:AddCallback(ModCallbacks.MC_PRE_USE_ITEM, MinigameManagement.PreGlowingHourglassUse, CollectibleType.COLLECTIBLE_GLOWING_HOUR_GLASS)
     mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, MinigameManagement.OnNewRoom)
 
     ArcadeCabinetMod = mod

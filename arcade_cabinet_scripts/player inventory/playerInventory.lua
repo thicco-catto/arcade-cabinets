@@ -339,7 +339,7 @@ function PlayerInventoryManager.SavePlayerState(player)
             local id = clot.SubType
             local hp = clot.HitPoints
             local data = {}
-            Helpers.CopyTable(data, wisp:GetData())
+            Helpers.CopyTable(data, clot:GetData())
             table.insert(playerState.Clots, { subtype = id, hp = hp, data = data })
         end
     end
@@ -353,7 +353,7 @@ function PlayerInventoryManager.SavePlayerState(player)
             local id = minisaac.SubType
             local hp = minisaac.HitPoints
             local data = {}
-            Helpers.CopyTable(data, wisp:GetData())
+            Helpers.CopyTable(data, minisaac:GetData())
             table.insert(playerState.Minisaacs, { subtype = id, hp = hp, data = data })
         end
     end
@@ -367,7 +367,7 @@ function PlayerInventoryManager.SavePlayerState(player)
             local id = dip.SubType
             local hp = dip.HitPoints
             local data = {}
-            Helpers.CopyTable(data, wisp:GetData())
+            Helpers.CopyTable(data, dip:GetData())
             table.insert(playerState.Dips, { subtype = id, hp = hp, data = data })
         end
     end
@@ -380,7 +380,7 @@ function PlayerInventoryManager.SavePlayerState(player)
         if parentIndex == playerIndex then
             local id = locust.SubType
             local data = {}
-            Helpers.CopyTable(data, wisp:GetData())
+            Helpers.CopyTable(data, locust:GetData())
             table.insert(playerState.Locusts, { subtype = id, data = data })
         end
     end
