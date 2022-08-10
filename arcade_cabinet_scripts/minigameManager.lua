@@ -93,6 +93,9 @@ local function FinishTransitionFadeIn()
     ArcadeCabinetVariables.OptionsFilter = Options.Filter
     ArcadeCabinetVariables.OptionsActiveCam = Options.CameraStyle
 
+    --Set the room index we currently are
+    ArcadeCabinetVariables.PreviousRoomIndex = level:GetCurrentRoomDesc().GridIndex
+
     Options.ChargeBars = false
     Options.Filter = false
     Options.CameraStyle = 2
@@ -306,35 +309,12 @@ local function CheckIfEndMinigame()
     --Add curses back
     level:AddCurse(ArcadeCabinetVariables.LevelCurses, false)
 
-    --Teleport the players back through the door
-    local room = game:GetRoom()
-    local openDoor = nil
-    for i = 0, 7, 1 do
-        local door = room:GetDoor(i)
-        if door then
-            openDoor = door
-            door:Open()
-            break
-        end
-    end
-
-    local extraVelocity = nil
-
-    if openDoor.Direction == Direction.LEFT then
-        extraVelocity = Vector(-100, 0)
-    elseif openDoor.Direction == Direction.RIGHT then
-        extraVelocity = Vector(100, 0)
-    elseif openDoor.Direction == Direction.UP then
-        extraVelocity = Vector(0, -100)
-    else
-        extraVelocity = Vector(0, 100)
-    end
-
-    game:GetPlayer(0).Position = openDoor.Position
-    game:GetPlayer(0):AddVelocity(extraVelocity)
-
     --Set the restore positions flag for next on new room callback
     ArcadeCabinetVariables.RestorePlayers = true
+
+    --Teleport players back
+    level.LeaveDoor = -1
+    game:ChangeRoom(ArcadeCabinetVariables.PreviousRoomIndex, -1)
 end
 
 

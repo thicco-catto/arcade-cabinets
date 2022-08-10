@@ -45,7 +45,7 @@ local MinigameConstants = {
     ENEMIES_PER_LEVEL = {
         3,
         3,
-        2
+        3
     },
 
     --For the smoke cloud

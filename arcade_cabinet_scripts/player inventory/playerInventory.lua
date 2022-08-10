@@ -730,7 +730,21 @@ function PlayerInventoryManager.RestorePlayerState(player)
     local playerIndex = Helpers.GetPlayerIndex(player)
     local playerState = SavedPlayerStates[playerIndex]
 
-    player.Position = playerState.Position
+    if playerState.SoulPosition then
+        for _, forgorBody in ipairs(Isaac.FindByType(EntityType.ENTITY_FAMILIAR, FamiliarVariant.FORGOTTEN_BODY)) do
+            forgorBody = forgorBody:ToFamiliar()
+            local owner = forgorBody.Player
+            local ownerIndex = Helpers.GetPlayerIndex(owner)
+
+            if ownerIndex == playerIndex then
+                forgorBody.Position = playerState.Position
+            end
+        end
+
+        player.Position = playerState.SoulPosition
+    else
+        player.Position = playerState.Position
+    end
 
     --Player gimmicks
     player:AddPoopMana(playerState.PoopMana - player:GetPoopMana())
@@ -1348,7 +1362,7 @@ function PlayerInventoryManager:OnPlayerUpdate(player)
     if player:GetData().RestoreSoulPosition then
         local savedState = SavedPlayerStates[playerIndex]
 
-        player.Position = savedState.SoulPosition
+        player.Position = savedState.Position
 
         player:GetData().RestoreSoulPosition = nil
     elseif #PlayersToRestore > 0 then

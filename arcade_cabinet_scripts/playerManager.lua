@@ -21,6 +21,8 @@ end
 function PlayerManagement:OnPlayerUpdate(player)
     --If we started playing we dont need to compute collision
     if ArcadeCabinetVariables.CurrentGameState ~= ArcadeCabinetVariables.GameState.NOT_PLAYING then return end
+    --If the room is not clear, ignore this too
+    if not game:GetRoom():IsClear() then return end
     --If the player has less than 5 coins we dont need to compute collision
     if player:GetNumCoins() < 5 then return end
 

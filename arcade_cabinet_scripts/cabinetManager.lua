@@ -53,13 +53,9 @@ local function SetUpCabinet(cabinet, forceGlitch)
         cabinetObject.glitched = isGlitched
     end
 
-    --If its glitched, replace the screen
+    --Show collectible
     if cabinetObject.glitched then
         cabinet:GetSprite():ReplaceSpritesheet(1, "gfx/slots/glitched_" .. ArcadeCabinetVariables.ArcadeCabinetSprite[cabinet.Variant])
-    end
-
-    --Show collectible
-    if Helpers.DoesAnyPlayerHasItem(CollectibleType.COLLECTIBLE_TMTRAINER) then
         cabinet:GetSprite():ReplaceSpritesheet(2, "gfx/slots/glitch_item_icon.png")
     else
         local chosenCollectible = cabinetObject:GetCollectible()
@@ -108,8 +104,19 @@ local function SpawnCabinetReward(cabinet)
     --Choose the item
     local chosenCollectible = cabinetObject:GetCollectible()
 
+    --If no player has tmtrainer, give it to the the first player
+    local removeTMTrainer = false
+    if not Helpers.DoesAnyPlayerHasItem(CollectibleType.COLLECTIBLE_TMTRAINER) then
+        removeTMTrainer = true
+        Isaac.GetPlayer(0):AddCollectible(CollectibleType.COLLECTIBLE_TMTRAINER)
+    end
+
     --Spawn the item pedestal
     local pedestal = Isaac.Spawn(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_COLLECTIBLE, chosenCollectible, cabinet.Position + Vector(0, -10), Vector.Zero, nilw)
+
+    if removeTMTrainer then
+        Isaac.GetPlayer(0):RemoveCollectible(CollectibleType.COLLECTIBLE_TMTRAINER)
+    end
 
     --Load the appropiate graphics
     local pedestalGfx = "gfx/items/altar_" .. ArcadeCabinetVariables.ArcadeCabinetSprite[cabinet.Variant]
