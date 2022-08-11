@@ -233,7 +233,8 @@ local function IsAnyPlayerPressingStart()
     local playerNum = game:GetNumPlayers()
     for i = 0, playerNum - 1, 1 do
         local player = game:GetPlayer(i)
-        if Input.IsActionPressed(ButtonAction.ACTION_ITEM, player.ControllerIndex) then
+        if Input.IsActionPressed(ButtonAction.ACTION_ITEM, player.ControllerIndex) or
+        Input.IsActionPressed(ButtonAction.ACTION_SHOOTDOWN, player.ControllerIndex) then
             return true
         end
     end
@@ -311,6 +312,11 @@ local function CheckIfEndMinigame()
 
     --Set the restore positions flag for next on new room callback
     ArcadeCabinetVariables.RestorePlayers = true
+
+    for i = 0, game:GetNumPlayers() - 1, 1 do
+        local player = game:GetPlayer(i)
+        player.Visible = true
+    end
 
     --Teleport players back
     level.LeaveDoor = -1

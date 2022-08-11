@@ -871,16 +871,20 @@ function gush:OnPlayerUpdate(player)
     end
     player:GetData().WasGrounded = IsPlayerGrounded(player)
 
-    if (Input.IsActionTriggered(ButtonAction.ACTION_ITEM, player.ControllerIndex) or player:GetData().JumpBuffer) and not isInDoor then
+    if (Input.IsActionTriggered(ButtonAction.ACTION_ITEM, player.ControllerIndex) or
+    Input.IsActionTriggered(ButtonAction.ACTION_SHOOTDOWN, player.ControllerIndex) or 
+    player:GetData().JumpBuffer) and not isInDoor then
         if CanPlayerJump(player) then
             Jump(player)
-        elseif Input.IsActionTriggered(ButtonAction.ACTION_ITEM, player.ControllerIndex) then
+        elseif Input.IsActionTriggered(ButtonAction.ACTION_ITEM, player.ControllerIndex) or
+        Input.IsActionTriggered(ButtonAction.ACTION_SHOOTDOWN, player.ControllerIndex) then
             --Check the input again for false positives
             player:GetData().JumpBuffer = MinigameConstants.JUMP_BUFFER_FRAMES
         end
     end
 
-    if Input.IsActionPressed(ButtonAction.ACTION_ITEM, player.ControllerIndex) then
+    if Input.IsActionPressed(ButtonAction.ACTION_ITEM, player.ControllerIndex) or
+    Input.IsActionPressed(ButtonAction.ACTION_SHOOTDOWN, player.ControllerIndex) then
         if not player:GetData().ExtraJumpFrames then
             player:GetData().ExtraJumpFrames = 0
         end

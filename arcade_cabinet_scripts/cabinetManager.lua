@@ -106,7 +106,7 @@ local function SpawnCabinetReward(cabinet)
 
     --If no player has tmtrainer, give it to the the first player
     local removeTMTrainer = false
-    if not Helpers.DoesAnyPlayerHasItem(CollectibleType.COLLECTIBLE_TMTRAINER) then
+    if cabinetObject.glitched and not Helpers.DoesAnyPlayerHasItem(CollectibleType.COLLECTIBLE_TMTRAINER) then
         removeTMTrainer = true
         Isaac.GetPlayer(0):AddCollectible(CollectibleType.COLLECTIBLE_TMTRAINER)
     end
@@ -172,7 +172,9 @@ local function OnCabinetUpdate(cabinet)
         if cabinetObject:ShouldGetDestroyed() then
             DestroyCabinet(cabinet)
         else
+            local cabinetObjectInList = cabinetObject:Exists()
             cabinetObject.numberOfAttempts = cabinetObject.numberOfAttempts + 1
+            cabinetObjectInList.numberOfAttempts = cabinetObject.numberOfAttempts
             cabinetSpr:Play("Idle", true)
         end
     end
