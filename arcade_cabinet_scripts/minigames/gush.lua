@@ -1357,6 +1357,15 @@ function gush:Init(mod, variables)
         timer = 0
     end
 
+    --Play music
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+        MusicManager:Play(MinigameGlitchedMusic, 1)
+    else
+        MusicManager:Play(MinigameMusic, 1)
+    end
+    MusicManager:UpdateVolume()
+    MusicManager:Pause()
+
     --UI
     if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
         HealthUI:ReplaceSpritesheet(1, "gfx/effects/gush/gush_glitch_hearts_ui.png")

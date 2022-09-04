@@ -18,7 +18,8 @@ local MinigameSounds = {
     LOSE = Isaac.GetSoundIdByName("arcade cabinet lose")
 }
 
-local MinigameMusic = Isaac.GetMusicIdByName("bsw black beat wielder")
+local MinigameMusic = Isaac.GetMusicIdByName("tgb the beats below beat")
+local MinigameGlitchedMusic = Isaac.GetMusicIdByName("tgb the beats below glitched")
 
 -- Entities
 local MinigameEntityVariants = {
@@ -208,6 +209,7 @@ local function DealDamage(player)
     if PlayerHP == 0 then
         CurrentMinigameState = MinigameState.LOSING
         SFXManager:Play(MinigameSounds.LOSE)
+        MusicManager:VolumeSlide(0, 1)
         TransitionScreen:Play("Appear", true)
 
         local playerNum = game:GetNumPlayers()
@@ -573,6 +575,7 @@ function the_ground_below:OnUpdateCutscenePlayer(effect)
             effect:GetSprite():Play("Happy", true)
 
             SFXManager:Play(MinigameSounds.WIN)
+            MusicManager:VolumeSlide(0, 1)
             TransitionScreen:Play("Appear", true)
             CurrentMinigameState = MinigameState.WINNING
         end
@@ -961,6 +964,15 @@ function the_ground_below:Init(mod, variables)
     end
 
     HeartsUI:LoadGraphics()
+
+    --Play music
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+        MusicManager:Play(MinigameGlitchedMusic, 1)
+    else
+        MusicManager:Play(MinigameMusic, 1)
+    end
+    MusicManager:UpdateVolume()
+    MusicManager:Pause()
 
     -- Prepare players
     local playerNum = game:GetNumPlayers()
