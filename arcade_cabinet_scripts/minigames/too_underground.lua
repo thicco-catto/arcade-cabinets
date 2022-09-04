@@ -436,7 +436,7 @@ function too_underground:OnTNTUpdate(tnt)
     tnt:GetData().hasExploded = true
 
     for index, rock in pairs(RocksInRoom) do
-        if tnt.Position:Distance(rock.gridEntity.Position) < 110 then
+        if tnt.Position:Distance(rock.gridEntity.Position) < 125 then
             BreakRock(index, rock)
         end
     end
@@ -461,7 +461,7 @@ function too_underground:OnBoneGuyUpdate(boneGuy)
                 Isaac.Explode(boneGuy.Position, boneGuy, 1)
 
                 for index, rock in pairs(RocksInRoom) do
-                    if boneGuy.Position:Distance(rock.gridEntity.Position) < 110 then
+                    if boneGuy.Position:Distance(rock.gridEntity.Position) < 125 then
                         BreakRock(index, rock)
                     end
                 end
@@ -610,7 +610,7 @@ end
 
 function too_underground:OnRockExplosionUpdate(explosion)
     for index, rock in pairs(RocksInRoom) do
-        if rock.gridEntity.Position:Distance(explosion.Position) < 45 then
+        if rock.gridEntity.Position:Distance(explosion.Position) < 50 then
             BreakRock(index, rock)
         end
     end
