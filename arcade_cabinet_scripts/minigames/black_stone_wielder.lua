@@ -276,7 +276,11 @@ local function UpdateTransition()
         elseif MinigameTimers.TransitionTimer == 49 then
             --Play music again coz game is dumb
             MusicManager:Enable()
-            MusicManager:Play(MinigameMusic, 1)
+            if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+                MusicManager:Play(MinigameGlitchedMusic, 1)
+            else
+                MusicManager:Play(MinigameMusic, 1)
+            end
             MusicManager:UpdateVolume()
             MusicManager:Pause()
         elseif MinigameTimers.TransitionTimer == 1 then

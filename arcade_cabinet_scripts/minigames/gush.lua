@@ -321,6 +321,9 @@ end
 
 
 local function StartTransitionScreen()
+    MusicManager:Pause()
+    MusicManager:Disable()
+
     CurrentMinigameState = MinigameState.TRANSITION_SCREEN
     MinigameTimers.TransitionScreenTimer = MinigameConstants.MAX_TRANSITION_SCREEN_TIMER
     if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
@@ -612,6 +615,7 @@ local function KillPlayers(player)
     if PlayerHP == 0 then
         CurrentMinigameState = MinigameState.LOSING
         SFXManager:Play(MinigameSounds.LOSE)
+        MusicManager:VolumeSlide(0, 1)
         TransitionScreen:Play("Appear")
     else
         SFXManager:Play(MinigameSounds.PLAYER_DEATH)
@@ -758,7 +762,6 @@ local function CheckIfPlayerIsTouchingExit(player)
         end
 
         MusicManager:Pause()
-        MusicManager:Disable()
 
         StartTransitionScreen()
         GoToNextRoom()
@@ -1007,6 +1010,7 @@ local function RemoveEndExplosions()
         if explosion:GetSprite():IsFinished("Idle") then
             if CurrentMinigameState == MinigameState.WINNING and explosion:GetData().IsLastExplosion then
                 SFXManager:Play(MinigameSounds.WIN)
+                MusicManager:VolumeSlide(0, 1)
                 TransitionScreen:Play("Appear", true)
 
                 local playerNum = game:GetNumPlayers()
@@ -1047,6 +1051,8 @@ end
 
 function gush:OnFrameUpdate()
     if CurrentMinigameState == MinigameState.INTRO_SCREEN then
+        MusicManager:Disable()
+
         local playerNum = game:GetNumPlayers()
         for i = 0, playerNum - 1, 1 do
             game:GetPlayer(i).ControlsEnabled = false
@@ -1060,6 +1066,18 @@ function gush:OnFrameUpdate()
         end
 
     elseif CurrentMinigameState == MinigameState.TRANSITION_SCREEN then
+        if MinigameTimers.TransitionScreenTimer == MinigameConstants.MAX_TRANSITION_SCREEN_TIMER - 1 then
+            --Play music
+            MusicManager:Enable()
+            if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+                MusicManager:Play(MinigameGlitchedMusic, 1)
+            else
+                MusicManager:Play(MinigameMusic, 1)
+            end
+            MusicManager:UpdateVolume()
+            MusicManager:Pause()
+        end
+
         MinigameTimers.TransitionScreenTimer = MinigameTimers.TransitionScreenTimer - 1
 
         if MinigameTimers.TransitionScreenTimer == 0 then
@@ -1157,11 +1175,6 @@ end
 function gush:OnNewRoom()
     SFXManager:Stop(SoundEffect.SOUND_DOOR_HEAVY_CLOSE)
     SFXManager:Stop(SoundEffect.SOUND_DOOR_HEAVY_OPEN)
-
-    MusicManager:Enable()
-    MusicManager:Play(MinigameMusic, 1)
-    MusicManager:UpdateVolume()
-    MusicManager:Pause()
 
     PrepareForRoom()
 end
@@ -1364,14 +1377,12 @@ function gush:Init(mod, variables)
     CurrentMinigameState = MinigameState.INTRO_SCREEN
     MinigameTimers.IntroTimer = MinigameConstants.MAX_INTRO_SCREEN_TIMER
 
-    --Play music
     if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
         MusicManager:Play(MinigameGlitchedMusic, 1)
     else
         MusicManager:Play(MinigameMusic, 1)
     end
     MusicManager:UpdateVolume()
-    MusicManager:Pause()
 
     --Set up players
     local playerNum = game:GetNumPlayers()
