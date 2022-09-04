@@ -79,18 +79,18 @@ local MinigameConstants = {
     FLY_VELOCITY = 4.5, --Self explanatory
     FLY_Y_SPAWN = 500,  --Y Position the flies will spawn in
     FLY_HITBOX_RADIUS = 20, --Self explanatory
-    NUM_FLY_LINES = 3,  --Number of fly lines per fly attack
-    MAX_FLY_LINE_TIMER_FRAMES = 70, --Frames between each fly line
+    NUM_FLY_LINES = 6,  --Number of fly lines per fly attack
+    MAX_FLY_LINE_TIMER_FRAMES = 35, --Frames between each fly line
 
     --Duke of flies attack
     DUKE_SPAWNING_POS = Vector(550, 540),   --Self explanatory
     DUKE_TARGET_POS = Vector(610, 400), --Position the duke needs to reach to start coughing
     DUKE_DESPAWN = Vector(900, 200),    --Position the duke needs to reach to end the attack
     DUKE_VELOCITY = 3,  --Self explanatory
-    DUKE_SPAWN_FLY_COOLDOWN = 80,   --Frames between each cough
-    DUKE_NUM_FLY_ROUNDS = 2,    --Number of coughs
+    DUKE_SPAWN_FLY_COOLDOWN = 40,   --Frames between each cough
+    DUKE_NUM_FLY_ROUNDS = 3,    --Number of coughs
     DUKE_FLY_SPAWN_OFFSET = 10, --An offsef so the flies spawn in his mouth
-    DUKE_FLY_VELOCITY = 7,  --Fly velocity while getting to their respective position in the line
+    DUKE_FLY_VELOCITY = 14,  --Fly velocity while getting to their respective position in the line
 
     --Ending cutscene
     PLAYER_FALL_VELOCITY = 10,

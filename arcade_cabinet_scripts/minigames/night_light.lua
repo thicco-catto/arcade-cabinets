@@ -172,7 +172,8 @@ local function ManagePlayerAnimations()
     local isPressingAnything = false
 
     if IsPlayerConfused then
-        if Input.IsActionPressed(ButtonAction.ACTION_LEFT, 0) then
+        if Input.IsActionPressed(ButtonAction.ACTION_LEFT, 0) or
+        Input.IsActionPressed(ButtonAction.ACTION_SHOOTLEFT, 0) then
             isPressingAnything = true
 
             if not FakePlayer:GetSprite():IsPlaying("IdleRight") then
@@ -183,7 +184,8 @@ local function ManagePlayerAnimations()
             FakePlayer:GetSprite():Play("IdleRight", true)
             LightBeam:GetSprite():Play("IdleRight", true)
 
-        elseif Input.IsActionPressed(ButtonAction.ACTION_RIGHT, 0) then
+        elseif Input.IsActionPressed(ButtonAction.ACTION_RIGHT, 0) or
+        Input.IsActionPressed(ButtonAction.ACTION_SHOOTRIGHT, 0) then
             isPressingAnything = true
 
             if not FakePlayer:GetSprite():IsPlaying("IdleLeft") then
@@ -194,7 +196,8 @@ local function ManagePlayerAnimations()
             FakePlayer:GetSprite():Play("IdleLeft", true)
             LightBeam:GetSprite():Play("IdleLeft", true)
 
-        elseif Input.IsActionPressed(ButtonAction.ACTION_UP, 0) then
+        elseif Input.IsActionPressed(ButtonAction.ACTION_UP, 0) or
+        Input.IsActionPressed(ButtonAction.ACTION_SHOOTUP, 0) then
             isPressingAnything = true
 
             if not FakePlayer:GetSprite():IsPlaying("IdleDown") then
@@ -205,7 +208,8 @@ local function ManagePlayerAnimations()
             FakePlayer:GetSprite():Play("IdleDown", true)
             LightBeam:GetSprite():Play("IdleDown", true)
 
-        elseif Input.IsActionPressed(ButtonAction.ACTION_DOWN, 0) then
+        elseif Input.IsActionPressed(ButtonAction.ACTION_DOWN, 0) or
+        Input.IsActionPressed(ButtonAction.ACTION_SHOOTDOWN, 0) then
             isPressingAnything = true
 
             if not FakePlayer:GetSprite():IsPlaying("IdleUp") then
@@ -217,7 +221,8 @@ local function ManagePlayerAnimations()
             LightBeam:GetSprite():Play("IdleUp", true)
         end
     else
-        if Input.IsActionPressed(ButtonAction.ACTION_LEFT, 0) then
+        if Input.IsActionPressed(ButtonAction.ACTION_LEFT, 0) or
+        Input.IsActionPressed(ButtonAction.ACTION_SHOOTLEFT, 0) then
             isPressingAnything = true
 
             if not FakePlayer:GetSprite():IsPlaying("IdleLeft") then
@@ -228,7 +233,8 @@ local function ManagePlayerAnimations()
             FakePlayer:GetSprite():Play("IdleLeft", true)
             LightBeam:GetSprite():Play("IdleLeft", true)
 
-        elseif Input.IsActionPressed(ButtonAction.ACTION_RIGHT, 0) then
+        elseif Input.IsActionPressed(ButtonAction.ACTION_RIGHT, 0) or
+        Input.IsActionPressed(ButtonAction.ACTION_SHOOTRIGHT, 0) then
             isPressingAnything = true
 
             if not FakePlayer:GetSprite():IsPlaying("IdleRight") then
@@ -239,7 +245,8 @@ local function ManagePlayerAnimations()
             FakePlayer:GetSprite():Play("IdleRight", true)
             LightBeam:GetSprite():Play("IdleRight", true)
 
-        elseif Input.IsActionPressed(ButtonAction.ACTION_UP, 0) then
+        elseif Input.IsActionPressed(ButtonAction.ACTION_UP, 0) or
+        Input.IsActionPressed(ButtonAction.ACTION_SHOOTUP, 0) then
             isPressingAnything = true
 
             if not FakePlayer:GetSprite():IsPlaying("IdleUp") then
@@ -250,7 +257,8 @@ local function ManagePlayerAnimations()
             FakePlayer:GetSprite():Play("IdleUp", true)
             LightBeam:GetSprite():Play("IdleUp", true)
 
-        elseif Input.IsActionPressed(ButtonAction.ACTION_DOWN, 0) then
+        elseif Input.IsActionPressed(ButtonAction.ACTION_DOWN, 0) or
+        Input.IsActionPressed(ButtonAction.ACTION_SHOOTDOWN, 0) then
             isPressingAnything = true
 
             if not FakePlayer:GetSprite():IsPlaying("IdleDown") then
@@ -565,7 +573,6 @@ local function RenderUI()
     end
     
     ClockUI:Render(centerPos + Vector(120, 100), Vector.Zero, Vector.Zero)
-
 end
 
 

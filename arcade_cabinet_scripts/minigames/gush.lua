@@ -26,7 +26,8 @@ local MinigameSounds = {
     LOSE = Isaac.GetSoundIdByName("arcade cabinet lose")
 }
 
-local MinigameMusic = Isaac.GetMusicIdByName("jc corpse beat")
+local MinigameMusic = Isaac.GetMusicIdByName("gush rickety beats")
+local MinigameGlitchedMusic = Isaac.GetMusicIdByName("gush rickety beats glitched")
 
 --Entities
 local MinigameEntityVariants = {
@@ -691,6 +692,8 @@ local function CheckIfPussyManAtePlayer(player)
                 SFXManager:Play(MinigameSounds.WIN)
                 TransitionScreen:Play("Appear", true)
 
+                MusicManager:VolumeSlide(0, 1)
+
                 local playerNum = game:GetNumPlayers()
                 for i = 0, playerNum - 1, 1 do
                     local player = game:GetPlayer(i)
@@ -753,6 +756,9 @@ local function CheckIfPlayerIsTouchingExit(player)
 
             return true
         end
+
+        MusicManager:Pause()
+        MusicManager:Disable()
 
         StartTransitionScreen()
         GoToNextRoom()
@@ -1069,6 +1075,8 @@ function gush:OnFrameUpdate()
                 player.ControlsEnabled = true
                 if i == 0 then player:UseActiveItem(CollectibleType.COLLECTIBLE_D7, false, false, true, false) end
             end
+
+            MusicManager:Resume()
         end
     elseif CurrentMinigameState == MinigameState.PLAYING then
         ManageCollapsings()
@@ -1149,6 +1157,12 @@ end
 function gush:OnNewRoom()
     SFXManager:Stop(SoundEffect.SOUND_DOOR_HEAVY_CLOSE)
     SFXManager:Stop(SoundEffect.SOUND_DOOR_HEAVY_OPEN)
+
+    MusicManager:Enable()
+    MusicManager:Play(MinigameMusic, 1)
+    MusicManager:UpdateVolume()
+    MusicManager:Pause()
+
     PrepareForRoom()
 end
 
@@ -1351,7 +1365,11 @@ function gush:Init(mod, variables)
     MinigameTimers.IntroTimer = MinigameConstants.MAX_INTRO_SCREEN_TIMER
 
     --Play music
-    MusicManager:Play(MinigameMusic, 1)
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+        MusicManager:Play(MinigameGlitchedMusic, 1)
+    else
+        MusicManager:Play(MinigameMusic, 1)
+    end
     MusicManager:UpdateVolume()
     MusicManager:Pause()
 
