@@ -29,7 +29,8 @@ local MinigameSounds = {
     LOSE = Isaac.GetSoundIdByName("arcade cabinet lose")
 }
 
-local MinigameMusic = Isaac.GetMusicIdByName("bsw black beat wielder")
+local MinigameMusic = Isaac.GetMusicIdByName("nl ghost beats")
+local MinigameGlitchedMusic = Isaac.GetMusicIdByName("nl ghost beats glitched")
 
 --Entities
 local MinigameEntityTypes = {
@@ -134,6 +135,7 @@ local function ManageSFX()
             if AlarmSoundTimes == 0 then
                 FinalCutsceneScreen:Play("BlinkLoop")
                 SFXManager:Play(MinigameSounds.WIN)
+                MusicManager:VolumeSlide(0, 1)
             else
                 SFXManager:Play(MinigameSounds.ALARM)
             end
@@ -163,6 +165,7 @@ local function UpdateInitialCutscene()
             Options.CameraStyle = 2
         end
     else
+        MusicManager:Resume()
         CurrentMinigameState = MinigameState.PLAYING
     end
 end
@@ -782,6 +785,7 @@ function night_light:OnNPCCollision(entity, collider)
     if PlayerHP == 0 then
         FadeOutScreen:Play("Appear", true)
         SFXManager:Play(MinigameSounds.LOSE)
+        MusicManager:VolumeSlide(0, 1)
         CurrentMinigameState = MinigameState.LOSING
     end
 
@@ -854,6 +858,15 @@ function night_light:Init(mod, variables)
 
     MinigameTimers.HourTimer = MinigameConstants.SECONDS_PER_HOUR * 30
     MinigameTimers.InitialCutsceneTimer = MinigameConstants.INTIAL_CUTSCENE_MAX_FRAMES
+
+    --Play music
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+        MusicManager:Play(MinigameGlitchedMusic, 1)
+    else
+        MusicManager:Play(MinigameMusic, 1)
+    end
+    MusicManager:UpdateVolume()
+    MusicManager:Pause()
 
     --UI
     if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
