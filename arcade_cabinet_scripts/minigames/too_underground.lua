@@ -56,6 +56,12 @@ local MinigameEntityVariants = {
 
 --Constants
 local MinigameConstants = {
+    ROOM_LAYOUTS = {
+        220,
+        221,
+        222
+    },
+
     CUSTOM_TNT_ACTIVE = Isaac.GetItemIdByName("TUG minecrafter"),
 
     ROCK_TYPES = {
@@ -126,6 +132,32 @@ local BoneGuysPositions = {}
 local BatteriesPositions = {}
 
 local CurrentGlitchRockMeterFrame = 0
+
+
+local function SpawnGlitchTiles()
+    if not ArcadeCabinetVariables.IsCurrentMinigameGlitched then return end
+    local room = game:GetRoom()
+
+    local possibleGlitchTiles = {}
+    for i = 0, 239, 1 do
+        table.insert(possibleGlitchTiles, i)
+    end
+
+    for _ = 1, MinigameConstants.GLITCH_NUM_GLITCH_TILES, 1 do
+        local chosen = rng:RandomInt(#possibleGlitchTiles) + 1
+        local gridIndex = possibleGlitchTiles[chosen]
+        table.remove(possibleGlitchTiles, chosen)
+
+        local glitchTile = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.GLITCH_TILE, 0, room:GetGridPosition(gridIndex), Vector.Zero, nil)
+
+        glitchTile:GetSprite():Play("Idle", true)
+        glitchTile:GetData().ChosenFrame = rng:RandomInt(MinigameConstants.GLITCH_TILE_FRAME_NUM)
+        glitchTile:GetSprite():SetFrame(glitchTile:GetData().ChosenFrame)
+        glitchTile:GetData().ChagingTile = rng:RandomInt(100) < MinigameConstants.GLITCH_TILE_CHANGING_CHANCE
+        glitchTile:GetData().RandomOffset = rng:RandomInt(MinigameConstants.GLITCH_TILE_CHANGE_FRAMES)
+        glitchTile.DepthOffset = -200
+    end
+end
 
 
 local function AddRock(gridEntity, index)
@@ -214,6 +246,56 @@ end
 local function UpdateIntroScreen()
     if CurrentMinigameState ~= MinigameState.INTRO_SCREEN then return end
 
+    if MinigameTimers.IntroScreenTimer == MinigameConstants.INTRO_SCREEN_MAX_FRAMES - 1 then
+        local room = game:GetRoom()
+
+        SpawnGlitchTiles()
+
+        --Music
+        if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+            MusicManager:Play(MinigameGlitchedMusic, 1)
+        else
+            MusicManager:Play(MinigameMusic, 1)
+        end
+        MusicManager:UpdateVolume()
+        MusicManager:Pause()
+
+        --Save bone guys positions
+        for _, entity in ipairs(Isaac.FindByType(EntityType.ENTITY_CLICKETY_CLACK, -1, -1)) do
+            BoneGuysPositions[#BoneGuysPositions+1] = entity.Position
+            entity:Remove()
+        end
+
+        --Save batteries positions
+        for _, entity in ipairs(Isaac.FindByType(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_LIL_BATTERY, -1)) do
+            BatteriesPositions[#BatteriesPositions+1] = entity.Position
+            entity:Remove()
+        end
+
+        --Spawn invinvible bone guy
+        InmortalBoneGuy = Isaac.Spawn(EntityType.ENTITY_CLICKETY_CLACK, 0, 0, Vector(-99999999, -99999999), Vector.Zero, nil)
+        InmortalBoneGuy:GetSprite():ReplaceSpritesheet(0, "a")
+        InmortalBoneGuy:GetSprite():ReplaceSpritesheet(1, "a")
+        InmortalBoneGuy:GetSprite():LoadGraphics()
+
+        --Spawn backdrop
+        local backdrop = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, ArcadeCabinetVariables.Backdrop1x2Variant, 0, game:GetRoom():GetCenterPos(), Vector.Zero, nil)
+
+        if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+            backdrop:GetSprite():ReplaceSpritesheet(0, "gfx/backdrop/glitched_tug_backdrop.png")
+        else
+            backdrop:GetSprite():ReplaceSpritesheet(0, "gfx/backdrop/tug_backdrop.png")
+        end
+        backdrop:GetSprite():LoadGraphics()
+        backdrop.DepthOffset = -4000
+
+        --Add rocks to the list
+        for i = 16, 223, 1 do
+            local gridEntity = room:GetGridEntity(i)
+            if gridEntity and gridEntity:ToRock() then AddRock(gridEntity, i) end
+        end
+    end
+
     MinigameTimers.IntroScreenTimer = MinigameTimers.IntroScreenTimer - 1
 
     --Spawn boneguys in waves
@@ -283,7 +365,9 @@ end
 
 
 function too_underground:OnFrameUpdate()
-    InmortalBoneGuy.Position = Vector(-99999999, -99999999)
+    if InmortalBoneGuy then
+        InmortalBoneGuy.Position = Vector(-99999999, -99999999)
+    end
 
     if ArcadeCabinetVariables.IsCurrentMinigameGlitched and
     game:GetFrameCount() % MinigameConstants.GLITCH_METER_CHANGE_FRAMES == 0 then
@@ -691,32 +775,6 @@ end
 
 
 --INIT MINIGAME
-local function SpawnGlitchTiles()
-    if not ArcadeCabinetVariables.IsCurrentMinigameGlitched then return end
-    local room = game:GetRoom()
-
-    local possibleGlitchTiles = {}
-    for i = 0, 239, 1 do
-        table.insert(possibleGlitchTiles, i)
-    end
-
-    for _ = 1, MinigameConstants.GLITCH_NUM_GLITCH_TILES, 1 do
-        local chosen = rng:RandomInt(#possibleGlitchTiles) + 1
-        local gridIndex = possibleGlitchTiles[chosen]
-        table.remove(possibleGlitchTiles, chosen)
-
-        local glitchTile = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.GLITCH_TILE, 0, room:GetGridPosition(gridIndex), Vector.Zero, nil)
-
-        glitchTile:GetSprite():Play("Idle", true)
-        glitchTile:GetData().ChosenFrame = rng:RandomInt(MinigameConstants.GLITCH_TILE_FRAME_NUM)
-        glitchTile:GetSprite():SetFrame(glitchTile:GetData().ChosenFrame)
-        glitchTile:GetData().ChagingTile = rng:RandomInt(100) < MinigameConstants.GLITCH_TILE_CHANGING_CHANCE
-        glitchTile:GetData().RandomOffset = rng:RandomInt(MinigameConstants.GLITCH_TILE_CHANGE_FRAMES)
-        glitchTile.DepthOffset = -200
-    end
-end
-
-
 function too_underground:AddCallbacks(mod)
     --Generic updates
     mod:AddCallback(ModCallbacks.MC_POST_UPDATE, too_underground.OnFrameUpdate)
@@ -840,8 +898,10 @@ function too_underground:Init(mod, variables)
 
     rng:SetSeed(game:GetSeeds():GetStartSeed(), 35)
 
-    --Glitch tiles
-    SpawnGlitchTiles()
+    --Choose room
+    local chosenRoom = MinigameConstants.ROOM_LAYOUTS[rng:RandomInt(#MinigameConstants.ROOM_LAYOUTS) + 1]
+    Isaac.ExecuteCommand("goto s.isaacs." .. chosenRoom)
+
 
     --Intro screen
     MinigameTimers.IntroScreenTimer = MinigameConstants.INTRO_SCREEN_MAX_FRAMES
@@ -867,50 +927,6 @@ function too_underground:Init(mod, variables)
     end
     MinecraferUI:LoadGraphics()
     StoneMeterUI:LoadGraphics()
-
-    --Music
-    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
-        MusicManager:Play(MinigameGlitchedMusic, 1)
-    else
-        MusicManager:Play(MinigameMusic, 1)
-    end
-    MusicManager:UpdateVolume()
-    MusicManager:Pause()
-
-    --Save bone guys positions
-    for _, entity in ipairs(Isaac.FindByType(EntityType.ENTITY_CLICKETY_CLACK, -1, -1)) do
-        BoneGuysPositions[#BoneGuysPositions+1] = entity.Position
-        entity:Remove()
-    end
-
-    --Save batteries positions
-    for _, entity in ipairs(Isaac.FindByType(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_LIL_BATTERY, -1)) do
-        BatteriesPositions[#BatteriesPositions+1] = entity.Position
-        entity:Remove()
-    end
-
-    --Spawn invinvible bone guy
-    InmortalBoneGuy = Isaac.Spawn(EntityType.ENTITY_CLICKETY_CLACK, 0, 0, Vector(-99999999, -99999999), Vector.Zero, nil)
-    InmortalBoneGuy:GetSprite():ReplaceSpritesheet(0, "a")
-    InmortalBoneGuy:GetSprite():ReplaceSpritesheet(1, "a")
-    InmortalBoneGuy:GetSprite():LoadGraphics()
-
-    --Spawn backdrop
-    local backdrop = Isaac.Spawn(EntityType.ENTITY_GENERIC_PROP, ArcadeCabinetVariables.Backdrop1x2Variant, 0, game:GetRoom():GetCenterPos(), Vector.Zero, nil)
-
-    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
-        backdrop:GetSprite():ReplaceSpritesheet(0, "gfx/backdrop/glitched_tug_backdrop.png")
-    else
-        backdrop:GetSprite():ReplaceSpritesheet(0, "gfx/backdrop/tug_backdrop.png")
-    end
-    backdrop:GetSprite():LoadGraphics()
-    backdrop.DepthOffset = -4000
-
-    --Add rocks to the list
-    for i = 16, 223, 1 do
-        local gridEntity = room:GetGridEntity(i)
-        if gridEntity and gridEntity:ToRock() then AddRock(gridEntity, i) end
-    end
 
     --Set players
     local playerNum = game:GetNumPlayers()
