@@ -40,7 +40,8 @@ local MinigameSounds = {
     LOSE = Isaac.GetSoundIdByName("arcade cabinet lose")
 }
 
-local MinigameMusic = Isaac.GetMusicIdByName("bsw black beat wielder")
+local MinigameMusic = Isaac.GetMusicIdByName("hs holy beats")
+local MinigameGlitchedMusic = Isaac.GetMusicIdByName("hs holy beats glitched")
 
 -- Entities
 local MinigameEntityTypes = {
@@ -782,6 +783,8 @@ function holy_smokes:OnFrameUpdate()
 
     if CurrentMinigameState == MinigameState.INTRO then
         if MinigameTimers.IntroTimer == 0 then
+            MusicManager:Resume()
+
             CurrentMinigameState = MinigameState.NO_ATTACK
             MinigameTimers.NextAttackTimer = MinigameConstants.FIRST_NO_ATTACK_FRAMES
 
@@ -833,6 +836,7 @@ function holy_smokes:OnFrameUpdate()
         if MinigameTimers.EndWaitTimer == 0 then
            CurrentMinigameState = MinigameState.WINNING
             SFXManager:Play(MinigameSounds.WIN)
+            MusicManager:VolumeSlide(0, 1)
             TransitionScreen:Play("Appear", true)
 
            local playerNum = game:GetNumPlayers()
@@ -983,6 +987,8 @@ function holy_smokes:OnPlayerDamage(player)
 
             TransitionScreen:Play("Appear", true)
             SFXManager:Play(MinigameSounds.LOSE)
+
+            MusicManager:VolumeSlide(0, 1)
 
             local playerNum = game:GetNumPlayers()
             for i = 0, playerNum - 1, 1 do
@@ -1259,6 +1265,15 @@ function holy_smokes:Init(mod, variables)
     PlayerHealthUI:Play("Idle", true)
     PlayerPowerUI:Play("Idle", true)
     BossHealthUI:Play("Idle", true)
+
+    --Music
+    if ArcadeCabinetVariables.IsCurrentMinigameGlitched then
+        MusicManager:Play(MinigameGlitchedMusic, 1)
+    else
+        MusicManager:Play(MinigameMusic, 1)
+    end
+    MusicManager:UpdateVolume()
+    MusicManager:Pause()
 
     -- Prepare players
     local playerNum = game:GetNumPlayers()
