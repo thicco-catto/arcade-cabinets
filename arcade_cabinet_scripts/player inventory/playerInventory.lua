@@ -563,6 +563,8 @@ function PlayerInventoryManager.ClearPlayerState(player)
 
     player:AddKeys(-player:GetNumKeys())
     player:RemoveGoldenKey()
+
+    player:RespawnFamiliars()
 end
 
 ---@param player EntityPlayer
