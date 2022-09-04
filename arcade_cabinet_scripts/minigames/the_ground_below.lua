@@ -37,60 +37,60 @@ local MinigameEntityVariants = {
 local MinigameConstants = {
     HEARTS_UI_RENDER_POS = Vector(70, 40),
 
-    MAX_INTRO_TIMER_FRAMES = 50,
-    MAX_I_FRAMES = 20,
+    MAX_INTRO_TIMER_FRAMES = 50, --Frames the intro last
+    MAX_I_FRAMES = 20,  --Player i frames
 
     --BG system
-    BG_SCROLLING_SPEED = 10,
-    BG_SPAWNING_OFFSET = 420,
-    BG_TO_SPAWN_THRESHOLD = 560,
+    BG_SCROLLING_SPEED = 10, --Bg scrolling speed
+    BG_SPAWNING_OFFSET = 420,   --Y pos the first bg spawns
+    BG_TO_SPAWN_THRESHOLD = 560,    --How down the next bg should spawn
 
     --Wave system
-    MAX_FALLING_TIMER_FRAMES = 15,
-    NUM_WAVES_PER_CHAPTER = {
+    MAX_FALLING_TIMER_FRAMES = 15,  --Frames between an attack and the next
+    NUM_WAVES_PER_CHAPTER = {   --Waves per chapter, to add more numbers here (always followed by comma)
         3,
         3,
     },
-    HORF_CHANCE_PER_CHAPTER = {
+    HORF_CHANCE_PER_CHAPTER = { --Chance to replace a fly for a horf in each wave per chapter. Add a number for each chapter
         33,
         33,
     },
-    KEEPER_CHANCE_PER_CHAPTER = {
+    KEEPER_CHANCE_PER_CHAPTER = {   --Chance to replace a fly for a keeper in each wave per chapter. Add a number for each chapter
         0,
         0,
     },
 
     --Horfs attack
-    HORF_SPAWNING_POS = Vector(550, 540),
-    HORF_TARGET_Y = -20,
-    HORF_VELOCITY = 2,
-    HORF_SHOT_COOLDOWN = 30,
-    HORF_SAFE_DISTANCE = 50,
-    HORF_HITBOX_RADIUS = 30,
+    HORF_SPAWNING_POS = Vector(550, 540), --What position the horfs spawn in (the 2nd horf is just mirrored)
+    HORF_TARGET_Y = -20,    --Y position the horfs need to reach to end the atacks
+    HORF_VELOCITY = 2,  --Self explanatory
+    HORF_SHOT_COOLDOWN = 30,    --Frames between shooting
+    HORF_SAFE_DISTANCE = 50,    --Distance from the player the horfs will not shoot (it only accounts for the y position)
+    HORF_HITBOX_RADIUS = 30,    --Self explanatory
 
     --Hanging keepers attack
-    KEEPER_SPAWNING_POS = Vector(800, 500),
-    KEEPER_TARGET_POS = Vector(550, 400),
-    KEEPER_VELOCITY = 4,
-    NUM_KEEPER_SHOTS = 6,
-    KEEPER_SHOT_COOLDOWN = 40,
+    KEEPER_SPAWNING_POS = Vector(800, 500), --What position the keepers spawn in (the 2nd keeper is just mirrored)
+    KEEPER_TARGET_POS = Vector(550, 400),   --Position the keepers need to reach to shoot
+    KEEPER_VELOCITY = 4,    --Self explanatory
+    NUM_KEEPER_SHOTS = 6,   --Number of triple shots the keepers will make
+    KEEPER_SHOT_COOLDOWN = 40,  --Same as horf
 
     --Random flies attack
-    FLY_VELOCITY = 4.5,
-    FLY_Y_SPAWN = 500,
-    FLY_HITBOX_RADIUS = 20,
-    NUM_FLY_LINES = 3,
-    MAX_FLY_LINE_TIMER_FRAMES = 70,
+    FLY_VELOCITY = 4.5, --Self explanatory
+    FLY_Y_SPAWN = 500,  --Y Position the flies will spawn in
+    FLY_HITBOX_RADIUS = 20, --Self explanatory
+    NUM_FLY_LINES = 3,  --Number of fly lines per fly attack
+    MAX_FLY_LINE_TIMER_FRAMES = 70, --Frames between each fly line
 
     --Duke of flies attack
-    DUKE_SPAWNING_POS = Vector(550, 540),
-    DUKE_TARGET_POS = Vector(610, 400),
-    DUKE_DESPAWN = Vector(900, 200),
-    DUKE_VELOCITY = 3,
-    DUKE_SPAWN_FLY_COOLDOWN = 80,
-    DUKE_NUM_FLY_ROUNDS = 2,
-    DUKE_FLY_SPAWN_OFFSET = 10,
-    DUKE_FLY_VELOCITY = 7,
+    DUKE_SPAWNING_POS = Vector(550, 540),   --Self explanatory
+    DUKE_TARGET_POS = Vector(610, 400), --Position the duke needs to reach to start coughing
+    DUKE_DESPAWN = Vector(900, 200),    --Position the duke needs to reach to end the attack
+    DUKE_VELOCITY = 3,  --Self explanatory
+    DUKE_SPAWN_FLY_COOLDOWN = 80,   --Frames between each cough
+    DUKE_NUM_FLY_ROUNDS = 2,    --Number of coughs
+    DUKE_FLY_SPAWN_OFFSET = 10, --An offsef so the flies spawn in his mouth
+    DUKE_FLY_VELOCITY = 7,  --Fly velocity while getting to their respective position in the line
 
     --Ending cutscene
     PLAYER_FALL_VELOCITY = 10,
@@ -101,9 +101,9 @@ local MinigameConstants = {
     MAX_SPLAT_FRAMES = 30,
 
     --Glitch stuff
-    GLITCH_FLY_CHANGE_Y_POS = 400,
+    GLITCH_FLY_CHANGE_Y_POS = 400,  --Y distance to the player the flies will change positions
 
-    GLITCH_EXTRA_CHANCE_FOR_COOL_ATTACKS = 15,
+    GLITCH_EXTRA_CHANCE_FOR_COOL_ATTACKS = 15,  --This chance will be added to whatever the horf/keeper replace attack is
 
     GLITCH_NUM_GLITCH_TILES = 40,
     GLITCH_TILE_FRAME_NUM = 4,

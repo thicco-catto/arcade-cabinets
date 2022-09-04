@@ -1158,7 +1158,7 @@ function gush:OnBrimstoneHeadInit(head)
 end
 
 
-function gush:OnNerveInit(nerve)
+function gush:OnNerveUpdate(nerve)
     nerve.Visible = false
 end
 
@@ -1263,7 +1263,7 @@ function gush:AddCallbacks(mod)
     mod:AddCallback(ModCallbacks.MC_POST_RENDER, gush.OnRender)
     mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, gush.OnNewRoom)
     mod:AddCallback(ModCallbacks.MC_POST_NPC_INIT, gush.OnBrimstoneHeadInit, EntityType.ENTITY_BRIMSTONE_HEAD)
-    mod:AddCallback(ModCallbacks.MC_POST_NPC_INIT, gush.OnNerveInit, EntityType.ENTITY_NERVE_ENDING)
+    mod:AddCallback(ModCallbacks.MC_NPC_UPDATE, gush.OnNerveUpdate, EntityType.ENTITY_NERVE_ENDING)
     mod:AddCallback(ModCallbacks.MC_POST_NPC_INIT, gush.OnSawInit, EntityType.ENTITY_SPIKEBALL)
     mod:AddCallback(ModCallbacks.MC_POST_NPC_INIT, gush.OnSawInit, EntityType.ENTITY_DEATHS_HEAD)
     mod:AddCallback(ModCallbacks.MC_NPC_UPDATE, gush.OnSawUpdate, EntityType.ENTITY_SPIKEBALL)
@@ -1290,7 +1290,7 @@ function gush:RemoveCallbacks(mod)
     mod:RemoveCallback(ModCallbacks.MC_POST_RENDER, gush.OnRender)
     mod:RemoveCallback(ModCallbacks.MC_POST_NEW_ROOM, gush.OnNewRoom)
     mod:RemoveCallback(ModCallbacks.MC_POST_NPC_INIT, gush.OnBrimstoneHeadInit)
-    mod:RemoveCallback(ModCallbacks.MC_POST_NPC_INIT, gush.OnNerveInit)
+    mod:RemoveCallback(ModCallbacks.MC_NPC_UPDATE, gush.OnNerveUpdate)
     mod:RemoveCallback(ModCallbacks.MC_POST_NPC_INIT, gush.OnSawInit)
     mod:RemoveCallback(ModCallbacks.MC_POST_NPC_INIT, gush.OnSawInit)
     mod:RemoveCallback(ModCallbacks.MC_NPC_UPDATE, gush.OnSawUpdate)

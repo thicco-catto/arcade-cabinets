@@ -491,8 +491,10 @@ function PlayerInventoryManager.ClearPlayerState(player)
     player:AddBloodCharge(-player:GetBloodCharge())
 
     --Remove eternal hearts and broken hearts because of jacob/esau
+    --Also remove rotten hearts
     player:AddEternalHearts(-player:GetEternalHearts())
     player:AddBrokenHearts(-player:GetBrokenHearts())
+    player:AddRottenHearts(-player:GetRottenHearts())
 
     --Remove trinkets
     for trinketSlot = 1, 0, -1 do
