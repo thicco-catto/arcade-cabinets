@@ -45,14 +45,14 @@ ArcadeCabinetVariables.ArcadeCabinetRooms = {
 }
 
 ArcadeCabinetVariables.ArcadeCabinetScripts = {
-    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_BLACKSTONEWIELDER] = loadFile("arcade_cabinet_scripts/minigames/black_stone_wielder"),
-    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_GUSH] = loadFile("arcade_cabinet_scripts/minigames/gush"),
-    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_HOLYSMOKES] = loadFile("arcade_cabinet_scripts/minigames/holy_smokes"),
-    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_JUMPINGCOFFING] = loadFile("arcade_cabinet_scripts/minigames/jumping_coffing"),
-    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_NIGHTLIGHT] = loadFile("arcade_cabinet_scripts/minigames/night_light"),
-    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_NOSPLASH] = loadFile("arcade_cabinet_scripts/minigames/no_splash"),
-    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_THEGROUNDBELOW] = loadFile("arcade_cabinet_scripts/minigames/the_ground_below"),
-    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_TOOUNDERGROUND] = loadFile("arcade_cabinet_scripts/minigames/too_underground")
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_BLACKSTONEWIELDER] = require("arcade_cabinet_scripts/minigames/black_stone_wielder"),
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_GUSH] = require("arcade_cabinet_scripts/minigames/gush"),
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_HOLYSMOKES] = require("arcade_cabinet_scripts/minigames/holy_smokes"),
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_JUMPINGCOFFING] = require("arcade_cabinet_scripts/minigames/jumping_coffing"),
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_NIGHTLIGHT] = require("arcade_cabinet_scripts/minigames/night_light"),
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_NOSPLASH] = require("arcade_cabinet_scripts/minigames/no_splash"),
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_THEGROUNDBELOW] = require("arcade_cabinet_scripts/minigames/the_ground_below"),
+    [ArcadeCabinetVariables.ArcadeCabinetVariant.VARIANT_TOOUNDERGROUND] = require("arcade_cabinet_scripts/minigames/too_underground")
 }
 
 ArcadeCabinetVariables.ArcadeCabinetItems = {

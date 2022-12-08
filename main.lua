@@ -16,34 +16,34 @@ local function loadFile(loc, ...)
     return assert(loadfile(path .. loc .. ".lua"))(...)
 end
 
-local ArcadeCabinetVariables = loadFile("arcade_cabinet_scripts/variables")
+local ArcadeCabinetVariables = require("arcade_cabinet_scripts/variables")
 
-local Helpers = loadFile("arcade_cabinet_scripts/helpers")
+local Helpers = require("arcade_cabinet_scripts/helpers")
 Helpers.Init(ArcadeCabinetVariables)
 
-local PlayerInventory = loadFile("arcade_cabinet_scripts/player inventory/playerInventory")
+local PlayerInventory = require("arcade_cabinet_scripts/player inventory/playerInventory")
 PlayerInventory:Init(ArcadeCabinetMod, Helpers)
 
-local Cabinet = loadFile("arcade_cabinet_scripts/cabinet")
+local Cabinet = require("arcade_cabinet_scripts/cabinet")
 Cabinet:Init(ArcadeCabinetVariables, Helpers)
 
-local CabinetManagement = loadFile("arcade_cabinet_scripts/cabinetManager")
+local CabinetManagement = require("arcade_cabinet_scripts/cabinetManager")
 CabinetManagement:Init(ArcadeCabinetMod, ArcadeCabinetVariables, PlayerInventory, Cabinet, Helpers)
 
-local MinigameManagement = loadFile("arcade_cabinet_scripts/minigameManager")
+local MinigameManagement = require("arcade_cabinet_scripts/minigameManager")
 MinigameManagement:Init(ArcadeCabinetMod, ArcadeCabinetVariables, PlayerInventory, Cabinet, Helpers)
 
-local PlayerManagement = loadFile("arcade_cabinet_scripts/playerManager")
+local PlayerManagement = require("arcade_cabinet_scripts/playerManager")
 PlayerManagement:Init(ArcadeCabinetMod, ArcadeCabinetVariables, PlayerInventory, Cabinet, Helpers)
 
 CabinetManagement:AddOtherManagers(MinigameManagement, PlayerManagement)
 MinigameManagement:AddOtherManagers(CabinetManagement, PlayerManagement)
 PlayerManagement:AddOtherManagers(CabinetManagement, MinigameManagement)
 
-local SaveManagement = loadFile("arcade_cabinet_scripts/saveManager")
+local SaveManagement = require("arcade_cabinet_scripts/saveManager")
 SaveManagement:Init(ArcadeCabinetMod, ArcadeCabinetVariables, PlayerInventory, Helpers)
 
-local DssCompat = loadFile("arcade_cabinet_scripts/dssCompat")
+local DssCompat = require("arcade_cabinet_scripts/dssCompat")
 DssCompat:Init(ArcadeCabinetVariables, SaveManagement)
 
 

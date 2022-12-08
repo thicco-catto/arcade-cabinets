@@ -18,7 +18,7 @@ local MinigameSounds = {
     LOSE = Isaac.GetSoundIdByName("arcade cabinet lose")
 }
 
-local MinigameMusic = Isaac.GetMusicIdByName("tgb the beats below beat")
+local MinigameMusic = Isaac.GetMusicIdByName("tgb the beats below")
 local MinigameGlitchedMusic = Isaac.GetMusicIdByName("tgb the beats below glitched")
 
 -- Entities
@@ -639,6 +639,8 @@ local function UpdateIntro()
 
     if MinigameTimers.IntroScreenTimer == 0 then
         CurrentMinigameState = MinigameState.FALLING
+
+        MusicManager:Resume()
 
         -- Backdrop
         local bg = Isaac.Spawn(EntityType.ENTITY_EFFECT, MinigameEntityVariants.BACKGROUND, 0, game:GetRoom():GetCenterPos() - Vector(0, 120), Vector.Zero, nil)
